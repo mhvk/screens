@@ -21,6 +21,7 @@ quantity_support()
 plt.clf()
 np.random.seed(123456)
 
+
 # Set scalings.
 lobs = 1.*u.m
 fobs = const.c / lobs
@@ -36,6 +37,8 @@ a = 0.3*np.exp(-0.5*(th/sig)**2) + 0.03 * np.exp(-0.5*((th-5*u.mas)/sig)**2)
 realization = a * np.random.normal(size=th.shape+(2,)).view('c16').squeeze(-1)
 # Make direct line of sight a bit brighter.
 realization[th.size // 2] = 1
+# # For tests where realization is 0.
+# realization[th.size // 2 - 4] = 1
 
 # plt.plot(th, realization.real)
 
@@ -45,10 +48,13 @@ dtau = tau_grid[1] - tau_grid[0]
 fd_grid = np.linspace(-20*u.mHz, 20*u.mHz, 80, endpoint=False)
 dfd = fd_grid[1] - fd_grid[0]
 wavefield = np.zeros(tau_grid.shape+fd_grid.shape, 'c16')
-tau = np.round(((th**2 * tau_scale - tau_grid[0])
-                / dtau).to_value(1)).astype(int)
-fd = np.round(((th * fd_scale - fd_grid[0]) / dfd).to_value(1)).astype(int)
-np.add.at(wavefield, (tau, fd), realization)
+tau = th**2 * tau_scale
+fd = th * fd_scale
+itau = np.round(((tau - tau_grid[0]) / dtau).to_value(1)).astype(int)
+ifd = np.round(((fd - fd_grid[0]) / dfd).to_value(1)).astype(int)
+# Add geometric delay at observed frequency to the realization.
+to_add = realization * np.exp(-2j*np.pi*fobs*tau)
+np.add.at(wavefield, (itau, ifd), to_add)
 
 sec_extent = (fd_grid[0].value, fd_grid[-1].value,
               tau_grid[0].value, tau_grid[-1].value)
@@ -97,19 +103,11 @@ plt.xlabel(fd_grid.unit.to_string('latex'))
 plt.ylabel(tau_grid.unit.to_string('latex'))
 
 # For comparison, contruct dynamic spectrum directly
-f = f_grid[:, np.newaxis, np.newaxis]
+f = f_grid[:, np.newaxis, np.newaxis] + fobs
 t = t_grid[:, np.newaxis]
 th_t = th + t * mu_eff
 
-# Last term takes into account that we observe at a higher frequency;
-# without it, one doesn't match the phases of the above.
-dynw = realization * np.exp(-2j * np.pi * tau_scale * (
-    f * th_t**2
-    + 2. * fobs * t * mu_eff * th))
-# Can put this inside f as well, as follows:
-# f += fobs
-# dynw = realization * np.exp(-2j * np.pi * tau_scale * (f * th_t**2
-#                                                        - fobs * th**2))
+dynw = realization * np.exp(-2j * np.pi * tau_scale * f * th_t**2)
 
 dynspec2 = np.abs(dynw[...].sum(-1))**2
 
