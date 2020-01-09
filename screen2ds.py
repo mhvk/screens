@@ -21,7 +21,7 @@ d_eff = 1 * u.kpc
 mu_eff = 100 * u.mas / u.yr
 
 # Create scattering screen, composed of a centred and an offset Gaussian.
-th = np.linspace(-10*u.mas, 10*u.mas, 80, endpoint=False)
+th = np.linspace(-10*u.mas, 10*u.mas, 64, endpoint=False)
 sig = 1.5*u.mas
 a = 0.3*np.exp(-0.5*(th/sig)**2) + 0.03 * np.exp(-0.5*((th-5*u.mas)/sig)**2)
 realization = a * np.random.normal(size=th.shape+(2,)).view('c16').squeeze(-1)
@@ -35,16 +35,16 @@ realization[th.size // 2] = 1
 f = np.linspace(-0.5, 0.5, 200, endpoint=False) << u.MHz
 f += fobs
 t = (np.linspace(-500, 500, 80, endpoint=False) << u.s).to(u.minute)
-th_t = th + mu_eff * t[:, np.newaxis]
+th_t = th[..., np.newaxis, np.newaxis] + mu_eff * t
 tau_t = ((d_eff / (2*const.c)) * th_t ** 2).to(
     u.s, equivalencies=u.dimensionless_angles())
-dynwave = realization * np.exp(-2j * np.pi
-                               * f[:, np.newaxis, np.newaxis] * tau_t)
+dynwave = (realization[..., np.newaxis, np.newaxis]
+           * np.exp(-2j * np.pi * f[:, np.newaxis] * tau_t))
 
 # Just for fun, add noise.
 noise = np.random.normal(scale=0.05,
-                         size=dynwave.shape[:2]+(2,)).view('c16').squeeze(-1)
-dynspec = np.abs(dynwave[...].sum(-1) + noise)**2
+                         size=dynwave.shape[-2:]+(2,)).view('c16').squeeze(-1)
+dynspec = np.abs(dynwave[...].sum(0) + noise)**2
 dynspec /= dynspec.mean()
 
 plt.subplot(121)
