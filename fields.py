@@ -44,3 +44,12 @@ def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t):
     phase = (f[:, np.newaxis] * u.cycle * tau_t).to_value(
         u.one, u.dimensionless_angles())
     return realization * np.exp(-1j * phase)
+
+
+def theta_theta(theta, d_eff, mu_eff, dynspec, f, t):
+    dynwave = dynamic_field(theta, 0, 1., d_eff, mu_eff, f, t)
+    # Get intensities by brute-force mapping.
+    pairs = dynwave * dynwave[:, np.newaxis].conj()
+    # Remove constant parts
+    pairs -= pairs.mean((-2, -1), keepdims=True)
+    return (dynspec * pairs).mean((-2, -1))

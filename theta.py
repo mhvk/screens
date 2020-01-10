@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 from scintillometry.io import hdf5
 
-from fields import dynamic_field
+from fields import dynamic_field, theta_theta
 
 
 plt.ion()
@@ -34,13 +34,7 @@ plt.colorbar()
 d_eff = 1 * u.kpc
 mu_eff = 100 * u.mas / u.yr
 
-dynwave = dynamic_field(th, 0, 1., d_eff, mu_eff, f, t)
-
-# Get intensities by brute-force mapping.
-pairs = dynwave * dynwave[:, np.newaxis].conj()
-# Remove constant parts
-pairs -= pairs.mean((-2, -1), keepdims=True)
-th_th = (dynspec * pairs).mean((-2, -1))
+th_th = theta_theta(th, d_eff, mu_eff, dynspec, f, t)
 
 # Clean up near the diagonal
 k = 1
