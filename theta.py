@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 from scintillometry.io import hdf5
 
-from fields import dynamic_field, theta_theta
+from fields import dynamic_field, theta_theta, clean_theta_theta
 
 
 plt.ion()
@@ -21,6 +21,7 @@ with hdf5.open('dynspec.h5') as fh:
          / fh.sample_rate).to(u.minute)
     realization = fh.fh_raw['realization'][:]
     th = fh.fh_raw['theta'][:] << u.mas
+    noise = fh.fh_raw.attrs['noise']
 
 # Display simulated dynamic spectrum.
 ds_kwargs = dict(extent=(t[0].value, t[-1].value, f[0].value, f[-1].value),
@@ -37,11 +38,7 @@ mu_eff = 100 * u.mas / u.yr
 th_th = theta_theta(th, d_eff, mu_eff, dynspec, f, t)
 
 # Clean up near the diagonal
-k = 1
-th_th = np.triu(th_th, k=k) + np.tril(th_th, k=-k)
-# th_th[27:38, 27:38] = 0
-i = np.arange(th.size-1)
-th_th[th.size-1-i, i+1] = 0
+th_th = clean_theta_theta(th_th, k=1, clean_cross=True)
 
 # Show inferred theta-theta.
 th_kwargs = dict(extent=(th[0].value, th[-1].value)*2,
@@ -58,7 +55,9 @@ w, v = np.linalg.eigh(th_th)
 
 assert w[-1] == w.max()
 
-recovered = v[:, -1] * w[-1]
+# Ideally, the eigenvalue is 1, but we want a normalized solution anyway,
+# so just use properly normalized eigenvector.
+recovered = v[:, -1]
 
 # Show the theta-theta implied by largest eigenvector.
 plt.subplot(324)
@@ -71,13 +70,16 @@ plt.ylabel(th.unit.to_string('latex'))
 plt.subplot(323)
 dynwave_r = dynamic_field(th, 0, recovered, d_eff, mu_eff, f, t)
 dynspec_r = np.maximum(np.abs(dynwave_r.sum(0)) ** 2, 1e-30)
+
 # Mean of dynamic spectra should equal sum of all recovered powers.
-# Since we normalize that to 1, do the same here
-dynspec_r /= dynspec_r.mean()
+# Since we normalize that to (close to) 1, just rescale similarly here.
+dynspec_r *= dynspec.mean()/dynspec_r.mean()
 plt.imshow(dynspec_r, **ds_kwargs)
 plt.xlabel(t.unit.to_string('latex'))
 plt.ylabel(f.unit.to_string('latex'))
 plt.colorbar()
+
+print('Recovered red. chi2 ', ((dynspec-dynspec_r)**2).mean() / noise**2)
 
 # Also show theta-theta corresponding to actual realization.
 plt.subplot(326)
@@ -90,14 +92,15 @@ w_real, v_real = np.linalg.eigh(th_th_real)
 
 assert w_real[-1] == w_real.max()
 
-recovered_real = v_real[:, -1] * w_real[-1]
+recovered_real = v_real[:, -1]
 
 # and the dynamic spectrum implied by its largest eigenvector.
 plt.subplot(325)
 dynwave_real = dynamic_field(th, 0, recovered_real, d_eff, mu_eff, f, t)
 dynspec_real = np.maximum(np.abs(dynwave_real.sum(0)) ** 2, 1e-30)
-dynspec_real /= (np.abs(recovered_real)**2).sum()
 plt.imshow(dynspec_real, **ds_kwargs)
 plt.xlabel(t.unit.to_string('latex'))
 plt.ylabel(f.unit.to_string('latex'))
 plt.colorbar()
+
+print('Recovered red. chi2 ', ((dynspec-dynspec_real)**2).mean() / noise**2)

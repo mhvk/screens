@@ -53,3 +53,12 @@ def theta_theta(theta, d_eff, mu_eff, dynspec, f, t):
     # Remove constant parts
     pairs -= pairs.mean((-2, -1), keepdims=True)
     return (dynspec * pairs).mean((-2, -1))
+
+
+def clean_theta_theta(theta_theta, k=1, clean_cross=True):
+    if k > 1:
+        theta_theta = np.triu(theta_theta, k=k) + np.tril(theta_theta, k=-k)
+    if clean_cross:
+        i = np.arange(theta_theta.shape[0]-1)
+        theta_theta[theta_theta.shape[0]-1-i, i+1] = 0
+    return theta_theta
