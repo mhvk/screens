@@ -1,11 +1,12 @@
 import numpy as np
+import scipy.linalg
 from astropy import units as u
 from astropy.visualization import quantity_support
 from matplotlib import pyplot as plt
 
 from scintillometry.io import hdf5
 
-from fields import dynamic_field, theta_theta, clean_theta_theta
+from fields import dynamic_field, theta_theta, theta_grid
 
 
 plt.ion()
@@ -35,10 +36,12 @@ plt.colorbar()
 d_eff = 1 * u.kpc
 mu_eff = 100 * u.mas / u.yr
 
-th_th = theta_theta(th, d_eff, mu_eff, dynspec, f, t)
+# Make a grid that steps roughly with dtau at large theta.
+# Assue we're not too close to max tau in secondary spectrum.
+tau_max = (1./(f[3]-f[0])).to(u.us)
+th_r = theta_grid(d_eff, mu_eff, f, t, tau_max=tau_max)
 
-# Clean up near the diagonal
-th_th = clean_theta_theta(th_th, k=1, clean_cross=True)
+th_th = theta_theta(th_r, d_eff, mu_eff, dynspec, f, t)
 
 # Show inferred theta-theta.
 th_kwargs = dict(extent=(th[0].value, th[-1].value)*2,
@@ -51,9 +54,7 @@ plt.ylabel(th.unit.to_string('latex'))
 
 # Calculate eigenvectors for inferred theta-theta.
 
-w, v = np.linalg.eigh(th_th)
-
-assert w[-1] == w.max()
+w, v = scipy.linalg.eigh(th_th, eigvals=(th_r.size-1, th_r.size-1))
 
 # Ideally, the eigenvalue is 1, but we want a normalized solution anyway,
 # so just use properly normalized eigenvector.
@@ -68,7 +69,7 @@ plt.ylabel(th.unit.to_string('latex'))
 
 # As well as the corresponding dynamic spetrum.
 plt.subplot(323)
-dynwave_r = dynamic_field(th, 0, recovered, d_eff, mu_eff, f, t)
+dynwave_r = dynamic_field(th_r, 0, recovered, d_eff, mu_eff, f, t)
 dynspec_r = np.maximum(np.abs(dynwave_r.sum(0)) ** 2, 1e-30)
 
 # Mean of dynamic spectra should equal sum of all recovered powers.
