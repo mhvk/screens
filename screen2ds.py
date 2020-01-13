@@ -65,7 +65,7 @@ f = fobs + np.linspace(-0.5*u.MHz, 0.5*u.MHz, 200, endpoint=False)
 t = np.linspace(-10*u.minute, 10*u.minute, 60, endpoint=False)
 
 ax1 = plt.subplot(131)
-plt.plot(th, th_perp, '+')
+plt.scatter(th, th_perp, marker='o', s=np.maximum(np.abs(realization*40), 0.5))
 plt.xlim(th.min()*1.05, th.max()*1.05)
 plt.ylim(th.min()*1.05, th.max()*1.05)
 ax1.set_aspect(1.)
@@ -114,7 +114,7 @@ fd_g = (d_eff/const.c*mu_eff*fobs*th_g).to(
 tau_g = (d_eff/(2*const.c)*th_g**2).to(
     u.us, equivalencies=u.dimensionless_angles())
 i0, i1 = theta_theta_indices(th_g)
-plt.plot(fd_g[i0]-fd_g[i1], tau_g[i0]-tau_g[i1], '.', fillstyle='none', ms=0.1)
+plt.plot(fd_g[i0]-fd_g[i1], tau_g[i0]-tau_g[i1], 'o', ms=0.2)
 sec_extent = (fd[0].value, fd[-1].value, tau[0].value, tau[-1].value)
 plt.imshow(np.log10(ss), origin=0, aspect='auto', extent=sec_extent,
            cmap='Greys', vmin=-7, vmax=0)
