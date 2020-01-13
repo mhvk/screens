@@ -1,6 +1,10 @@
 """1-D scatering screen and its dynamic and secondary spectra.
 
 Create a dynamic wave field based on a set of scattering points.
+
+Runs as a script to create a simulated dynamic spectrum, plotting
+the result, and with the grid of theta that might be used to
+reproduce it overlaid.
 """
 
 import matplotlib.pyplot as plt
@@ -11,7 +15,7 @@ from astropy.visualization import quantity_support
 
 from scintillometry.io import hdf5
 
-from fields import dynamic_field
+from fields import dynamic_field, theta_grid, theta_theta_indices
 
 
 plt.ion()
@@ -54,25 +58,26 @@ realization /= np.sqrt((np.abs(realization)**2).sum())
 # plt.plot(th, realization.real)
 
 # Smallest theta corresponds to 0.15 us -> 6.5 MHz of bandwidth
-# But also need resolution of 0.013 MHz -> factor 500.
-# (d_eff/const.c/2*(0.25*u.mas)**2).to(u.us, u.dimensionless_angles())
+# But also need resolution of 0.013 MHz -> factor 500 -> too much.
+# Instead rely on f_d for those small theta.
 
-f = np.linspace(-0.5, 0.5, 196, endpoint=False) << u.MHz
-f += fobs
-t = (np.linspace(-240, 240, 32, endpoint=False) << u.s).to(u.minute)
-
+f = fobs + np.linspace(-0.5*u.MHz, 0.5*u.MHz, 200, endpoint=False)
+t = np.linspace(-10*u.minute, 10*u.minute, 60, endpoint=False)
 
 ax1 = plt.subplot(131)
 plt.plot(th, th_perp, '+')
-plt.xlim(th.min()*1.05, th.max()*1.04)
-plt.ylim(th.min()*1.04, th.max()*1.05)
+plt.xlim(th.min()*1.05, th.max()*1.05)
+plt.ylim(th.min()*1.05, th.max()*1.05)
 ax1.set_aspect(1.)
 
 dynwave = dynamic_field(th, th_perp, realization, d_eff, mu_eff, f, t)
 axes = tuple(range(0, dynwave.ndim-2))
 dynspec = np.abs(dynwave[...].sum(axes))**2
 
-# Just for fun, add noise.
+# Just for fun, add noise.  Add as gaussian noise, since in a real
+# observation, the dynamic spectrum would consist of folded data of
+# a lot of background-subtracted pulses, so intensities would no longer
+# be chi2 distributed.
 noise = 0.01
 dynspec += noise * np.random.normal(size=dynspec.shape)
 
@@ -96,7 +101,20 @@ fd = np.fft.fftshift(fd) << fd.unit
 
 ss = np.maximum(np.abs(sec)**2, 1e-30)
 
+
+# Plot secondary spectrum, with thetas from a default grid that would be
+# used for it overlaid.
 plt.subplot(133)
+
+tau_max = (d_eff/(2*const.c)*th.max()**2).to(
+    u.us, u.dimensionless_angles())
+th_g = theta_grid(d_eff, mu_eff, f, t, tau_max=tau_max)
+fd_g = (d_eff/const.c*mu_eff*fobs*th_g).to(
+    u.mHz, equivalencies=u.dimensionless_angles())
+tau_g = (d_eff/(2*const.c)*th_g**2).to(
+    u.us, equivalencies=u.dimensionless_angles())
+i0, i1 = theta_theta_indices(th_g)
+plt.plot(fd_g[i0]-fd_g[i1], tau_g[i0]-tau_g[i1], '.', fillstyle='none', ms=0.1)
 sec_extent = (fd[0].value, fd[-1].value, tau[0].value, tau[-1].value)
 plt.imshow(np.log10(ss), origin=0, aspect='auto', extent=sec_extent,
            cmap='Greys', vmin=-7, vmax=0)
@@ -105,6 +123,7 @@ plt.ylabel(tau.unit.to_string('latex'))
 plt.colorbar()
 
 
+# Save the simulated dynamic spectrum for later use.
 with hdf5.open('dynspec.h5', 'w', sample_shape=dynspec.shape[:1],
                sample_rate=(1/(t[1]-t[0])).to(u.mHz),
                samples_per_frame=dynspec.shape[-1],
