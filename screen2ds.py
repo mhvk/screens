@@ -21,11 +21,10 @@ from fields import dynamic_field, theta_grid, theta_theta_indices
 plt.ion()
 quantity_support()
 plt.clf()
-np.random.seed(1234)
+np.random.seed(123456)
 
 # Set scalings.
-lobs = 1. * u.m
-fobs = const.c / lobs
+fobs = 330. * u.MHz
 d_eff = 1 * u.kpc
 mu_eff = 100 * u.mas / u.yr
 
@@ -34,9 +33,10 @@ simple = True
 # Create scattering screen, composed of a centred and an offset Gaussian.
 sig = 1.5*u.mas
 if simple:
-    th = np.linspace(-8, 8, 32, endpoint=False) << u.mas
+    th = np.linspace(-7, 7, 28, endpoint=False) << u.mas
     th_perp = np.zeros_like(th)
-    a = 0.3*np.exp(-0.5*(th/sig)**2) + 0.03*np.exp(-0.5*((th-5*u.mas)/sig)**2)
+    a = (0.3*np.exp(-0.5*(th/sig)**2)
+         + 0.03*np.exp(-0.5*((th-5*u.mas)/sig)**2)).to_value(1)
 else:
     th1 = np.linspace(-8, 8, 32, endpoint=False) << u.mas
     a1 = 0.3*np.exp(-0.5*(th1/sig)**2)
@@ -50,7 +50,8 @@ realization = a * np.random.normal(size=th.shape+(2,)).view('c16').squeeze(-1)
 # Make direct line of sight a bit brighter.
 # TODO: this image should not really have proper motion!
 realization[np.where(th == 0)] = 1
-# realization[th.size // 2-4] = 0.1
+# realization[th.size // 2+8] = 0.1
+# realization[th.size // 2+4] = 0.1
 
 # Normalize so we should get a dynamic spectrum of unity mean
 realization /= np.sqrt((np.abs(realization)**2).sum())
@@ -106,8 +107,7 @@ ss = np.maximum(np.abs(sec)**2, 1e-30)
 # used for it overlaid.
 plt.subplot(133)
 
-tau_max = (d_eff/(2*const.c)*th.max()**2).to(
-    u.us, u.dimensionless_angles())
+tau_max = (1./(f[3]-f[0])).to(u.us)
 th_g = theta_grid(d_eff, mu_eff, f, t, tau_max=tau_max)
 fd_g = (d_eff/const.c*mu_eff*fobs*th_g).to(
     u.mHz, equivalencies=u.dimensionless_angles())
@@ -130,6 +130,6 @@ with hdf5.open('dynspec.h5', 'w', sample_shape=dynspec.shape[:1],
                dtype=dynspec.dtype, time=Time.now(), frequency=f,
                sideband=1) as fw:
     fw.write(dynspec.T)
-    fw.fh_raw.create_dataset('realization', data=realization.value)
+    fw.fh_raw.create_dataset('realization', data=realization)
     fw.fh_raw.create_dataset('theta', data=th.value)
     fw.fh_raw.attrs['noise'] = noise
