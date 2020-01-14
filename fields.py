@@ -93,7 +93,7 @@ def theta_theta(theta, d_eff, mu_eff, dynspec, f, t):
     return result
 
 
-def theta_grid(d_eff, mu_eff, f, t, tau_max=None):
+def theta_grid(d_eff, mu_eff, f, t, tau_max=None, oversample=1.4):
     """Make a grid of theta that sample the parabola roughly uniformly.
 
     With the constraint that near tau_max, the spacing is
@@ -114,12 +114,16 @@ def theta_grid(d_eff, mu_eff, f, t, tau_max=None):
     tau_max : ~astropy.units.Quantity
         Maximum delay to consider.  If not given, taken as the value
         implied by the frequency resolution (i.e., ``1/(f[2]-f[0])``).
+    oversample : float
+        Factor by which to oversample pixels.  This is a very finicky
+        number.  With 1, dynamic spectra seem to be underfit, with
+        1.5 fitting takes very long as points are strongly correlated.
     """
     fobs = f.mean()
     tau_factor = d_eff/(2.*const.c)
     fd_factor = d_eff*mu_eff*fobs/const.c
-    dtau = (1./f.ptp()).to(u.us)
-    dfd = (1./t.ptp()).to(u.mHz)
+    dtau = (1./oversample/f.ptp()).to(u.us)
+    dfd = (1./oversample/t.ptp()).to(u.mHz)
     a_pix = (tau_factor/dtau * (dfd/fd_factor)**2).to_value(
         1, equivalencies=u.dimensionless_angles())
     if tau_max is None:
