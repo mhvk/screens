@@ -8,7 +8,8 @@ def expand2(*arrays):
             for array in arrays]
 
 
-def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t):
+def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t,
+                  fast=True):
     """Given a set of scattering points, construct the dynamic wave field.
 
     Parameters
@@ -29,6 +30,11 @@ def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t):
         Times for which the dynamic wave spectrum should be calculated.
     f : ~astropy.units.frequency
         Frequencies for which the spectrum should be calculated.
+    fast : bool
+        Calculates the field faster by iteratively applying a phasor for each
+        the frequency step along the frequency axis. Assumes the frequencies
+        are a linear sequence.  Will lead to inaccuracies at the 1e-9 level,
+        which should be negligible for most purposes.
 
     Returns
     -------
@@ -40,9 +46,23 @@ def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t):
         theta_par, theta_perp, realization, d_eff, mu_eff)
     th_par = theta_par + mu_eff * t
     tau_t = (d_eff / (2*const.c)) * (th_par**2 + theta_perp**2)
-    phase = (f[:, np.newaxis] * u.cycle * tau_t).to_value(
-        u.one, u.dimensionless_angles())
-    return realization * np.exp(-1j * phase)
+    phasor = np.empty(np.broadcast(tau_t, f[:, np.newaxis]).shape, complex)
+    if fast:
+        phase0 = (f[0] * u.cycle * tau_t).to_value(
+            u.one, u.dimensionless_angles())
+        dphase = ((f[1]-f[0]) * u.cycle * tau_t).to_value(
+            u.one, u.dimensionless_angles())
+        phasor[..., :1, :] = np.exp(-1j * phase0)
+        phasor[..., 1:, :] = np.exp(-1j * dphase)
+        phasor = np.cumprod(phasor, out=phasor, axis=-2)
+    else:
+        phasor.imag = (-f[:, np.newaxis] * u.cycle * tau_t).to_value(
+            u.one, u.dimensionless_angles())
+        phasor = np.exp(phasor, out=phasor)
+
+    if np.any(realization != 1.):
+        phasor *= realization
+    return phasor
 
 
 def theta_theta_indices(theta, lower=-0.25, upper=0.75):
