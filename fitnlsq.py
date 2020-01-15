@@ -4,7 +4,7 @@ from astropy.table import QTable
 from astropy.utils import lazyproperty
 from astropy.visualization import quantity_support
 from matplotlib import pyplot as plt
-from scipy.optimize import least_squares
+from scipy.optimize import curve_fit
 
 from scintillometry.io import hdf5
 
@@ -30,7 +30,7 @@ class DynSpecChi2:
         return dynamic_field(self.theta, 0., 1., self.d_eff, self.mu_eff,
                              self.f, self.t)
 
-    def residuals(self, magnification, mu_eff):
+    def model(self, magnification, mu_eff):
         if mu_eff is not None and mu_eff != self.mu_eff:
             self.mu_eff = mu_eff
             # Force recalculation by next access.
@@ -39,7 +39,11 @@ class DynSpecChi2:
         dyn_wave_sum = (self.dyn_wave
                         * magnification[:, np.newaxis, np.newaxis]).sum(0)
         dynspec_r = (dyn_wave_sum.view('2f8')**2).sum(-1)
-        return (dynspec - dynspec_r).ravel() / self.noise
+        return dynspec_r
+
+    def residuals(self, magnification, mu_eff):
+        model = self.model(magnification, mu_eff)
+        return (dynspec - model) / self.noise
 
     def jacobian(self, magnification, mu_eff):
         # Use Wirtinger derivatives to calculate derivative to x, y
@@ -63,8 +67,7 @@ class DynSpecChi2:
             jac_mu = None
 
         jacobian = self._combine_pars(jac_mag, jac_mu)
-
-        return -jacobian / noise
+        return jacobian
 
     def _combine_pars(self, magnification, mu_eff):
         pars = (magnification.view('2f8')
@@ -76,6 +79,7 @@ class DynSpecChi2:
         return pars
 
     def _separate_pars(self, pars):
+        pars = np.asanyarray(pars)
         if len(pars) > 2*len(self.theta):
             magnification = pars[:-1].view(complex)
             mu_eff = pars[-1] << self.mu_eff.unit
@@ -83,16 +87,16 @@ class DynSpecChi2:
         else:
             return pars.view(complex), None
 
-    def _residuals(self, pars):
+    def _model(self, unused_x_data, *pars):
         magnification, mu_eff = self._separate_pars(pars)
         old_mu_eff = self.mu_eff
-        residuals = self.residuals(magnification, mu_eff)
+        model = self.model(magnification, mu_eff)
         if self._prt and old_mu_eff != self.mu_eff:
-            print(self.mu_eff, (residuals**2).sum())
+            print(self.mu_eff, ((self.dynspec-model)**2).sum()/noise**2)
 
-        return residuals
+        return model.ravel()
 
-    def _jacobian(self, pars):
+    def _jacobian(self, unused_x_data, *pars):
         magnification, mu_eff = self._separate_pars(pars)
         return self.jacobian(magnification, mu_eff)
 
@@ -101,10 +105,17 @@ class DynSpecChi2:
         if mu_eff_guess is not None:
             mu_eff_guess = mu_eff_guess.to_value(self.mu_eff.unit)
         guesses = self._combine_pars(mag_guesses, mu_eff_guess)
-        sol = least_squares(self._residuals, guesses, self._jacobian,
-                            verbose=min(verbose, 2), **kwargs)
-        sol.magnifications, sol.mu_eff = self._separate_pars(sol['x'])
-        return sol
+        # Default method of 'lm' does not give reliable error estimates.
+        kwargs.setdefault('method', 'trf')
+        if kwargs['method'] != 'lm':
+            kwargs['verbose'] = min(verbose, 2)
+        popt, pcovar = curve_fit(
+            self._model, xdata=None, ydata=self.dynspec.ravel(),
+            p0=guesses, sigma=np.broadcast_to(noise, self.dynspec.size),
+            jac=self._jacobian, **kwargs)
+        magnifications, mu_eff = self._separate_pars(popt)
+        sig_mag, sig_mu_eff = self._separate_pars(np.sqrt(np.diag(pcovar)))
+        return magnifications, sig_mag, mu_eff, sig_mu_eff
 
 
 with hdf5.open('dynspec.h5') as fh:
@@ -129,4 +140,4 @@ recovered = r['recovered'][ibest]
 
 dyn_chi2 = DynSpecChi2(th_r, d_eff, mu_eff, dynspec, f, t, noise)
 
-sol = dyn_chi2.fit(recovered, mu_eff)
+mag_fit, mag_err, mu_fit, mu_err = dyn_chi2.fit(recovered, mu_eff)
