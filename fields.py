@@ -28,8 +28,10 @@ def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t,
         Effective proper motion (``v_eff / d_eff``), parallel to ``theta_par``.
     t : ~astropy.units.Quantity
         Times for which the dynamic wave spectrum should be calculated.
+        Should broadcast with ``f`` to give the dynamic spectrum shape.
     f : ~astropy.units.frequency
         Frequencies for which the spectrum should be calculated.
+        Should broadcast with ``t`` to give the dynamic spectrum shape.
     fast : bool
         Calculates the field faster by iteratively applying a phasor for each
         the frequency step along the frequency axis. Assumes the frequencies
@@ -39,25 +41,27 @@ def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t,
     Returns
     -------
     dynwave : array
-        Delayed wave field array, with last axis time, second but last
-        frequency, and earlier axes as given by the other parameters.
+        Delayed wave field array, with time and frequency axes as given by
+        ``t`` and ``f``, and earlier axes as given by the other parameters.
     """
     theta_par, theta_perp, realization, d_eff, mu_eff = expand2(
         theta_par, theta_perp, realization, d_eff, mu_eff)
     th_par = theta_par + mu_eff * t
-    tau_t = (d_eff / (2*const.c)) * (th_par**2 + theta_perp**2)
-    phasor = np.empty(np.broadcast(tau_t, f[:, np.newaxis]).shape, complex)
+    tau_t = (((d_eff / (2*const.c)) * (th_par**2 + theta_perp**2))
+             .to_value(u.s, u.dimensionless_angles()))
+    f = f.to_value(u.rad/u.s, equivalencies=[(u.Hz, u.cycle/u.s)])
     if fast:
-        phase0 = (f[0] * u.cycle * tau_t).to_value(
-            u.one, u.dimensionless_angles())
-        dphase = ((f[1]-f[0]) * u.cycle * tau_t).to_value(
-            u.one, u.dimensionless_angles())
-        phasor[..., :1, :] = np.exp(-1j * phase0)
-        phasor[..., 1:, :] = np.exp(-1j * dphase)
-        phasor = np.cumprod(phasor, out=phasor, axis=-2)
+        assert 1 <= f.ndim <= 2
+        f_axis = f.shape.index(f.size) - f.ndim
+        extra_slice = (slice(None),) * (-1-f_axis)
+        ph0_index = (Ellipsis, slice(0, 1)) + extra_slice
+        dph0_index = (Ellipsis, slice(1, None)) + extra_slice
+        phasor = np.empty(np.broadcast(tau_t, f).shape, complex)
+        phasor[ph0_index] = np.exp(-1j * f[0] * tau_t)
+        phasor[dph0_index] = np.exp(-1j * (f[1]-f[0]) * tau_t)
+        phasor = np.cumprod(phasor, out=phasor, axis=f_axis)
     else:
-        phasor.imag = (-f[:, np.newaxis] * u.cycle * tau_t).to_value(
-            u.one, u.dimensionless_angles())
+        phasor = -1j * (f * tau_t)
         phasor = np.exp(phasor, out=phasor)
 
     if np.any(realization != 1.):

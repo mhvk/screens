@@ -104,10 +104,10 @@ class DynamicSpectrum:
     @classmethod
     def fromfile(cls, filename, d_eff=None, mu_eff=None):
         with hdf5.open(filename) as fh:
-            dynspec = fh.read().T
+            dynspec = fh.read()
             f = fh.frequency
             t = (np.arange(-fh.shape[0] // 2, fh.shape[0] // 2)
-                 / fh.sample_rate).to(u.minute)
+                 / fh.sample_rate).to(u.minute)[:, np.newaxis]
             noise = fh.fh_raw.attrs['noise']
 
         self = cls(dynspec, f, t, noise, d_eff, mu_eff)
@@ -136,7 +136,7 @@ class DynamicSpectrum:
     def fd(self):
         fobs = self.f.mean()
         return (self.d_eff/const.c*self.mu_eff*self.theta*fobs).to(
-            u.mHz, u.dimensionless_angles())
+            u.mHz, u.dimensionless_angles())[:, np.newaxis]
 
     def dynamic_bases(self, mu_eff=None):
         if mu_eff is None:
@@ -267,7 +267,7 @@ class DynamicSpectrum:
                    .view([('mag_real', 'f8'), ('mag_imag', 'f8')]))
         if mu_eff is not None:
             dphidmu = (-1j * self.d_eff/const.c
-                       * u.cycle * self.f[:, np.newaxis] * self.t
+                       * u.cycle * self.f * self.t
                        * self.theta[:, np.newaxis, np.newaxis]).to(
                            1./self.mu_eff.unit, u.dimensionless_angles())
             ddyn_wave_sum_dmu = (magdw * dphidmu).sum(0)
@@ -459,7 +459,7 @@ if __name__ == '__main__':
          ftol=0.1/dyn_chi2.dynspec.size)
 
     plt.subplot(232)
-    plt.imshow(dyn_chi2.residuals(raw_mag_fit, raw_mu_eff_fit),
+    plt.imshow(dyn_chi2.residuals(raw_mag_fit, raw_mu_eff_fit).T,
                aspect='auto', origin=0, vmin=-5, vmax=5)
 
     rd = np.sqrt(dyn_chi2.pcovar.diagonal())
@@ -476,7 +476,7 @@ if __name__ == '__main__':
     plt.imshow(cc, vmin=-1, vmax=1)
 
     plt.subplot(235)
-    plt.imshow(dyn_chi2.residuals(cln_mag_fit, cln_mu_eff_fit),
+    plt.imshow(dyn_chi2.residuals(cln_mag_fit, cln_mu_eff_fit).T,
                aspect='auto', origin=0, vmin=-5, vmax=5)
 
     plt.subplot(234)

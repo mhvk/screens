@@ -63,7 +63,7 @@ realization /= np.sqrt((np.abs(realization)**2).sum())
 # Instead rely on f_d for those small theta.
 
 f = fobs + np.linspace(-0.5*u.MHz, 0.5*u.MHz, 200, endpoint=False)
-t = np.linspace(-10*u.minute, 10*u.minute, 100, endpoint=False)
+t = np.linspace(-10*u.minute, 10*u.minute, 100, endpoint=False)[:, np.newaxis]
 
 ax1 = plt.subplot(131)
 plt.scatter(th, th_perp, marker='o', s=np.maximum(np.abs(realization*40), 0.5))
@@ -84,7 +84,7 @@ dynspec += noise * np.random.normal(size=dynspec.shape)
 
 plt.subplot(132)
 ds_extent = (t[0].value, t[-1].value, f[0].value, f[-1].value)
-plt.imshow(dynspec, origin=0, aspect='auto', extent=ds_extent, cmap='Greys')
+plt.imshow(dynspec.T, origin=0, aspect='auto', extent=ds_extent, cmap='Greys')
 plt.xlabel(t.unit.to_string('latex'))
 plt.ylabel(f.unit.to_string('latex'))
 plt.colorbar()
@@ -93,8 +93,8 @@ plt.colorbar()
 # And turn it into a secondary spectrum.
 sec = np.fft.fft2(dynspec)
 sec /= sec[0, 0]
-tau = np.fft.fftfreq(dynspec.shape[0], f[1] - f[0]).to(u.us)
-fd = np.fft.fftfreq(dynspec.shape[1], t[1] - t[0]).to(u.mHz)
+tau = np.fft.fftfreq(dynspec.shape[1], f[1] - f[0]).to(u.us)
+fd = np.fft.fftfreq(dynspec.shape[0], t[1] - t[0]).to(u.mHz)
 
 sec = np.fft.fftshift(sec)
 tau = np.fft.fftshift(tau) << tau.unit
@@ -117,7 +117,7 @@ i0, i1 = theta_theta_indices(th_g)
 plt.plot(fd_g[i0]-fd_g[i1], tau_g[i0]-tau_g[i1], 'bo', ms=0.2)
 plt.plot(fd_g, tau_g, 'ro', ms=0.4)
 sec_extent = (fd[0].value, fd[-1].value, tau[0].value, tau[-1].value)
-plt.imshow(np.log10(ss), origin=0, aspect='auto', extent=sec_extent,
+plt.imshow(np.log10(ss.T), origin=0, aspect='auto', extent=sec_extent,
            cmap='Greys', vmin=-7, vmax=0)
 plt.xlabel(fd.unit.to_string('latex'))
 plt.ylabel(tau.unit.to_string('latex'))
@@ -125,12 +125,12 @@ plt.colorbar()
 
 
 # Save the simulated dynamic spectrum for later use.
-with hdf5.open('dynspec.h5', 'w', sample_shape=dynspec.shape[:1],
+with hdf5.open('dynspec.h5', 'w', sample_shape=dynspec.shape[1:],
                sample_rate=(1/(t[1]-t[0])).to(u.mHz),
-               samples_per_frame=dynspec.shape[-1],
+               samples_per_frame=dynspec.shape[0],
                dtype=dynspec.dtype, time=Time.now(), frequency=f,
                sideband=1) as fw:
-    fw.write(dynspec.T)
+    fw.write(dynspec)
     fw.fh_raw.create_dataset('realization', data=realization)
     fw.fh_raw.create_dataset('theta', data=th.value)
     fw.fh_raw.attrs['noise'] = noise
