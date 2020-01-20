@@ -15,11 +15,11 @@ plt.clf()
 
 
 with hdf5.open('dynspec.h5') as fh:
-    dynspec = fh.read().T
+    dynspec = fh.read()
     f = fh.frequency
     fobs = f[f.shape[0]//2]
     t = (np.arange(-fh.shape[0] // 2, fh.shape[0] // 2)
-         / fh.sample_rate).to(u.minute)
+         / fh.sample_rate).to(u.minute)[:, np.newaxis]
     realization = fh.fh_raw['realization'][:]
     th = fh.fh_raw['theta'][:] << u.mas
     noise = fh.fh_raw.attrs['noise']
@@ -28,7 +28,7 @@ with hdf5.open('dynspec.h5') as fh:
 ds_kwargs = dict(extent=(t[0].value, t[-1].value, f[0].value, f[-1].value),
                  origin=0, aspect='auto', cmap='Greys', vmin=0, vmax=6)
 plt.subplot(321)
-plt.imshow(dynspec, **ds_kwargs)
+plt.imshow(dynspec.T, **ds_kwargs)
 plt.xlabel(t.unit.to_string('latex'))
 plt.ylabel(f.unit.to_string('latex'))
 plt.colorbar()
@@ -75,7 +75,7 @@ dynspec_r = np.maximum(np.abs(dynwave_r.sum(0)) ** 2, 1e-30)
 # Mean of dynamic spectra should equal sum of all recovered powers.
 # Since we normalize that to (close to) 1, just rescale similarly here.
 dynspec_r *= dynspec.mean()/dynspec_r.mean()
-plt.imshow(dynspec_r, **ds_kwargs)
+plt.imshow(dynspec_r.T, **ds_kwargs)
 plt.xlabel(t.unit.to_string('latex'))
 plt.ylabel(f.unit.to_string('latex'))
 plt.colorbar()
@@ -99,7 +99,7 @@ recovered_real = v_real[:, -1]
 plt.subplot(325)
 dynwave_real = dynamic_field(th, 0, recovered_real, d_eff, mu_eff, f, t)
 dynspec_real = np.maximum(np.abs(dynwave_real.sum(0)) ** 2, 1e-30)
-plt.imshow(dynspec_real, **ds_kwargs)
+plt.imshow(dynspec_real.T, **ds_kwargs)
 plt.xlabel(t.unit.to_string('latex'))
 plt.ylabel(f.unit.to_string('latex'))
 plt.colorbar()
