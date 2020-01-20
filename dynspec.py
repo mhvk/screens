@@ -90,8 +90,6 @@ def path_length(a, y):
 
 
 class DynamicSpectrum:
-    _mu_eff_old = None
-
     def __init__(self, dynspec, f, t, noise, d_eff, mu_eff,
                  theta=None, magnification=None):
         self.dynspec = dynspec
@@ -144,7 +142,7 @@ class DynamicSpectrum:
         if mu_eff is None:
             mu_eff = self.mu_eff
 
-        if mu_eff != self._mu_eff_old:
+        if mu_eff != getattr(self, '_mu_eff_old', None):
             self._dyn_wave = dynamic_field(self.theta, 0., 1.,
                                            self.d_eff, mu_eff, self.f, self.t)
             self._mu_eff_old = mu_eff
@@ -296,10 +294,12 @@ class DynamicSpectrum:
 
         return pars
 
-    def _separate_pars(self, pars):
+    def _separate_pars(self, pars, mu_eff_scale=None):
         pars = np.asanyarray(pars)
         if len(pars) > 2*len(self.theta)-1:
-            mu_eff = pars[-1] * self.mu_eff_guess
+            if mu_eff_scale is None:
+                mu_eff_scale = self.mu_eff_guess
+            mu_eff = pars[-1] * mu_eff_scale
             pars = pars[:-1]
         else:
             mu_eff = None
@@ -312,24 +312,45 @@ class DynamicSpectrum:
         magnification[~theta0] = others
         return magnification, mu_eff
 
-    def _separate_covar(self, pcovar):
-        """Covariance of magnitudes and magnitudes with mu_eff."""
+    def _separate_covar(self, pcovar, mu_eff_scale=None):
+        """Complex covariance and pseudo-covariance.
+
+        Of magnitudes with themselves and magnitudes with mu_eff
+
+        Note: not quite sure this is done correctly (or useful)!
+        https://en.wikipedia.org/wiki/Complex_random_vector#Covariance_matrix_and_pseudo-covariance_matrix
+        """
         if len(pcovar) > 2*len(self.theta)-1:
-            mu_eff_cov, mu_eff_var = self._separate_pars(pcovar[-1])
-            pcovar = pcovar[:-1, :-1]
+            if mu_eff_scale is None:
+                mu_eff_scale = self.mu_eff_guess
+            mu_eff_cov, mu_eff_var = self._separate_pars(
+                pcovar[-1], mu_eff_scale**2)
+            pcovar = pcovar[:-1, :-1] * mu_eff_scale
         else:
             mu_eff_cov = mu_eff_var = None
 
-        nth = self.theta.shape[0]
-        c0, r0 = pcovar[-1].reshape(-1, 2), pcovar[:, -1].reshape(-1, 2)
-        others = pcovar[:-1, :-1].reshape(nth-1, 2, nth-1, 2)
-        mag_cov = np.zeros((nth, 2, nth, 2), float)
-        theta0 = self.theta == 0
-        itheta0 = np.argmax(theta0)
-        mag_cov[itheta0, 0] = c0
-        mag_cov[:, :, itheta0, 0] = r0
-        mag_cov[~theta0][:, :, ~theta0] = others
-        return mag_cov, mu_eff_cov, mu_eff_var
+        r0 = pcovar[-1:, :-1]
+        r0 = np.concatenate([r0, np.zeros_like(r0)], axis=0)
+        c0 = pcovar[:-1, -1:]
+        c0 = np.concatenate([c0, np.zeros_like(c0)], axis=1)
+        others = pcovar[:-1, :-1]
+        var0 = np.array([[pcovar[-1, -1], 0.],
+                         [0., 0.]])
+        i0 = np.argmax(self.theta == 0) * 2
+        mag_cov_reim = np.block(
+            [[others[:i0, :i0], c0[:i0], others[:i0, i0:]],
+             [r0[:, :i0], var0, r0[:, i0:]],
+             [others[i0:, :i0], c0[i0:], others[i0:, i0:]]])
+        mag_cov_xx = mag_cov_reim[0::2, 0::2]
+        mag_cov_yx = mag_cov_reim[1::2, 0::2]
+        mag_cov_xy = mag_cov_reim[0::2, 1::2]
+        mag_cov_yy = mag_cov_reim[1::2, 1::2]
+        mag_covar = (mag_cov_xx + mag_cov_yy
+                     + 1j*(mag_cov_yx - mag_cov_xy))
+        mag_pseudo = (mag_cov_xx - mag_cov_yy
+                      + 1j*(mag_cov_yx + mag_cov_xy))
+
+        return mag_covar, mag_pseudo, mu_eff_cov, mu_eff_var
 
     def _model(self, unused_x_data, *pars):
         magnification, mu_eff = self._separate_pars(pars)
