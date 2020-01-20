@@ -155,12 +155,3 @@ def theta_grid(d_eff, mu_eff, f, t, tau_max=None, oversample=1.4):
     th_r = (np.sqrt(y/y.max()*tau_max/tau_factor) * np.sign(s)).to(
         u.mas, u.dimensionless_angles())
     return th_r
-
-
-def clean_theta_theta(theta_theta, k=1, clean_cross=True):
-    if k > 1:
-        theta_theta = np.triu(theta_theta, k=k) + np.tril(theta_theta, k=-k)
-    if clean_cross:
-        i = np.arange(theta_theta.shape[0]-1)
-        theta_theta[theta_theta.shape[0]-1-i, i+1] = 0
-    return theta_theta

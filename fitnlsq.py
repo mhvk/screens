@@ -109,12 +109,12 @@ class DynSpecChi2:
         kwargs.setdefault('method', 'trf')
         if kwargs['method'] != 'lm':
             kwargs['verbose'] = min(verbose, 2)
-        popt, pcovar = curve_fit(
+        self.popt, self.pcovar = curve_fit(
             self._model, xdata=None, ydata=self.dynspec.ravel(),
             p0=guesses, sigma=np.broadcast_to(noise, self.dynspec.size),
             jac=self._jacobian, **kwargs)
-        magnifications, mu_eff = self._separate_pars(popt)
-        sig_mag, sig_mu_eff = self._separate_pars(np.sqrt(np.diag(pcovar)))
+        magnifications, mu_eff = self._separate_pars(self.popt)
+        sig_mag, sig_mu_eff = self._separate_pars(np.sqrt(np.diag(self.pcovar)))
         return magnifications, sig_mag, mu_eff, sig_mu_eff
 
 
