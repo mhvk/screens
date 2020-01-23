@@ -12,7 +12,7 @@ from scintillometry.io import hdf5
 from fields import dynamic_field, theta_theta
 
 
-def theta_grid(d_eff, mu_eff, f, t, tau_max=None,
+def theta_grid(d_eff, mu_eff, f, t, tau_max=None, fd_max=None,
                oversample_tau=1.3, oversample_fd=1.3**2):
     """Make a grid of theta that sample the parabola in a particular way.
 
@@ -39,6 +39,9 @@ def theta_grid(d_eff, mu_eff, f, t, tau_max=None,
     tau_max : ~astropy.units.Quantity
         Maximum delay to consider.  If not given, taken as the value
         implied by the frequency resolution (i.e., ``1/(f[2]-f[0])``).
+    fd_max : ~astropy.units.Quantity
+        Maximum doppler factor to consider.  If not given, taken as the
+        value implied by the time resolution (i.e., ``1/(t[2]-t[0])``).
     oversample_tau : float
         Factor by which to oversample pixels in tau (inverse frequency).
         This is a somewhat finicky number: With 1, dynamic spectra are
@@ -62,7 +65,14 @@ def theta_grid(d_eff, mu_eff, f, t, tau_max=None,
         1, equivalencies=u.dimensionless_angles())
     if tau_max is None:
         tau_max = 1/(f[2]-f[0])
-    y_max = (tau_max/dtau).to_value(1)
+    if fd_max is None:
+        fd_max = 1/(t[2]-t[0])
+    th_max = min(np.sqrt(tau_max/tau_factor).to(
+        u.mas, u.dimensionless_angles()),
+                 (fd_max/fd_factor).to(
+                     u.mas, u.dimensionless_angles()))
+    tau_max_use = (tau_factor * th_max**2).to(u.us, u.dimensionless_angles())
+    y_max = (tau_max_use/dtau).to_value(1)
     s_max = round(path_length(a_pix, y_max))
     # Corresponding path length around a parabola
     s = np.arange(1, s_max+1)
@@ -78,7 +88,7 @@ def theta_grid(d_eff, mu_eff, f, t, tau_max=None,
 
     s = np.hstack([-s[::-1], 0, s[:]])
     y = np.hstack([y[::-1], 0, y[:]])
-    th_r = (np.sqrt(y/y_max*tau_max/tau_factor) * np.sign(s)).to(
+    th_r = (np.sqrt(y/y_max*tau_max_use/tau_factor) * np.sign(s)).to(
         u.mas, u.dimensionless_angles())
     return th_r
 
@@ -123,20 +133,9 @@ class DynamicSpectrum:
 
         return self
 
-    def theta_grid(self, tau_max=None, oversample=1.):
+    def theta_grid(self, **kwargs):
         return theta_grid(self.d_eff, self.mu_eff, self.f, self.t,
-                          tau_max=tau_max)
-
-    @property
-    def tau(self):
-        return (self.d_eff/(const.c*2)*self.theta**2).to(
-            u.us, u.dimensionless_angles())
-
-    @property
-    def fd(self):
-        fobs = self.f.mean()
-        return (self.d_eff/const.c*self.mu_eff*self.theta*fobs).to(
-            u.mHz, u.dimensionless_angles())[:, np.newaxis]
+                          **kwargs)
 
     def dynamic_bases(self, mu_eff=None):
         if mu_eff is None:
@@ -164,7 +163,7 @@ class DynamicSpectrum:
         r['w'] = 0.
         r['th_ms'] = 0.
         r['redchi2'] = 0.
-        r['recovered'] = np.zeros((1, self.theta.size), complex)
+        r['recovered'] = np.zeros((1,)+self.theta.shape, complex)
         for i, mu_eff in enumerate(r['mu_eff']):
             th_th = self.theta_theta(mu_eff)
             w, v = eigh(th_th, eigvals=(self.theta.size-1,)*2)
@@ -450,8 +449,8 @@ if __name__ == '__main__':
                                         mu_eff=100*u.mas/u.yr)
     dyn_chi2.theta = dyn_chi2.theta_grid(
         tau_max=(1./(dyn_chi2.f[3]-dyn_chi2.f[0])).to(u.us))
-    if not hasattr(dyn_chi2, 'curvature'):
-        dyn_chi2.locate_mu_eff(np.arange(98, 103) << u.mas/u.yr)
+    # if not hasattr(dyn_chi2, 'curvature'):
+    dyn_chi2.locate_mu_eff(np.arange(98, 103) << u.mas/u.yr)
 
     r = dyn_chi2.curvature
 
@@ -493,7 +492,7 @@ if __name__ == '__main__':
          ftol=0.1/dyn_chi2.dynspec.size)
 
     plt.subplot(3, 4, 5)
-    plt.plot(th, np.abs(raw_mag_fit), th, raw_mag_err)
+    plt.plot(th, np.abs(raw_mag_fit), th, np.abs(raw_mag_err))
 
     rd = np.sqrt(dyn_chi2.pcovar.diagonal())
     rc = dyn_chi2.pcovar/rd/rd[:, np.newaxis]
@@ -508,7 +507,7 @@ if __name__ == '__main__':
      cln_mu_eff_fit, cln_mu_eff_err) = dyn_chi2.cleanup_fit()
 
     plt.subplot(3, 4, 9)
-    plt.plot(th, np.abs(cln_mag_fit), th, cln_mag_err)
+    plt.plot(th, np.abs(cln_mag_fit), th, np.abs(cln_mag_err))
 
     cd = np.sqrt(dyn_chi2.ccovar.diagonal())
     cc = dyn_chi2.ccovar/cd/cd[:, np.newaxis]
