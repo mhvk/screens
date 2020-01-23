@@ -91,32 +91,30 @@ class SecondarySpectrum:
         fobs = self.f.mean()
         tau_factor = self.d_eff/(2.*const.c)
         fd_factor = self.d_eff*mu_eff*fobs/const.c
-        ifd, itau = np.indices(self.secspec.shape)
-        ok = (self.fd != 0) & (self.tau != 0)
-        itau = itau[ok]
-        ifd = ifd[ok]
+        ifd, itau = np.indices(self.secspec.shape, sparse=True)
+        fd = self.fd[ifd, 0]
+        tau = self.tau[itau]
         # On purpose, keep the sign.
-        th_tau2 = (self.tau[itau]/tau_factor).to(
-            u.mas**2, u.dimensionless_angles())
-        th_fd = (self.fd[ifd, 0]/fd_factor).to(u.mas, u.dimensionless_angles())
+        th_tau2 = (tau/tau_factor).to(u.mas**2, u.dimensionless_angles())
+        th_fd = (fd/fd_factor).to(u.mas, u.dimensionless_angles())
         # th_fd = th1-th2
         # th_tau = np.sqrt(th1**2-th2**2) = np.sqrt((th1-th2)(th1+th2))
         # -> th1+th2 = th_tau / th_fd
         # -> th1 = (th_tau**2 / th_fd + th_fd) / 2
         # -> th2 = (th_tau**2 / th_fd - th_fd) / 2
-        ths = np.stack([(th_tau2 / th_fd + sign * th_fd) / 2.
-                        for sign in (-1, +1)], axis=0) << self.theta.unit
+        with np.errstate(all='ignore'):
+            ths = np.stack([(th_tau2 / th_fd + sign * th_fd) / 2.
+                            for sign in (-1, +1)], axis=0) << self.theta.unit
         ith = np.searchsorted(self.theta, ths)
-        # Only keep pairs which are inside the grid.
-        ok = np.all((ith > 0) & (ith < self.theta.size-1), axis=0)
+        # Only keep pairs which are inside the grid and not on the axes
+        ok = ((fd != 0) & (tau != 0)
+              & np.all((ith > 0) & (ith < self.theta.size-1), axis=0))
         ths = ths[:, ok]
         ith = ith[:, ok]
-        itau = itau[ok]
-        ifd = ifd[ok]
         goupone = self.theta[ith+1] - ths < ths - self.theta[ith]
         ith += goupone
         model = np.zeros_like(self.secspec, magnification.dtype)
-        model[ifd, itau] = magnification[ith[0]] * magnification[ith[1]].conj()
+        model[ok] = magnification[ith[0]] * magnification[ith[1]].conj()
         return model
 
     def locate_mu_eff(self, mu_eff_trials=None, power=True, verbose=False):
