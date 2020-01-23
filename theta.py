@@ -7,11 +7,11 @@ from matplotlib import pyplot as plt
 from scintillometry.io import hdf5
 
 from fields import dynamic_field, theta_theta, theta_grid
+from visualization import ThetaTheta
 
 
-plt.ion()
 quantity_support()
-plt.clf()
+plt.ion()
 
 
 with hdf5.open('dynspec.h5') as fh:
@@ -27,6 +27,7 @@ with hdf5.open('dynspec.h5') as fh:
 # Display simulated dynamic spectrum.
 ds_kwargs = dict(extent=(t[0].value, t[-1].value, f[0].value, f[-1].value),
                  origin=0, aspect='auto', cmap='Greys', vmin=0, vmax=6)
+
 plt.subplot(321)
 plt.imshow(dynspec.T, **ds_kwargs)
 plt.xlabel(t.unit.to_string('latex'))
@@ -43,14 +44,13 @@ th_r = theta_grid(d_eff, mu_eff, f, t, tau_max=tau_max)
 
 th_th = theta_theta(th_r, d_eff, mu_eff, dynspec, f, t)
 
-# Show inferred theta-theta.
 th_kwargs = dict(extent=(th[0].value, th[-1].value)*2,
                  origin=0, vmin=-7, vmax=0, cmap='Greys')
-plt.subplot(322)
-plt.imshow(np.log10(np.maximum(np.abs(th_th)**2, 1e-30)), **th_kwargs)
-plt.xlabel(th.unit.to_string('latex'))
-plt.ylabel(th.unit.to_string('latex'))
-
+th_th_proj = ThetaTheta(th_r)
+ax = plt.subplot(322, projection=th_th_proj)
+ax.imshow(np.log10(np.maximum(np.abs(th_th)**2, 1e-30)), **th_kwargs)
+ax.set_xlabel(th.unit.to_string('latex'))
+ax.set_ylabel(th.unit.to_string('latex'))
 
 # Calculate eigenvectors for inferred theta-theta.
 
@@ -61,11 +61,11 @@ w, v = scipy.linalg.eigh(th_th, eigvals=(th_r.size-1, th_r.size-1))
 recovered = v[:, -1]
 
 # Show the theta-theta implied by largest eigenvector.
-plt.subplot(324)
-plt.imshow(np.log10(np.abs(np.outer(recovered, recovered.conj())**2)),
-           **th_kwargs)
-plt.xlabel(th.unit.to_string('latex'))
-plt.ylabel(th.unit.to_string('latex'))
+ax = plt.subplot(324, projection=th_th_proj)
+ax.imshow(np.log10(np.abs(np.outer(recovered, recovered.conj())**2)),
+          **th_kwargs)
+ax.set_xlabel(th.unit.to_string('latex'))
+ax.set_ylabel(th.unit.to_string('latex'))
 
 # As well as the corresponding dynamic spetrum.
 plt.subplot(323)
@@ -83,11 +83,11 @@ plt.colorbar()
 print('Recovered red. chi2 ', ((dynspec-dynspec_r)**2).mean() / noise**2)
 
 # Also show theta-theta corresponding to actual realization.
-plt.subplot(326)
+ax = plt.subplot(326)
 th_th_real = np.outer(realization, realization.conj())
-plt.imshow(np.log10(np.abs(th_th_real**2)), **th_kwargs)
-plt.xlabel(th.unit.to_string('latex'))
-plt.ylabel(th.unit.to_string('latex'))
+ax.imshow(np.log10(np.abs(th_th_real**2)), **th_kwargs)
+ax.set_xlabel(th.unit.to_string('latex'))
+ax.set_ylabel(th.unit.to_string('latex'))
 
 w_real, v_real = np.linalg.eigh(th_th_real)
 
