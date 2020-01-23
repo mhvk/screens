@@ -4,10 +4,10 @@ from astropy.table import QTable
 from astropy.visualization import quantity_support
 from matplotlib import pyplot as plt
 from scipy.linalg import eigh
-from scipy import ndimage
 
 from fields import theta_theta_indices
 from dynspec import DynamicSpectrum, theta_grid
+from visualization import ThetaTheta
 
 
 class SecondarySpectrum:
@@ -51,7 +51,7 @@ class SecondarySpectrum:
         self.t = t
         return self
 
-    def theta_theta(self, mu_eff=None):
+    def theta_theta(self, mu_eff=None, conserve=False):
         if mu_eff is None:
             mu_eff = self.mu_eff
 
@@ -61,12 +61,13 @@ class SecondarySpectrum:
                                 tau_max=self.tau.max()*2/3,
                                 fd_max=self.fd.max(),
                                 oversample_tau=2, oversample_fd=4)
-        i0, i1 = theta_theta_indices(self.theta)
-        tau_th = (self.d_eff/(const.c*2)*self.theta**2).to(
-            u.us, u.dimensionless_angles())
+        i0, i1 = theta_theta_indices(self.theta, lower=-0.5, upper=0.95)
+        i1 = i1.ravel()
         fobs = self.f.mean()
-        fd_th = (self.d_eff/const.c*mu_eff*self.theta*fobs).to(
-            u.mHz, u.dimensionless_angles())
+        tau_factor = self.d_eff/(2.*const.c)
+        fd_factor = self.d_eff*mu_eff*fobs/const.c
+        tau_th = (tau_factor*self.theta**2).to(u.us, u.dimensionless_angles())
+        fd_th = (fd_factor*self.theta).to(u.mHz, u.dimensionless_angles())
 
         dtau = tau_th[i0] - tau_th[i1]
         dfd = fd_th[i0] - fd_th[i1]
@@ -78,11 +79,24 @@ class SecondarySpectrum:
               & (idfd >= 0) & (idfd < sec.shape[-2]))
         theta_theta = np.zeros(self.theta.shape*2, sec.dtype)
         amplitude = sec[idfd[ok], idtau[ok]]
+        if conserve:
+            # Area conversion factor:
+            # abs(Δtau[i0]*Δfd[i1]-Δtau[i1]*Δfd[i0])/(Δth[i0]*Δth[i1])
+            # Δtau = dtau/dth * Δth = tau_factor * 2 * theta * Δtheta
+            # Δfd = dfd/dth * Δth = fd_factor * Δth
+            # -> conversion factor
+            # abs(dtau/dth[i0]*dfd/dth[i1] - dtau/dth[i1]*dfd/dth[i0])
+            # = abs(tau_factor*2*(theta[i0]-theta[i1])*fd_factor)
+            # = abs(tau_factor*2*dfd) [see above].
+            area = np.abs(tau_factor * 2. * dfd).to_value(
+                u.us * u.mHz / u.mas**2, u.dimensionless_angles())
+            amplitude[ok] *= area
+
         theta_theta[i0[ok], i1[ok]] = amplitude
         theta_theta[i1[ok], i0[ok]] = amplitude
         return theta_theta
 
-    def model(self, magnification=None, mu_eff=None):
+    def model(self, magnification=None, mu_eff=None, conserve=False):
         if magnification is None:
             magnification = self.magnification
         if mu_eff is None:
@@ -114,7 +128,14 @@ class SecondarySpectrum:
         goupone = self.theta[ith+1] - ths < ths - self.theta[ith]
         ith += goupone
         model = np.zeros_like(self.secspec, magnification.dtype)
-        model[ok] = magnification[ith[0]] * magnification[ith[1]].conj()
+        amplitude = magnification[ith[0]] * magnification[ith[1]].conj()
+        if conserve:
+            area = (np.abs(tau_factor * 2. * fd_factor * (ths[1] - ths[0]))
+                    .to_value(u.us * u.mHz / u.mas**2,
+                              u.dimensionless_angles()))
+            model[ok] = amplitude / area
+        else:
+            model[ok] = amplitude
         return model
 
     def locate_mu_eff(self, mu_eff_trials=None, power=True, verbose=False):
@@ -166,6 +187,7 @@ class SecondarySpectrum:
 
 if __name__ == '__main__':
     plt.ion()
+    plt.clf()
     quantity_support()
 
     dyn_spec = DynamicSpectrum.fromfile('dynspec.h5', d_eff=1.*u.kpc,
@@ -175,18 +197,20 @@ if __name__ == '__main__':
     sec_kwargs = dict(extent=(sec_spec.fd[0].value, sec_spec.fd[-1].value,
                               sec_spec.tau[0].value, sec_spec.tau[-1].value),
                       cmap='Greys', vmin=-7, vmax=0, origin=0, aspect='auto')
-    plt.clf()
     plt.subplot(321)
     plt.imshow(np.log10(np.abs(sec_spec.secspec)**2).T, **sec_kwargs)
+
+    conserve = True
 
     mu_eff = 100*u.mas/u.yr
     th_kwargs = sec_kwargs.copy()
     th_kwargs['extent'] = (sec_spec.theta[0].value,
                            sec_spec.theta[-1].value)*2
-    th_th = sec_spec.theta_theta(mu_eff)
-    plt.subplot(322)
-    plt.imshow(np.log10(np.maximum(np.abs(th_th)**2, 1e-30)).T,
-               **th_kwargs)
+    th_kwargs['aspect'] = 'equal'
+    th_th = sec_spec.theta_theta(mu_eff, conserve=conserve)
+    th_th_proj = ThetaTheta(sec_spec.theta)
+    ax = plt.subplot(322, projection=th_th_proj)
+    ax.imshow(np.log10(np.maximum(np.abs(th_th)**2, 1e-30)).T, **th_kwargs)
 
     secspec = sec_spec.secspec.copy()
     secspec[(sec_spec.fd == 0) | (sec_spec.tau == 0)] = 0
@@ -194,11 +218,10 @@ if __name__ == '__main__':
     w_a, v_a = eigh(np.abs(th_th)**2, eigvals=(sec_spec.theta.size-1,)*2)
     rec_a = v_a[:, -1] * np.sqrt(w_a[-1])
     th_th_rp = rec_a[:, np.newaxis] * rec_a
-    plt.subplot(324)
-    plt.imshow(np.log10(np.maximum(th_th_rp, 1e-30)).T,
-               **th_kwargs)
+    ax = plt.subplot(324, projection=th_th_proj)
+    ax.imshow(np.log10(np.maximum(th_th_rp, 1e-30)).T, **th_kwargs)
 
-    sec_rp = sec_spec.model(rec_a, mu_eff)
+    sec_rp = sec_spec.model(rec_a, mu_eff, conserve=conserve)
     sec_p = np.abs(secspec)**2
     sec_p_noise = sec_p[:30, :30].std()
     print("just power, red chi2 = ",
@@ -208,14 +231,16 @@ if __name__ == '__main__':
 
     # try recovering phases as well.
     w, v = eigh(th_th, eigvals=(sec_spec.theta.size-1,)*2)
-    recovered = v[:, -1]
+    recovered = v[:, -1] * np.sqrt(w[-1])
     th_th_r = recovered[:, np.newaxis] * recovered
-    plt.subplot(326)
-    plt.imshow(np.log10(np.maximum(np.abs(th_th_r)**2, 1e-30)).T,
-               **th_kwargs)
-    sec_r = sec_spec.model(recovered, mu_eff)
+    ax = plt.subplot(326, projection=th_th_proj)
+    ax.imshow(np.log10(np.maximum(np.abs(th_th_r)**2, 1e-30)).T, **th_kwargs)
+
+    sec_r = sec_spec.model(recovered, mu_eff, conserve=conserve)
     sec_noise = secspec[:30, :30].std()
     print("also phase, red chi2 = ",
           (np.abs(secspec-sec_rp)**2).mean() / sec_noise**2)
+    print(" power red chi2 = ",
+          ((np.abs(secspec)**2-np.abs(sec_r)**2)**2).mean() / sec_p_noise**2)
     plt.subplot(325)
     plt.imshow(np.log10(np.maximum(np.abs(sec_r)**2, 1e-30)).T, **sec_kwargs)

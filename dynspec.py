@@ -10,6 +10,7 @@ import h5py
 from scintillometry.io import hdf5
 
 from fields import dynamic_field, theta_theta
+from visualization import ThetaTheta
 
 
 def theta_grid(d_eff, mu_eff, f, t, tau_max=None, fd_max=None,
@@ -458,11 +459,12 @@ if __name__ == '__main__':
     plt.subplot(3, 4, 1)
     plt.plot(r['mu_eff'], r['redchi2'])
 
-    plt.subplot(3, 4, 2)
     th_th = dyn_chi2.theta_theta(r.meta['mu_eff'])
     th = dyn_chi2.theta
     th_kwargs = dict(extent=(th[0].value, th[-1].value)*2,
                      origin=0, vmin=-7, vmax=0, cmap='Greys')
+    th_th_proj = ThetaTheta(dyn_chi2.theta)
+    plt.subplot(3, 4, 2, projection=th_th_proj)
     plt.imshow(np.log10(np.maximum(np.abs(th_th)**2, 1e-30)), **th_kwargs)
     plt.xlabel(th.unit.to_string('latex'))
     plt.ylabel(th.unit.to_string('latex'))
