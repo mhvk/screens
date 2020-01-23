@@ -244,3 +244,14 @@ if __name__ == '__main__':
           ((np.abs(secspec)**2-np.abs(sec_r)**2)**2).mean() / sec_p_noise**2)
     plt.subplot(325)
     plt.imshow(np.log10(np.maximum(np.abs(sec_r)**2, 1e-30)).T, **sec_kwargs)
+
+    # Try via dynspec.  Generically, this seems to be worse, especially with
+    # flux conservation turned on.
+    dyn_spec.theta = sec_spec.theta
+    ds_model = dyn_spec.model(recovered)
+    sec_dr = np.fft.fft2(ds_model)
+    sec_dr /= sec_dr[0, 0]
+    sec_dr = np.fft.fftshift(sec_dr)
+    sec_dr[(sec_spec.fd == 0) | (sec_spec.tau == 0)] = 0
+    print("via dyn spec, red chi2 = ",
+          (np.abs(secspec-sec_dr)**2).mean() / sec_noise**2)
