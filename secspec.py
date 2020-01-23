@@ -61,7 +61,7 @@ class SecondarySpectrum:
                                 tau_max=self.tau.max()*2/3,
                                 fd_max=self.fd.max(),
                                 oversample_tau=2, oversample_fd=4)
-        i0, i1 = theta_theta_indices(self.theta, lower=-0.5, upper=0.95)
+        i0, i1 = theta_theta_indices(self.theta)
         i1 = i1.ravel()
         fobs = self.f.mean()
         tau_factor = self.d_eff/(2.*const.c)
@@ -128,7 +128,7 @@ class SecondarySpectrum:
         goupone = self.theta[ith+1] - ths < ths - self.theta[ith]
         ith += goupone
         model = np.zeros_like(self.secspec, magnification.dtype)
-        amplitude = magnification[ith[0]] * magnification[ith[1]].conj()
+        amplitude = magnification[ith[1]] * magnification[ith[0]].conj()
         if conserve:
             area = (np.abs(tau_factor * 2. * fd_factor * (ths[1] - ths[0]))
                     .to_value(u.us * u.mHz / u.mas**2,
@@ -239,7 +239,7 @@ if __name__ == '__main__':
     sec_r = sec_spec.model(recovered, mu_eff, conserve=conserve)
     sec_noise = secspec[:30, :30].std()
     print("also phase, red chi2 = ",
-          (np.abs(secspec-sec_rp)**2).mean() / sec_noise**2)
+          (np.abs(secspec-sec_r)**2).mean() / sec_noise**2)
     print(" power red chi2 = ",
           ((np.abs(secspec)**2-np.abs(sec_r)**2)**2).mean() / sec_p_noise**2)
     plt.subplot(325)
