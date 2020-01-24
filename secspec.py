@@ -5,8 +5,8 @@ from astropy.visualization import quantity_support
 from matplotlib import pyplot as plt
 from scipy.linalg import eigh
 
-from fields import theta_theta_indices
-from dynspec import DynamicSpectrum, theta_grid
+from fields import theta_grid, theta_theta_indices
+from dynspec import DynamicSpectrum
 from visualization import ThetaTheta
 
 
@@ -51,16 +51,27 @@ class SecondarySpectrum:
         self.t = t
         return self
 
-    def theta_theta(self, mu_eff=None, conserve=False):
+    def theta_grid(self, oversample_tau=2, oversample_fd=4, **kwargs):
+        kwargs.setdefault('d_eff', self.d_eff)
+        kwargs.setdefault('mu_eff', self.mu_eff)
+        kwargs.setdefault('fobs', self.f.mean())
+        kwargs.setdefault('dtau', (self.tau[1]-self.tau[0]).squeeze()
+                          / oversample_tau)
+        kwargs.setdefault('dfd', (self.fd[1]-self.fd[0]).squeeze()
+                          / oversample_fd)
+        kwargs.setdefault('tau_max', self.tau.max() * 2/3)
+        kwargs.setdefault('fd_max', self.fd.max() * 2/3)
+        return theta_grid(**kwargs)
+
+    def theta_theta(self, mu_eff=None, conserve=False, theta_grid=True,
+                    **kwargs):
         if mu_eff is None:
             mu_eff = self.mu_eff
 
+        if theta_grid:
+            self.theta = self.theta_grid(mu_eff=mu_eff, **kwargs)
+
         sec = self.secspec
-        # TODO: Adjust grid code to take in tau, fd.
-        self.theta = theta_grid(self.d_eff, mu_eff, self.f, self.t,
-                                tau_max=self.tau.max()*2/3,
-                                fd_max=self.fd.max(),
-                                oversample_tau=2, oversample_fd=4)
         i0, i1 = theta_theta_indices(self.theta)
         i1 = i1.ravel()
         fobs = self.f.mean()

@@ -117,11 +117,16 @@ def theta_theta(theta, d_eff, mu_eff, dynspec, f, t):
     return result
 
 
-def theta_grid(d_eff, mu_eff, f, t, tau_max=None, oversample=1.4):
-    """Make a grid of theta that sample the parabola roughly uniformly.
+def theta_grid(d_eff, mu_eff, fobs, dtau, tau_max, dfd, fd_max):
+    """Make a grid of theta that sample the parabola in a particular way.
 
-    With the constraint that near tau_max, the spacing is
-    roughly the spacing allowed by the frequencies.
+    The idea would be to impose the constraint that near tau_max the
+    spacing is roughly the spacing allowed by the frequencies, and
+    near the origin that allowed by the times.  In practice, one needs
+    to oversample in both directions, by about a factor 1.3 in tau (which
+    makes some sense from wanting to sample resolution elements with about
+    3 points, not just 2 for a FFT), but by about a factor 1.6 in f_d,
+    which is less clear.
 
     Parameters
     ----------
@@ -131,31 +136,84 @@ def theta_grid(d_eff, mu_eff, f, t, tau_max=None, oversample=1.4):
         account.
     mu_eff : ~astropy.units.Quantity
         Effective proper motion (``v_eff / d_eff``), parallel to ``theta_par``.
-    t : ~astropy.units.Quantity
-        Times for which the dynamic wave spectrum should be calculated.
-    f : ~astropy.units.frequency
-        Frequencies for which the spectrum should be calculated.
+    fobs : ~astropy.units.frequency
+        Mean frequency for which the doppler facto should be calculated.
+    dtau : ~astropy.units.Quantity
+        Requested spacing in delay (typically should somewhat oversample the
+        spacing in the secondary spectrum).
     tau_max : ~astropy.units.Quantity
-        Maximum delay to consider.  If not given, taken as the value
-        implied by the frequency resolution (i.e., ``1/(f[2]-f[0])``).
-    oversample : float
-        Factor by which to oversample pixels.  This is a very finicky
-        number.  With 1, dynamic spectra seem to be underfit, with
-        1.5 fitting takes very long as points are strongly correlated.
+        Maximum delay to consider.  Can be up to the value implied by the
+        the frequency resolution (i.e., ``1/(f[2]-f[0])``).
+    dfd : ~astropy.units.Quantity
+        Requested spacing in doppler factor (typically should oversample the
+        spacing in the secondary spectrum).
+    fd_max : ~astropy.units.Quantity
+        Maximum doppler factor to consider.  Can be up to the value implied
+        by the time resolution (i.e., ``1/(t[2]-t[0])``).
     """
-    fobs = f.mean()
     tau_factor = d_eff/(2.*const.c)
     fd_factor = d_eff*mu_eff*fobs/const.c
-    dtau = (1./oversample/f.ptp()).to(u.us)
-    dfd = (1./oversample/t.ptp()).to(u.mHz)
-    a_pix = (tau_factor/dtau * (dfd/fd_factor)**2).to_value(
+    # Curvature in physical units.
+    a = tau_factor / fd_factor**2
+    # Consider relevant maximum.
+    fd_max = min(fd_max, np.sqrt(tau_max/a).to(
+        fd_max.unit, u.dimensionless_angles()))
+    # Curvature in sample units.
+    a_pix = (a * dfd**2 / dtau).to_value(
         1, equivalencies=u.dimensionless_angles())
-    if tau_max is None:
-        tau_max = 1/(f[2]-f[0])
-    n_th_by_2 = round((tau_max/dtau).to_value(1))
-    s = np.arange(-n_th_by_2, n_th_by_2)
-    # Roughly equal spaced along parabola.
-    y = (np.sqrt(2.5*np.abs(a_pix*s)+1)-1)**2
-    th_r = (np.sqrt(y/y.max()*tau_max/tau_factor) * np.sign(s)).to(
-        u.mas, u.dimensionless_angles())
+    x_max = (fd_max/dfd).to_value(1)
+    x = sample_parabola(x_max, a_pix)
+    th_r = (x*dfd/fd_factor).to(u.mas, u.dimensionless_angles())
     return th_r
+
+
+def sample_parabola(x_max, a=1.):
+    """Solve for the x that evenly sample a parabola.
+
+    The points will have spacing of 1 along the parabola (in units of x).
+
+    Parameters
+    ----------
+    x_max : float
+        Maximum x value to extend to.
+    """
+    s_max = round(path_length(x_max, a))
+    # Corresponding path length around a parabola
+    s = np.arange(1, s_max+1)
+    # Initial guesses for x.
+    x = np.linspace(1, x_max, s.size)
+    d_s = s - path_length(x, a)
+    it = 0
+    while np.any(np.abs(d_s) > 1e-6) and it < 100:
+        dsdx = path_length(x, a, derivative=True)
+        x = x + d_s / dsdx
+        d_s = s - path_length(x, a)
+        it += 1
+
+    return np.hstack([-x[::-1], 0, x[:]])
+
+
+def path_length(x, a=1, derivative=False):
+    r"""Path length along a parabola, measured from the origin.
+
+    For a parabola :math:`y=ax^2`::
+
+    .. math::
+        \int ds &= \int \sqrt{dx^2+dy^2} = \int \sqrt{1+(2ax)^2} dx
+                &= \frac{1}{4a}\left(\asinh(2ax) + x\sqrt{1+(2ax)^2}\right)
+
+    Parameters
+    ----------
+    x : array-like
+        X position to evaluate the path length for.
+    a : float, optional
+        Curvature (y = a*x**2).  Default: 1.
+    derivative : bool
+        If true, return ds/dx rather than s.
+    """
+    x = 2 * a * x
+    sq = np.sqrt(1+x**2)
+    if derivative:
+        return sq
+    else:
+        return (np.arcsinh(x) + x * sq) / (4*a)

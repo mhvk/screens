@@ -9,124 +9,8 @@ import h5py
 
 from scintillometry.io import hdf5
 
-from fields import dynamic_field, theta_theta
+from fields import dynamic_field, theta_theta, theta_grid
 from visualization import ThetaTheta
-
-
-def theta_grid(d_eff, mu_eff, f, t, tau_max=None, fd_max=None,
-               oversample_tau=1.3, oversample_fd=1.3**2):
-    """Make a grid of theta that sample the parabola in a particular way.
-
-    The idea would be to impose the constraint that near tau_max the
-    spacing is roughly the spacing allowed by the frequencies, and
-    near the origin that allowed by the times.  In practice, one needs
-    to oversample in both directions.  The factor 1.3 makes some sense
-    from wanting to sample resolution elements with about 3 points
-    (rather than 2 for a FFT), but the reason one needs to sample more
-    densely in doppler factor is less clear.
-
-    Parameters
-    ----------
-    d_eff : ~astropy.units.Quantity
-        Effective distance.  Should be constant; if different for
-        different points, no screen-to-screen scattering is taken into
-        account.
-    mu_eff : ~astropy.units.Quantity
-        Effective proper motion (``v_eff / d_eff``), parallel to ``theta_par``.
-    t : ~astropy.units.Quantity
-        Times for which the dynamic wave spectrum should be calculated.
-    f : ~astropy.units.frequency
-        Frequencies for which the spectrum should be calculated.
-    tau_max : ~astropy.units.Quantity
-        Maximum delay to consider.  If not given, taken as the value
-        implied by the frequency resolution (i.e., ``1/(f[2]-f[0])``).
-    fd_max : ~astropy.units.Quantity
-        Maximum doppler factor to consider.  If not given, taken as the
-        value implied by the time resolution (i.e., ``1/(t[2]-t[0])``).
-    oversample_tau : float
-        Factor by which to oversample pixels in tau (inverse frequency).
-        This is a somewhat finicky number: With 1, dynamic spectra are
-        underfit, while with 1.5 fitting takes very long as points are
-        strongly correlated.
-    oversample_fd : float
-        Factor by which to oversample pixels in doppler factor (inverse
-        time).  Seems best to roughly use the square of ``oversample_tau``,
-        not quite clear why.
-    """
-    # Calculate what the pixels spacings would be in a 2D FFT;
-    # Since a FFT can fully describe the data, any spacing in our grid
-    # needs to be at least the same.
-    fobs = f.mean()
-    tau_factor = d_eff/(2.*const.c)
-    fd_factor = d_eff*mu_eff*fobs/const.c
-    dtau = (1./f.ptp()).to(u.us) / oversample_tau
-    dfd = (1./t.ptp()).to(u.mHz) / oversample_fd
-    if tau_max is None:
-        tau_max = 1/(f[2]-f[0])
-    if fd_max is None:
-        fd_max = 1/(t[2]-t[0])
-    # Curvature in physical units.
-    a = tau_factor / fd_factor**2
-    fd_max = min(fd_max, np.sqrt(tau_max/a).to(
-        fd_max.unit, u.dimensionless_angles()))
-    a_pix = (a * dfd**2 / dtau).to_value(
-        1, equivalencies=u.dimensionless_angles())
-    x_max = (fd_max/dfd).to_value(1)
-    x = sample_parabola(x_max, a_pix)
-    th_r = (x*dfd/fd_factor).to(u.mas, u.dimensionless_angles())
-    return th_r
-
-
-def sample_parabola(x_max, a=1.):
-    """Solve for the x that evenly sample a parabola.
-
-    The points will have spacing of 1 along the parabola (in units of x).
-
-    Parameters
-    ----------
-    x_max : float
-        Maximum x value to extend to.
-    """
-    s_max = round(path_length(x_max, a))
-    # Corresponding path length around a parabola
-    s = np.arange(1, s_max+1)
-    # Initial guesses for x.
-    x = np.linspace(1, x_max, s.size)
-    d_s = s - path_length(x, a)
-    it = 0
-    while np.any(np.abs(d_s) > 1e-6) and it < 100:
-        dsdx = path_length(x, a, derivative=True)
-        x = x + d_s / dsdx
-        d_s = s - path_length(x, a)
-        it += 1
-
-    return np.hstack([-x[::-1], 0, x[:]])
-
-
-def path_length(x, a=1, derivative=False):
-    r"""Path length along a parabola, measured from the origin.
-
-    For a parabola :math:`y=ax^2`::
-
-    .. math::
-        \int ds &= \int \sqrt{dx^2+dy^2} = \int \sqrt{1+(2ax)^2} dx
-                &= \frac{1}{4a}\left(\asinh(2ax) + x\sqrt{1+(2ax)^2}\right)
-
-    Parameters
-    ----------
-    x : array-like
-        X position to evaluate the path length for.
-    a : float, optional
-        Curvature (y = a*x**2).  Default: 1.
-    derivative : bool
-        If true, return ds/dx rather than s.
-    """
-    x = 2 * a * x
-    sq = np.sqrt(1+x**2)
-    if derivative:
-        return sq
-    else:
-        return (np.arcsinh(x) + x * sq) / (4*a)
 
 
 class DynamicSpectrum:
@@ -163,9 +47,17 @@ class DynamicSpectrum:
 
         return self
 
-    def theta_grid(self, **kwargs):
-        return theta_grid(self.d_eff, self.mu_eff, self.f, self.t,
-                          **kwargs)
+    def theta_grid(self, oversample_tau=1.3, oversample_fd=1.3**2, **kwargs):
+        kwargs.setdefault('d_eff', self.d_eff)
+        kwargs.setdefault('mu_eff', self.mu_eff)
+        kwargs.setdefault('fobs', self.f.mean())
+        kwargs.setdefault('dtau', (1./self.f.ptp()).to(u.us)
+                          / oversample_tau)
+        kwargs.setdefault('dfd', (1./self.t.ptp()).to(u.mHz)
+                          / oversample_fd)
+        kwargs.setdefault('tau_max', 1/(self.f[2]-self.f[0]))
+        kwargs.setdefault('fd_max', 1/(self.t[2]-self.t[0]))
+        return theta_grid(**kwargs)
 
     def dynamic_bases(self, mu_eff=None):
         if mu_eff is None:
