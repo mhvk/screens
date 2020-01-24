@@ -1,3 +1,4 @@
+# Licensed under the GPLv3 - see LICENSE
 import numpy as np
 from astropy import units as u, constants as const
 from astropy.table import QTable

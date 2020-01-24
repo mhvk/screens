@@ -1,3 +1,4 @@
+# Licensed under the GPLv3 - see LICENSE
 """1-D scatering screen and its dynamic and secondary spectra.
 
 Create a dynamic wave field based on a set of scattering points.

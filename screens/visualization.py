@@ -1,3 +1,12 @@
+# Licensed under the GPLv3 - see LICENSE
+"""Transforms needed to display theta-theta plots linearly with angle.
+
+Usage::
+
+  ax = plt.subplot(221, projection=ThetaTheta(theta))
+  ax.imshow(theta_theta, ...)
+
+"""
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.transforms import Transform

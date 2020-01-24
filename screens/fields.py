@@ -1,3 +1,4 @@
+# Licensed under the GPLv3 - see LICENSE
 import numpy as np
 from astropy import units as u, constants as const
 
@@ -73,10 +74,10 @@ def theta_theta_indices(theta, lower=-0.25, upper=0.75):
     """Indices to pairs of angles within bounds.
 
     Select pairs theta0, theta1 for which theta is constraint to lie
-    around theta=0 to within (lower*theta0, upper*theta0).
+    around theta0 to within (lower*theta0, upper*theta0).
 
     Here, ``lower=-1, upper=1`` would select all non-duplicate pairs that
-    are not on the diagonals with theta1 = +-theta0 (i.e., like
+    are not on the diagonals with theta1 = ±theta0 (i.e., like
     ``np.triu_indices(theta.size, k=1)``, but also excluding the
     cross-diagonal; ``upper=1+epsilon`` would be identical).  But using
     all off-diagonal points gives too many poor constraints.

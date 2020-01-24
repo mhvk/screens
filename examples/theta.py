@@ -1,3 +1,4 @@
+# Licensed under the GPLv3 - see LICENSE
 import numpy as np
 import scipy.linalg
 from astropy import units as u

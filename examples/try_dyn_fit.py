@@ -1,3 +1,12 @@
+# Licensed under the GPLv3 - see LICENSE
+"""Fit a simulated dynamic spectrum directly using a 1D screen.
+
+This presumes a dynamic spectrum has been generated using screen2ds.
+It does *not* use the theta information from that file, but does
+assume approximate knowledge of d_eff and mu_eff (only fitting for
+the latter).
+"""
+
 import numpy as np
 from astropy import units as u
 from matplotlib import pyplot as plt
@@ -14,7 +23,6 @@ dyn_chi2 = DynamicSpectrum.fromfile('dynspec.h5', d_eff=1.*u.kpc,
                                     mu_eff=100*u.mas/u.yr)
 dyn_chi2.theta = dyn_chi2.theta_grid(
     tau_max=(1./(dyn_chi2.f[3]-dyn_chi2.f[0])).to(u.us))
-# if not hasattr(dyn_chi2, 'curvature'):
 dyn_chi2.locate_mu_eff(np.arange(98, 103) << u.mas/u.yr)
 
 r = dyn_chi2.curvature
