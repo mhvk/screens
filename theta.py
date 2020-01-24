@@ -6,12 +6,13 @@ from matplotlib import pyplot as plt
 
 from scintillometry.io import hdf5
 
-from fields import dynamic_field, theta_theta, theta_grid
-from visualization import ThetaTheta
+from screens.fields import dynamic_field, theta_theta, theta_grid
+from screens.visualization import ThetaTheta
 
 
 quantity_support()
 plt.ion()
+plt.clf()
 
 
 with hdf5.open('dynspec.h5') as fh:
@@ -40,7 +41,9 @@ mu_eff = 100 * u.mas / u.yr
 # Make a grid that steps roughly with dtau at large theta.
 # Assue we're not too close to max tau in secondary spectrum.
 tau_max = (1./(f[3]-f[0])).to(u.us)
-th_r = theta_grid(d_eff, mu_eff, f, t, tau_max=tau_max)
+th_r = theta_grid(d_eff, mu_eff, fobs=f.mean(),
+                  dtau=1/f.ptp(), tau_max=tau_max,
+                  dfd=1/t.ptp(), fd_max=1*u.Hz)
 
 th_th = theta_theta(th_r, d_eff, mu_eff, dynspec, f, t)
 
