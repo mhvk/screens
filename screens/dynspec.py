@@ -7,7 +7,7 @@ import h5py
 
 from scintillometry.io import hdf5
 
-from fields import dynamic_field, theta_theta, theta_grid
+from .fields import dynamic_field, theta_theta, theta_grid
 
 
 class DynamicSpectrum:

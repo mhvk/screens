@@ -1,13 +1,10 @@
 import numpy as np
 from astropy import units as u, constants as const
 from astropy.table import QTable
-from astropy.visualization import quantity_support
-from matplotlib import pyplot as plt
 from scipy.linalg import eigh
 
-from fields import theta_grid, theta_theta_indices
-from dynspec import DynamicSpectrum
-from visualization import ThetaTheta
+from .fields import theta_grid, theta_theta_indices
+from .dynspec import DynamicSpectrum
 
 
 class SecondarySpectrum:
