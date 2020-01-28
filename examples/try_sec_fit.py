@@ -26,11 +26,12 @@ plt.imshow(np.log10(np.abs(sec_spec.secspec)**2).T, **sec_kwargs)
 conserve = True
 
 mu_eff = 100*u.mas/u.yr
+th_th = sec_spec.theta_theta(mu_eff, conserve=conserve)
+
 th_kwargs = sec_kwargs.copy()
 th_kwargs['extent'] = (sec_spec.theta[0].value,
                        sec_spec.theta[-1].value)*2
 th_kwargs['aspect'] = 'equal'
-th_th = sec_spec.theta_theta(mu_eff, conserve=conserve)
 th_th_proj = ThetaTheta(sec_spec.theta)
 ax = plt.subplot(322, projection=th_th_proj)
 ax.imshow(np.log10(np.maximum(np.abs(th_th)**2, 1e-30)).T, **th_kwargs)
