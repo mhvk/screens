@@ -3,8 +3,7 @@ import numpy as np
 from astropy import units as u, constants as const
 from astropy.table import QTable
 from scipy.optimize import curve_fit
-from scipy.linalg import eigh
-import h5py
+from numpy.linalg import eigh
 
 from scintillometry.io import hdf5
 
@@ -24,13 +23,14 @@ class DynamicSpectrum:
         self.magnification = magnification
 
     @classmethod
-    def fromfile(cls, filename, d_eff=None, mu_eff=None):
+    def fromfile(cls, filename, d_eff=None, mu_eff=None, noise=None):
         with hdf5.open(filename) as fh:
             dynspec = fh.read()
             f = fh.frequency
             t = (np.arange(-fh.shape[0] // 2, fh.shape[0] // 2)
                  / fh.sample_rate).to(u.minute)[:, np.newaxis]
-            noise = fh.fh_raw.attrs['noise']
+            if noise is None:
+                noise = fh.fh_raw.attrs['noise']
 
         self = cls(dynspec, f, t, noise, d_eff, mu_eff)
         self.filename = filename
@@ -53,8 +53,8 @@ class DynamicSpectrum:
                           / oversample_tau)
         kwargs.setdefault('dfd', (1./self.t.ptp()).to(u.mHz)
                           / oversample_fd)
-        kwargs.setdefault('tau_max', 1/(self.f[2]-self.f[0]))
-        kwargs.setdefault('fd_max', 1/(self.t[2]-self.t[0]))
+        kwargs.setdefault('tau_max', 1/(self.f[2]-self.f[0]).min())
+        kwargs.setdefault('fd_max', 1/(self.t[2]-self.t[0]).min())
         return theta_grid(**kwargs)
 
     def dynamic_bases(self, mu_eff=None):
@@ -62,64 +62,80 @@ class DynamicSpectrum:
             mu_eff = self.mu_eff
 
         if mu_eff != getattr(self, '_mu_eff_old', None):
-            self._dyn_wave = dynamic_field(self.theta, 0., 1.,
-                                           self.d_eff, mu_eff, self.f, self.t)
+            self._dyn_wave = dynamic_field(
+                self.theta, 0., 1.,
+                self.d_eff, mu_eff, self.f, self.t).reshape(
+                    (1,)*(self.dynspec.ndim-2)+(-1,)+self.dynspec.shape[-2:])
             self._mu_eff_old = mu_eff
 
         return self._dyn_wave
 
-    def theta_theta(self, mu_eff=None):
+    def theta_theta(self, mu_eff=None, theta_grid=True, **kwargs):
         if mu_eff is None:
             mu_eff = self.mu_eff
+
+        if theta_grid:
+            self.theta = self.theta_grid(mu_eff=mu_eff, **kwargs)
 
         return theta_theta(self.theta, self.d_eff, mu_eff,
                            self.dynspec, self.f, self.t)
 
-    def locate_mu_eff(self, mu_eff_trials=None, verbose=True):
+    def locate_mu_eff(self, mu_eff_trials=None, verbose=True, use=True,
+                      **kwargs):
         if mu_eff_trials is None:
             mu_eff_trials = np.linspace(self.mu_eff * 0.8,
                                         self.mu_eff * 1.2, 21)
         r = QTable([mu_eff_trials], names=['mu_eff'])
-        r['w'] = 0.
-        r['th_ms'] = 0.
-        r['redchi2'] = 0.
-        r['recovered'] = np.zeros((1,)+self.theta.shape, complex)
+        shape = (len(mu_eff_trials),) + self.dynspec.shape[:-2]
+        r['w'] = np.zeros(shape)
+        r['th_ms'] = np.zeros(shape)
+        r['ndof'] = 0
+        r['redchi2'] = np.zeros(shape)
+        r['theta'] = np.zeros(len(mu_eff_trials), object)
+        r['recovered'] = np.zeros(len(mu_eff_trials), object)
         for i, mu_eff in enumerate(r['mu_eff']):
-            th_th = self.theta_theta(mu_eff)
-            w, v = eigh(th_th, eigvals=(self.theta.size-1,)*2)
-            recovered = v[:, -1]
-            recovered0 = recovered[self.theta == 0]
+            th_th = self.theta_theta(mu_eff, **kwargs)
+            w, v = eigh(th_th)
+            recovered = v[..., -1]
+            recovered0 = recovered[..., self.theta == 0]
 
             recovered *= recovered0.conj()/np.abs(recovered0)
 
-            th_ms = (np.abs((th_th - (recovered[:, np.newaxis]
-                                      * recovered.conj())))**2).mean()
+            th_ms = (np.abs(
+                th_th - (recovered[..., :, np.newaxis]
+                         * recovered[..., np.newaxis, :].conj())
+                )**2).mean()
             dynspec_r = self.model(recovered, mu_eff=mu_eff)
             # Mean of dynamic spectra should equal sum of all recovered powers.
             # Since we normalize that to (close to) 1, just rescale similarly.
-            dynspec_r *= self.dynspec.mean()/dynspec_r.mean()
-            redchi2 = ((self.dynspec-dynspec_r)**2).mean() / self.noise**2
+            dynspec_r *= (self.dynspec.mean((-2, -1), keepdims=True)
+                          / dynspec_r.mean((-2, -1), keepdims=True))
+            ndof = (self.dynspec.shape[-1] * self.dynspec.shape[-2]
+                    - self.theta.size - 2)
+            redchi2 = (((self.dynspec-dynspec_r)**2).sum((-2, -1))
+                       / self.noise**2) / ndof
+            r['ndof'][i] = ndof
             r['redchi2'][i] = redchi2
             r['th_ms'][i] = th_ms
-            r['w'][i] = w[-1]
+            r['w'][i] = w[..., -1]
+            r['theta'][i] = self.theta
             r['recovered'][i] = recovered
             if verbose:
-                print(f'{mu_eff} {w[-1]} {th_ms} {redchi2}')
-
-        r.meta['theta'] = self.theta
-        r.meta['d_eff'] = self.d_eff
-        r.meta['mu_eff'] = r['mu_eff'][r['redchi2'].argmin()]
+                print(f'{mu_eff} {w[..., -1]} {ndof} {redchi2}')
 
         self.curvature = r
+        if use:
+            ibest = r['redchi2'].argmin(0)
+            self.theta = r['theta'][ibest]
+            self.magnification = np.array(r['recovered'][ibest])
+            if self.dynspec.ndim > 2:
+                assert self.dynspec.ndim == 3, 'not implemented yet'
+                self.magnification = np.array(
+                    [self.magnification[i][i]
+                     for i in range(self.dynspec.shape[0])],
+                    dtype=object)
+            self.mu_eff = r['mu_eff'][ibest]
 
-        if getattr(self, 'filename', None) is not None:
-            # Work-around for astropy 3.2 bug that prevents overwriting path.
-            with h5py.File(self.filename, 'r+') as h5:
-                h5.pop('curvature', None)
-                h5.pop('curvature.__table_column_meta__', None)
-
-            r.write(self.filename, serialize_meta=True, path='curvature',
-                    append=True)
         return r
 
     def model(self, magnification=None, mu_eff=None):
@@ -300,8 +316,17 @@ class DynamicSpectrum:
             ibest = self.curvature['redchi2'].argmin()
             mu_eff_guess = self.curvature['mu_eff'][ibest]
             mag_guess = self.curvature['recovered'][ibest]
-        else:
+            self.theta = self.curvature['theta'][ibest]
+        elif isinstance(guess, tuple):
             mag_guess, mu_eff_guess = guess
+        else:
+            # Assume mu_eff; note this defines new theta grid.
+            mu_eff_guess = guess
+            th_th = self.theta_theta(mu_eff_guess)
+            _, v = eigh(th_th)
+            mag_guess = v[..., -1]
+            m0 = mag_guess[..., self.theta == 0]
+            mag_guess *= m0.conj()/np.abs(m0)
 
         self._prt = verbose > 2
         self.mag_guess = mag_guess

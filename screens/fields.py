@@ -3,9 +3,9 @@ import numpy as np
 from astropy import units as u, constants as const
 
 
-def expand2(*arrays):
-    """Add two unity axes to the end of all arrays."""
-    return [np.reshape(array, np.shape(array)+(1, 1))
+def expand(*arrays, n=2):
+    """Add n unity axes to the end of all arrays."""
+    return [np.reshape(array, np.shape(array)+(1,)*n)
             for array in arrays]
 
 
@@ -45,8 +45,9 @@ def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t,
         Delayed wave field array, with time and frequency axes as given by
         ``t`` and ``f``, and earlier axes as given by the other parameters.
     """
-    theta_par, theta_perp, realization, d_eff, mu_eff = expand2(
-        theta_par, theta_perp, realization, d_eff, mu_eff)
+    ds_ndim = np.broadcast(f, t).ndim
+    theta_par, theta_perp, realization, d_eff, mu_eff = expand(
+        theta_par, theta_perp, realization, d_eff, mu_eff, n=ds_ndim)
     th_par = theta_par + mu_eff * t
     tau_t = (((d_eff / (2*const.c)) * (th_par**2 + theta_perp**2))
              .to_value(u.s, u.dimensionless_angles()))
@@ -100,7 +101,8 @@ def theta_theta(theta, d_eff, mu_eff, dynspec, f, t):
     by estimating the amplitude at each pair by cross-multiplying their
     expected signature in the dynamic spectrum.
     """
-    dynwave = dynamic_field(theta, 0, 1., d_eff, mu_eff, f, t)
+    dynwave = dynamic_field(theta, 0, 1., d_eff, mu_eff, f, t).reshape(
+        theta.shape + (1,)*(dynspec.ndim - 2) + dynspec.shape[-2:])
     # Get intensities by brute-force mapping:
     # dynspec * dynwave[j] * dynwave[i].conj() / sqrt(2) for all j > i
     # Do first product ahead of time to speed up calculation
@@ -108,12 +110,12 @@ def theta_theta(theta, d_eff, mu_eff, dynspec, f, t):
     ddyn = (dynspec - dynspec.mean()) * dynwave
     # Explicit loop is faster than just broadcasting or using indices
     # for advanced indexing, since it avoids creating a large array.
-    result = np.zeros(theta.shape * 2, ddyn.dtype)
+    result = np.zeros(dynspec.shape[:-2] + theta.shape * 2, ddyn.dtype)
     indices = theta_theta_indices(theta)
     for i, j in zip(*indices):
         amplitude = (ddyn[j] * dynwave[i].conj()).mean((-2, -1)) / np.sqrt(2.)
-        result[i, j] = amplitude
-        result[j, i] = amplitude.conj()
+        result[..., i, j] = amplitude
+        result[..., j, i] = amplitude.conj()
 
     return result
 
@@ -178,7 +180,7 @@ def sample_parabola(x_max, a=1.):
     x_max : float
         Maximum x value to extend to.
     """
-    s_max = round(path_length(x_max, a))
+    s_max = np.round(path_length(x_max, a))
     # Corresponding path length around a parabola
     s = np.arange(1, s_max+1)
     # Initial guesses for x.

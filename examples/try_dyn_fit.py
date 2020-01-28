@@ -31,7 +31,7 @@ plt.clf()
 plt.subplot(3, 4, 1)
 plt.plot(r['mu_eff'], r['redchi2'])
 
-th_th = dyn_chi2.theta_theta(r.meta['mu_eff'])
+th_th = dyn_chi2.theta_theta()
 th = dyn_chi2.theta
 th_kwargs = dict(extent=(th[0].value, th[-1].value)*2,
                  origin=0, vmin=-7, vmax=0, cmap='Greys')
