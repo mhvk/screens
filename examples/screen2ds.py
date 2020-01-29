@@ -30,6 +30,11 @@ d_eff = 1 * u.kpc
 mu_eff = 100 * u.mas / u.yr
 
 simple = True
+# Possible scale to multiply theta values with.  Time and frequency
+# are scaled correspondingly, i.e., scale = 0.1 means 100 times larger
+# frequency range (1->100 MHz) and 10 times larger time range.
+# This allows tests of secondary spectrum f_d axis using f*t instead of t.
+scale = 1
 
 # Create scattering screen, composed of a centred and an offset Gaussian.
 sig = 1.5*u.mas
@@ -39,13 +44,16 @@ if simple:
     a = (0.3*np.exp(-0.5*(th/sig)**2)
          + 0.03*np.exp(-0.5*((th-5*u.mas)/sig)**2)).to_value(1)
 else:
-    th1 = np.linspace(-8, 8, 32, endpoint=False) << u.mas
+    th1 = (np.linspace(-8, 8, 32, endpoint=False) << u.mas) * scale
     a1 = 0.3*np.exp(-0.5*(th1/sig)**2)
     th2 = np.array([4.5, 4.7, 4.8, 4.9, 5., 5.2, 5.5, 6.5, 8.5]) << u.mas
     a2 = 0.03 * np.exp(-0.5*((th2-5*u.mas)/sig)**2)
     th = np.hstack((th1.value, th2.value)) << u.mas
     a = np.hstack((a1.value, a2.value))
     th_perp = np.hstack((-th1.value/20, .2*np.ones(th2.shape))) << u.mas
+
+th *= scale
+th_perp *= scale
 
 realization = a * np.random.normal(size=th.shape+(2,)).view('c16').squeeze(-1)
 # Make direct line of sight a bit brighter.
@@ -63,8 +71,9 @@ realization /= np.sqrt((np.abs(realization)**2).sum())
 # But also need resolution of 0.013 MHz -> factor 500 -> too much.
 # Instead rely on f_d for those small theta.
 
-f = fobs + np.linspace(-0.5*u.MHz, 0.5*u.MHz, 200, endpoint=False)
-t = np.linspace(-10*u.minute, 10*u.minute, 100, endpoint=False)[:, np.newaxis]
+f = fobs + np.linspace(-0.5*u.MHz, 0.5*u.MHz, 200, endpoint=False) / scale**2
+t = np.linspace(-10*u.minute, 10*u.minute, 100,
+                endpoint=False)[:, np.newaxis] / scale
 
 ax1 = plt.subplot(131)
 plt.scatter(th, th_perp, marker='o', s=np.maximum(np.abs(realization*40), 0.5))

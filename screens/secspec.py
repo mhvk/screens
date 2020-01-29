@@ -4,7 +4,7 @@ from astropy import units as u, constants as const
 from astropy.table import QTable
 from scipy.linalg import eigh
 
-from .fields import theta_grid, theta_theta_indices
+from .fields import theta_grid, theta_theta_indices, phasor, expand
 from .dynspec import DynamicSpectrum
 
 
@@ -21,7 +21,7 @@ class SecondarySpectrum:
         self.magnification = magnification
 
     @classmethod
-    def from_dynamic_spectrum(cls, dynspec, **kwargs):
+    def from_dynamic_spectrum(cls, dynspec, *, fd=None, **kwargs):
         for key in ('f', 't', 'd_eff', 'mu_eff', 'theta',
                     'magnification', 'noise'):
             val = getattr(dynspec, key, None)
@@ -32,14 +32,33 @@ class SecondarySpectrum:
             # TODO: give DynamicSpectrum an __array__ method.
             dynspec = dynspec.dynspec
 
-        sec = np.fft.fft2(dynspec)
-        sec /= sec[0, 0]
         f = kwargs.pop('f')
+        t = kwargs.pop('t')
+        if t.size in t.shape and fd is None:  # fast FFT possible.
+            sec = np.fft.fft2(dynspec)
+            fd = np.fft.fftfreq(t.size, t[1]-t[0]).to(u.mHz).reshape(t.shape)
+        else:
+            # Time axis has slow FT or explicit fd given.
+            # Time is assumed to be along axis -2.
+            if fd is None:
+                t_step = np.abs(np.diff(t, axis=-2)).min()
+                n_t = round((t.ptp()/t_step).to_value(1).item()) + 1
+                fd = np.fft.fftfreq(n_t, t_step)
+
+            if fd.ndim == 1:
+                fd = expand(fd, n=dynspec.ndim)
+
+            dt = np.diff(t, axis=-1)
+            linear_axis = -1 if np.allclose(dt, dt[..., :1]) else None
+            factor = phasor(t, fd, linear_axis=linear_axis)
+            factor *= dynspec
+            step1 = factor.sum(-2, keepdims=True).swapaxes(0, -2).squeeze(0)
+            sec = np.fft.fft(step1, axis=-1)
+            fd.shape = sec.shape[-2], 1
+
+        sec /= sec[0, 0]
         tau = np.fft.fftfreq(f.size, f[1]-f[0]).to(u.us)
         tau.shape = f.shape
-        t = kwargs.pop('t')
-        fd = np.fft.fftfreq(t.size, t[1]-t[0]).to(u.mHz)
-        fd.shape = t.shape
 
         sec = np.fft.fftshift(sec)
         tau = np.fft.fftshift(tau) << tau.unit

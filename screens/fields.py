@@ -10,7 +10,7 @@ def expand(*arrays, n=2):
     return result if len(arrays) > 1 else result[0]
 
 
-def phasor(indep, transform, fast=False):
+def phasor(indep, transform, axis=None, linear_axis=None):
     """Calculate phase part of a Fourier transform like operation.
 
     Simply calcations ``exp(-j*indep*transform)``, where generally the two
@@ -27,26 +27,29 @@ def phasor(indep, transform, fast=False):
     transform : array_like
         Transformed variable.  If an `~astropy.units.Quantity`, it must have
         the inverse units of ``indep``.  It should *not* include a factor 2pi.
-    fast : bool, optional
-        Speed up calculation for the case where indep is a linear range.  Will
-        lead to inaccuracies at the 1e-9 level, which should not matter for
-        most purposes.
+    linear_axis : int, optional
+        Possible axis along which ``indep`` changes by linear steps, and for
+        which the calculation can be sped up using cumulative multiplication.
+        This will lead to inaccuracies at the 1e-9 level, which should not
+        matter for most purposes.
     """
-    if fast:
-        assert 1 <= indep.ndim <= 2
-        indep_axis = indep.shape.index(indep.size) - indep.ndim
-        extra_slice = (slice(None),) * (-1-indep_axis)
+    if linear_axis is None:
+        phasor = -1j * (indep * transform * u.cycle).to_value(u.rad)
+        phasor = np.exp(phasor, out=phasor)
+    else:
+        if linear_axis > 0:
+            linear_axis -= indep.ndim
+        extra_slice = (slice(None),) * (-1-linear_axis)
         ph0_index = (Ellipsis, slice(0, 1)) + extra_slice
+        ph01_index = (Ellipsis, slice(0, 2)) + extra_slice
         dph0_index = (Ellipsis, slice(1, None)) + extra_slice
-        ph0 = (indep[0] * transform * u.cycle).to_value(u.rad)
-        dph = ((indep[1]-indep[0]) * transform * u.cycle).to_value(u.rad)
+        ph0 = (indep[ph0_index] * transform * u.cycle).to_value(u.rad)
+        dph = (np.diff(indep[ph01_index], axis=linear_axis)
+               * transform * u.cycle).to_value(u.rad)
         phasor = np.empty(np.broadcast(indep, transform).shape, complex)
         phasor[ph0_index] = np.exp(-1j * ph0)
         phasor[dph0_index] = np.exp(-1j * dph)
-        phasor = np.cumprod(phasor, out=phasor, axis=indep_axis)
-    else:
-        phasor = -1j * (indep * transform * u.cycle).to_value(u.rad)
-        phasor = np.exp(phasor, out=phasor)
+        phasor = np.cumprod(phasor, out=phasor, axis=linear_axis)
 
     return phasor
 
@@ -93,7 +96,8 @@ def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t,
     th_par = theta_par + mu_eff * t
     tau_t = (((d_eff / (2*const.c)) * (th_par**2 + theta_perp**2))
              .to(u.s, u.dimensionless_angles()))
-    result = phasor(f, tau_t, fast=fast)
+    result = phasor(f, tau_t, linear_axis=(f.shape.index(f.size)-f.ndim
+                                           if fast else None))
     if np.any(realization != 1.):
         result *= realization
     return result
