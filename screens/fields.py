@@ -13,7 +13,7 @@ def expand(*arrays, n=2):
     return result if len(arrays) > 1 else result[0]
 
 
-def phasor(indep, transform, axis=None, linear_axis=None):
+def phasor(indep, transform, linear_axis=None):
     """Calculate phase part of a Fourier transform like operation.
 
     Simply calcated ``exp(-j*indep*transform)``, where generally the two
