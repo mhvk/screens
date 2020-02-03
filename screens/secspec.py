@@ -12,6 +12,38 @@ __all__ = ['SecondarySpectrum']
 
 
 class SecondarySpectrum:
+    """Secondary spectrum and methods to fit it.
+
+    The code is meant to be agnostic to which axes are which, but some may
+    assume a shape of ``(..., doppler_axis, delay_axis)``.
+
+    Parameters
+    ----------
+    secspec : `~numpy.ndarray`
+        Fourier transform of a dynamic spectrum.
+    fd : `~astropy.units.Quantity`
+        Doppler factors of the secondary spectrum.  Normally time conjugate
+        but can be arbitrary (e.g., conjugate of ``f*t``).  Should have the
+        the proper shape to broadcast with ``secspec``.
+    tau : `~astropy.units.Quantity`
+        Delays of the secondary spectrum.  Should have the proper shape to
+        broadcast with ``dynspec``.
+    noise : float
+        The uncertainty in the real and imaginary components of the secondary
+        spectrum.
+    d_eff : `~astropy.units.Quantity`
+        Assumed effective distance.  This is used throughout and not fit,
+        but can be treated as a scaling parameters.
+    mu_eff : `~astropy.units.Quantity`, optional
+        Initial guess for the effective proper motion, ``v_eff/d_eff``.
+    theta : `~astropy.units.Quantity`, optional
+        Grid of theta angles to use for modelling the dynamic spectrum.
+        Probably more usefully calculated later using ``theta_grid``.
+    magnification :  `~astropy.units.Quantity`, optional
+        Magnifications at each ``theta``.  More typically inferred by fitting
+        the secondary spectrum.
+    """
+
     def __init__(self, secspec, tau, fd, noise, d_eff, mu_eff,
                  theta=None, magnification=None):
         self.secspec = secspec
@@ -24,7 +56,30 @@ class SecondarySpectrum:
         self.magnification = magnification
 
     @classmethod
-    def from_dynamic_spectrum(cls, dynspec, *, fd=None, **kwargs):
+    def from_dynamic_spectrum(cls, dynspec, **kwargs):
+        """Create a secondary spectrum from a dynamic one.
+
+        Easiest if the input is a `~screens.dynspec.DynamicSpectrum`
+        instance.
+
+        By passing in an explicit time axis using ``t``, one can get a
+        different delay factor conjugate.  Particularly useful with
+        ``t=f*t``, which takes into account the frequency dependence of
+        the time variation of scintles.
+
+        Note that the dynamic spectrum is assumed to have shape
+        ``(..., time_axis, frequency_axis)``.
+
+        Parameters
+        ----------
+        dynspec : array_like or `~screens.dynspec.DynamicSpectrum`
+            Input dynamic spectrum for which the fourier transform will
+            be calculated.  If it has attributes ``f``, ``t``, ``d_eff``,
+            ``theta``, ``magnification``, and ``noise``, those will be
+            used as default inputs.  TODO: ``noise`` is likely wrong!
+        **kwargs
+            Other arguments to initialize the secondary spectrum.
+        """
         for key in ('f', 't', 'd_eff', 'mu_eff', 'theta',
                     'magnification', 'noise'):
             val = getattr(dynspec, key, None)
@@ -37,12 +92,14 @@ class SecondarySpectrum:
 
         f = kwargs.pop('f')
         t = kwargs.pop('t')
+        fd = kwargs.pop('fd', None)
         if t.size in t.shape and fd is None:  # fast FFT possible.
             sec = np.fft.fft2(dynspec)
             fd = np.fft.fftfreq(t.size, t[1]-t[0]).to(u.mHz).reshape(t.shape)
         else:
             # Time axis has slow FT or explicit fd given.
             # Time is assumed to be along axis -2.
+            # TODO: relax this assumption.
             if fd is None:
                 t_step = np.abs(np.diff(t, axis=-2)).min()
                 n_t = round((t.ptp()/t_step).to_value(1).item()) + 1
@@ -52,6 +109,8 @@ class SecondarySpectrum:
                 fd = expand(fd, n=dynspec.ndim)
 
             dt = np.diff(t, axis=-1)
+            # Check whether our last axis (generally frequency) is linearly
+            # spaced, so we can speed up the calculation.
             linear_axis = -1 if np.allclose(dt, dt[..., :1]) else None
             factor = phasor(t, fd, linear_axis=linear_axis)
             factor *= dynspec
@@ -72,6 +131,16 @@ class SecondarySpectrum:
         return self
 
     def theta_grid(self, oversample_tau=2, oversample_fd=4, **kwargs):
+        """Calculate a grid of theta for modelling the secondary spectrum.
+
+        Wraps `screens.fields.theta_grid` with defaults from the class.
+        See that function for details.  Oversampling is set relatively high
+        here, since covariances between the theta are not as important as
+        for fitting a dynamic spectrum.
+
+        Note that this does *not* set the angles on the class, so typical
+        usage is ``ds.theta = ds.theta_grid()``.
+        """
         kwargs.setdefault('d_eff', self.d_eff)
         kwargs.setdefault('mu_eff', self.mu_eff)
         kwargs.setdefault('fobs', self.f.mean())
@@ -85,6 +154,31 @@ class SecondarySpectrum:
 
     def theta_theta(self, mu_eff=None, conserve=False, theta_grid=True,
                     **kwargs):
+        """Project the secondary spectrum into theta-theta space.
+
+        For a given grid in ``theta`` (possibly calculated) and a set of pairs
+        found using `screens.fields.theta_theta_indices`, interpolate in the
+        secondary spectrum to find the theta-theta arrays.
+
+        Parameters
+        ----------
+        mu_eff : `~astropy.units.Quantity`, optional
+            Effective proper motion to use.  Defaults to that stored on
+            the instance.  Will update the instance if given.
+        conserve : bool
+            Whether to conserve flux per surface area.  Doing so reduces
+            sensitivity to points near the axes, but means one cannot
+            directly use any eigenvectors directly in constructing dynamic
+            spectra.
+        theta_grid : bool, optional
+            Whether to calculate a new theta grid, or use the one stored
+            on the instance.  By default, calculate it only if ``mu_eff`` is
+            passed in.  If `True`, this will update the grid stored on the
+            instance.
+        **kwargs
+            Any further arguments are passed on to
+            `~screens.dynspec.DynamicSpectrum.theta_grid`
+        """
         if mu_eff is None:
             mu_eff = self.mu_eff
 
@@ -128,6 +222,7 @@ class SecondarySpectrum:
         return theta_theta
 
     def model(self, magnification=None, mu_eff=None, conserve=False):
+        """Calculate the expected secondary spectrum for given parameters."""
         if magnification is None:
             magnification = self.magnification
         if mu_eff is None:
@@ -170,14 +265,51 @@ class SecondarySpectrum:
         return model
 
     def locate_mu_eff(self, mu_eff_trials=None, power=True, verbose=False):
+        """Try reproducing the secondary spectrum for a range of proper motion.
+
+        For each proper motion, construct a theta-theta array, calculte the
+        largest eigenvalue and use the corresponding eigenvector as the model
+        one-dimensional screen.
+
+        Parameters
+        ----------
+        mu_eff_trials : `~astropy.units.Quantity`
+            Proper motions to try.
+        power : bool
+            Whether to just decompose the powers or the full complex secondary
+            spectrum.  The former is faster and varies less quickly with
+            proper motion, so can be used to find the global minimum before
+            re-running on the full complex values.
+        verbose : bool
+            Whether or not to give summary statistics for each trial.
+
+        Returns
+        -------
+        curvature : `~astropy.table.QTable`
+            Table with the following columns:
+            - ``mu_eff`` : Input proper motions.
+            - ``theta`` : grid in theta used.
+            - ``w`` : Largest eigenvalue.
+            - ``recovered`` : corresponding eigenvector, i.e., magnifications.
+            - ``th_ms`` : Mean-square residual in theta-theta space.
+            - ``ndof`` : degrees of freedom ``n_dynspec - n_theta - 2``.
+            - ``redchi2`` : reduced chi2 ``((dynspec - model)/noise)**2/ndof``.
+
+        Notes
+        -----
+        The resulting table is also stored on the instance, as ``curvature``.
+
+        Note that the noise in the secondary spectrum is currently ignored.
+        """
         if mu_eff_trials is None:
             mu_eff_trials = np.linspace(self.mu_eff * 0.5,
                                         self.mu_eff * 2, 201)
         r = QTable([mu_eff_trials], names=['mu_eff'])
+        r['theta'] = np.zeros(len(r), object)
         r['w'] = 0.
+        r['recovered'] = np.zeros(len(r), object)
         r['th_ms'] = 0.
         r['redchi2'] = 0.
-        r['recovered'] = np.zeros(len(r), object)
         for i, mu_eff in enumerate(r['mu_eff']):
             th_th = self.theta_theta(mu_eff)
             if power:
@@ -201,10 +333,11 @@ class SecondarySpectrum:
             else:
                 redchi2 = (np.abs(self.secspec-secspec_r)**2).mean()
 
-            r['redchi2'][i] = redchi2
-            r['th_ms'][i] = th_ms
+            r['theta'][i] = self.theta
             r['w'][i] = w[-1]
             r['recovered'][i] = recovered
+            r['th_ms'][i] = th_ms
+            r['redchi2'][i] = redchi2
             if verbose:
                 print(f'{mu_eff} {w[-1]} {th_ms} {redchi2}')
 

@@ -1,4 +1,12 @@
 # Licensed under the GPLv3 - see LICENSE
+"""Do eigenvalue decomposition on a simulated secondary spectrum.
+
+This presumes a dynamic spectrum has been generated using screen2ds.
+It does *not* use the theta information from that file, but does
+assume d_eff and mu_eff are already known.
+
+TODO: actually try to locate mu_eff.
+"""
 import numpy as np
 from astropy import units as u
 from matplotlib import pyplot as plt
