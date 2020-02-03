@@ -1,15 +1,18 @@
 # Licensed under the GPLv3 - see LICENSE
 """Transforms needed to display theta-theta plots linearly with angle.
 
-Usage::
+Sample usage::
 
-  ax = plt.subplot(221, projection=ThetaTheta(theta))
-  ax.imshow(theta_theta, ...)
+  ax = plt.subplot(221, projection=ThetaTheta(my_theta_grid))
+  ax.imshow(my_theta_theta_array, ...)
 
 """
 import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.transforms import Transform
+
+
+__all__ = ['ThetaTheta', 'ThetaThetaTransform', 'ThetaThetaAxes']
 
 
 class ThetaThetaTransform(Transform):
@@ -47,6 +50,16 @@ class ThetaTheta:
 
 class ThetaThetaAxes(Axes):
     def __init__(self, *args, theta=None, **kwargs):
+        """Define transformed axes that are linear in theta.
+
+        This is for showing Theta-Theta images where the grid of angles is
+        not uniform (instead, e.g., being uniform along the parabola).
+
+        Parameters
+        ----------
+        theta : `~astropy.units.Quantity`
+            Grid of angles at which the theta-theta image is evaluated.
+        """
         if theta is None:
             raise TypeError("Need to pass in theta!")
 
@@ -54,11 +67,9 @@ class ThetaThetaAxes(Axes):
         super().__init__(*args, **kwargs)
 
     def imshow(self, *args, **kwargs):
-        """
-        Wrapper to Matplotlib's :meth:`~matplotlib.axes.Axes.imshow`.
+        """Show image with linear theta scales, defaulting to origin='lower'.
 
-        Defaults origin to lower, and scales data such that axis scale
-        is linear in theta.
+        Wraps :meth:`matplotlib.axes.Axes.imshow`.
         """
         kwargs.setdefault('origin', 'lower')
         im = super().imshow(*args, **kwargs)

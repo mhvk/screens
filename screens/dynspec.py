@@ -10,6 +10,9 @@ from scintillometry.io import hdf5
 from .fields import dynamic_field, theta_theta, theta_grid
 
 
+__all__ = ['DynamicSpectrum']
+
+
 class DynamicSpectrum:
     def __init__(self, dynspec, f, t, noise, d_eff, mu_eff,
                  theta=None, magnification=None):
@@ -187,6 +190,8 @@ class DynamicSpectrum:
            &= i\left(\bar{w} \Phi - w \bar{Phi}\right) = 2Im(w\bar{Phi})
 
         And for :math:`mu_{eff}`:
+
+        .. math::
 
            \frac{\partial w}{\partial\mu_{eff}}
            &= \sum_k\mu_k\Phi_k

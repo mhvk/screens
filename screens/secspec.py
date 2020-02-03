@@ -8,6 +8,9 @@ from .fields import theta_grid, theta_theta_indices, phasor, expand
 from .dynspec import DynamicSpectrum
 
 
+__all__ = ['SecondarySpectrum']
+
+
 class SecondarySpectrum:
     def __init__(self, secspec, tau, fd, noise, d_eff, mu_eff,
                  theta=None, magnification=None):

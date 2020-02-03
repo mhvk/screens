@@ -3,6 +3,9 @@ import numpy as np
 from astropy import units as u, constants as const
 
 
+__all__ = ['phasor', 'dynamic_field', 'theta_theta', 'theta_grid']
+
+
 def expand(*arrays, n=2):
     """Add n unity axes to the end of all arrays."""
     result = [np.reshape(array, np.shape(array)+(1,)*n)
@@ -234,7 +237,7 @@ def path_length(x, a=1, derivative=False):
     For a parabola :math:`y=ax^2`::
 
     .. math::
-        \int ds &= \int \sqrt{dx^2+dy^2} = \int \sqrt{1+(2ax)^2} dx
+        \int ds &= \int \sqrt{dx^2+dy^2} = \int \sqrt{1+(2ax)^2} dx \\
                 &= \frac{1}{4a}\left(\asinh(2ax) + x\sqrt{1+(2ax)^2}\right)
 
     Parameters
