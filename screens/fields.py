@@ -3,7 +3,7 @@ import numpy as np
 from astropy import units as u, constants as const
 
 
-__all__ = ['phasor', 'dynamic_field', 'theta_theta', 'theta_grid']
+__all__ = ['phasor', 'dynamic_field', 'theta_grid', 'theta_theta_indices']
 
 
 def expand(*arrays, n=2):
@@ -16,10 +16,10 @@ def expand(*arrays, n=2):
 def phasor(indep, transform, axis=None, linear_axis=None):
     """Calculate phase part of a Fourier transform like operation.
 
-    Simply calcations ``exp(-j*indep*transform)``, where generally the two
+    Simply calcated ``exp(-j*indep*transform)``, where generally the two
     inputs will be on different dimensions, so that they broadcast against
     each other.  If the independent variable spans a linearly spaced range,
-    one can use ``fast=True`` to speed up the calculation by only calculating
+    one can use ``linear_axis`` to speed up the calculation by only calculating
     ``exp(-j*indep[0]*transform)`` and ``exp(-j*(indep[1]-indep[0])*tranform)``
     and filling the array by cumulative multiplication.
 
@@ -66,15 +66,17 @@ def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t,
     theta_par : ~astropy.units.Quantity
         Angles of the scattering point in the direction parallel to ``mu_eff``
     theta_perp : ~astropy.units.Quantity
-        Angles perpendiculat to ``mu_eff``.
+        Angles perpendicular to ``mu_eff``.
     realization : array-like
-        Complex amplitudes of the scattering points
+        Complex amplitudes of the scattering points.  Set to ``1.`` to avoid
+        using it.
     d_eff : ~astropy.units.Quantity
         Effective distance.  Should be constant; if different for
         different points, no screen-to-screen scattering is taken into
         account.
     mu_eff : ~astropy.units.Quantity
-        Effective proper motion (``v_eff / d_eff``), parallel to ``theta_par``.
+        Effective proper motion (``v_eff / d_eff``), i.e., parallel to
+        ``theta_par``.
     t : ~astropy.units.Quantity
         Times for which the dynamic wave spectrum should be calculated.
         Should broadcast with ``f`` to give the dynamic spectrum shape.
@@ -109,7 +111,7 @@ def dynamic_field(theta_par, theta_perp, realization, d_eff, mu_eff, f, t,
 def theta_theta_indices(theta, lower=-0.25, upper=0.75):
     """Indices to pairs of angles within bounds.
 
-    Select pairs theta0, theta1 for which theta is constraint to lie
+    Select pairs theta0, theta1 for which theta1 is constrained to lie
     around theta0 to within (lower*theta0, upper*theta0).
 
     Here, ``lower=-1, upper=1`` would select all non-duplicate pairs that
@@ -121,38 +123,18 @@ def theta_theta_indices(theta, lower=-0.25, upper=0.75):
     The defaults instead select points nearer the top of the inverted
     arclets, extending further on the outside than on the inside, since
     on the inside all arclets crowd together.
+
+    Parameters
+    ----------
+    theta : `~astropy.units.Quantity`
+        Grid of angles.
+    lower, upper : float
+        Range of angles for which indices should be returned.
     """
     indgrid = np.indices((len(theta), len(theta)))
     sel = (np.abs(theta[:, np.newaxis] + (upper+lower)/2*theta)
            < (upper-lower)/2 * np.abs(theta))
     return indgrid[1][sel], indgrid[0][sel]
-
-
-def theta_theta(theta, d_eff, mu_eff, dynspec, f, t):
-    """Theta-theta plot for the given theta and dynamic spectrum.
-
-    Uses ``theta_theta_indices`` to determine which pairs to
-    include in the theta-theta array, and then brute-force maps those
-    by estimating the amplitude at each pair by cross-multiplying their
-    expected signature in the dynamic spectrum.
-    """
-    dynwave = dynamic_field(theta, 0, 1., d_eff, mu_eff, f, t).reshape(
-        theta.shape + (1,)*(dynspec.ndim - 2) + dynspec.shape[-2:])
-    # Get intensities by brute-force mapping:
-    # dynspec * dynwave[j] * dynwave[i].conj() / sqrt(2) for all j > i
-    # Do first product ahead of time to speed up calculation
-    # (remove constant parts of input spectrum to eliminate edge effects)
-    ddyn = (dynspec - dynspec.mean()) * dynwave
-    # Explicit loop is faster than just broadcasting or using indices
-    # for advanced indexing, since it avoids creating a large array.
-    result = np.zeros(dynspec.shape[:-2] + theta.shape * 2, ddyn.dtype)
-    indices = theta_theta_indices(theta)
-    for i, j in zip(*indices):
-        amplitude = (ddyn[j] * dynwave[i].conj()).mean((-2, -1)) / np.sqrt(2.)
-        result[..., i, j] = amplitude
-        result[..., j, i] = amplitude.conj()
-
-    return result
 
 
 def theta_grid(d_eff, mu_eff, fobs, dtau, tau_max, dfd, fd_max):
@@ -168,24 +150,24 @@ def theta_grid(d_eff, mu_eff, fobs, dtau, tau_max, dfd, fd_max):
 
     Parameters
     ----------
-    d_eff : ~astropy.units.Quantity
+    d_eff : `~astropy.units.Quantity`
         Effective distance.  Should be constant; if different for
         different points, no screen-to-screen scattering is taken into
         account.
-    mu_eff : ~astropy.units.Quantity
+    mu_eff : `~astropy.units.Quantity`
         Effective proper motion (``v_eff / d_eff``), parallel to ``theta_par``.
-    fobs : ~astropy.units.frequency
-        Mean frequency for which the doppler facto should be calculated.
-    dtau : ~astropy.units.Quantity
+    fobs : `~astropy.units.Quantity`
+        Mean frequency for which the doppler factor should be calculated.
+    dtau : `~astropy.units.Quantity`
         Requested spacing in delay (typically should somewhat oversample the
         spacing in the secondary spectrum).
-    tau_max : ~astropy.units.Quantity
+    tau_max : `~astropy.units.Quantity`
         Maximum delay to consider.  Can be up to the value implied by the
         the frequency resolution (i.e., ``1/(f[2]-f[0])``).
-    dfd : ~astropy.units.Quantity
+    dfd : `~astropy.units.Quantity`
         Requested spacing in doppler factor (typically should oversample the
         spacing in the secondary spectrum).
-    fd_max : ~astropy.units.Quantity
+    fd_max : `~astropy.units.Quantity`
         Maximum doppler factor to consider.  Can be up to the value implied
         by the time resolution (i.e., ``1/(t[2]-t[0])``).
     """

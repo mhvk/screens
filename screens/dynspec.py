@@ -7,14 +7,44 @@ from numpy.linalg import eigh
 
 from scintillometry.io import hdf5
 
-from .fields import dynamic_field, theta_theta, theta_grid
+from .fields import dynamic_field, theta_grid, theta_theta_indices
 
 
 __all__ = ['DynamicSpectrum']
 
 
 class DynamicSpectrum:
-    def __init__(self, dynspec, f, t, noise, d_eff, mu_eff,
+    """Dynamic spectrum and methods to fit it.
+
+    The code is meant to be agnostic to which axes are which, but some may
+    assume a shape of ``(..., time_axis, frequency_axis)``.
+
+    Parameters
+    ----------
+    dynspec : `~numpy.ndarray`
+        Intensities as a function of time and frequency.
+    t : `~astropy.units.Quantity`
+        Times of the dynamic spectrum.  Should have the proper shape to
+        broadcast with ``dynspec``.
+    f : `~astropy.units.Quantity`
+        Frequencies of the dynamic spectrum.  Should have the proper shape to
+        broadcast with ``dynspec``.
+    noise : float
+        The uncertainty in the intensities in the dynamic spectrum.
+    d_eff : `~astropy.units.Quantity`
+        Assumed effective distance.  This is used throughout and not fit,
+        but can be treated as a scaling parameters.
+    mu_eff : `~astropy.units.Quantity`, optional
+        Initial guess for the effective proper motion, ``v_eff/d_eff``.
+    theta : `~astropy.units.Quantity`, optional
+        Grid of theta angles to use for modelling the dynamic spectrum.
+        Probably more usefully calculated later using ``theta_grid``.
+    magnification :  `~astropy.units.Quantity`, optional
+        Magnifications at each ``theta``.  More typically inferred by fitting
+        the dynamic spectrum.
+    """
+
+    def __init__(self, dynspec, f, t, noise, d_eff, mu_eff=None,
                  theta=None, magnification=None):
         self.dynspec = dynspec
         self.f = f
@@ -27,6 +57,10 @@ class DynamicSpectrum:
 
     @classmethod
     def fromfile(cls, filename, d_eff=None, mu_eff=None, noise=None):
+        """Read a dynamic spectrum from an HDF5 file.
+
+        This includes its time and frequency axes.
+        """
         with hdf5.open(filename) as fh:
             dynspec = fh.read()
             f = fh.frequency
@@ -48,7 +82,15 @@ class DynamicSpectrum:
 
         return self
 
-    def theta_grid(self, oversample_tau=1.3, oversample_fd=1.3**2, **kwargs):
+    def theta_grid(self, oversample_tau=1.3, oversample_fd=1.69, **kwargs):
+        """Calculate a grid of theta for modelling the dynamic spectrum.
+
+        Wraps `screens.fields.theta_grid` with defaults from the class.
+        See that function for details.
+
+        Note that this does *not* set the angles on the class, so typical
+        usage is ``ds.theta = ds.theta_grid()``.
+        """
         kwargs.setdefault('d_eff', self.d_eff)
         kwargs.setdefault('mu_eff', self.mu_eff)
         kwargs.setdefault('fobs', self.f.mean())
@@ -61,6 +103,23 @@ class DynamicSpectrum:
         return theta_grid(**kwargs)
 
     def dynamic_bases(self, mu_eff=None):
+        """Calculate the amplitude infererence patterns for current fit.
+
+        The power of the sum of these amplitudes is a dynamic spectrum.
+
+        Explicitly assumes that time and frequency are the last two axes
+        of the dynamic spectrum.  (TODO: lift this restriction.)
+
+        Parameters
+        ----------
+        mu_eff : `~astropy.units.Quantity`, optional
+            Effective proper motion to use.  Defaults to that stored on
+            the instance.  Will *not* update the instance.
+
+        Notes
+        -----
+        The calculated dynamic bases are cached for a given ``mu_eff``.
+        """
         if mu_eff is None:
             mu_eff = self.mu_eff
 
@@ -73,29 +132,102 @@ class DynamicSpectrum:
 
         return self._dyn_wave
 
-    def theta_theta(self, mu_eff=None, theta_grid=True, **kwargs):
-        if mu_eff is None:
-            mu_eff = self.mu_eff
+    def theta_theta(self, mu_eff=None, theta_grid=None, **kwargs):
+        """Create a theta-theta array from the dynamic spectrum.
 
-        if theta_grid:
+        For a given grid in ``theta`` (possibly calculated) and a set of pairs
+        found using `screens.fields.theta_theta_indices`, this brute-force
+        estimates the amplitudes at each pair by cross-multiplying their
+        expected signature in the dynamic spectrum.
+
+        Parameters
+        ----------
+        mu_eff : `~astropy.units.Quantity`, optional
+            Effective proper motion to use.  Defaults to that stored on
+            the instance.  Will update the instance if given.
+        theta_grid : bool, optional
+            Whether to calculate a new theta grid, or use the one stored
+            on the instance.  By default, calculate it only if ``mu_eff`` is
+            passed in.  If `True`, this will update the grid stored on the
+            instance.
+        **kwargs
+            Any further arguments are passed on to
+            `~screens.dynspec.DynamicSpectrum.theta_grid`
+        """
+        if mu_eff is not None:
+            self.mu_eff = mu_eff
+
+        if theta_grid or (theta_grid is None and mu_eff is not None):
             self.theta = self.theta_grid(mu_eff=mu_eff, **kwargs)
 
-        return theta_theta(self.theta, self.d_eff, mu_eff,
-                           self.dynspec, self.f, self.t)
+        dynwave = self.dynamic_bases()
+        # Get intensities by brute-force mapping:
+        # dynspec * dynwave[j] * dynwave[i].conj() / sqrt(2) for all j > i
+        # Do first product ahead of time to speed up calculation
+        # (remove constant parts of input spectrum to eliminate edge effects)
+        ddyn = (self.dynspec - self.dynspec.mean()) * dynwave
+        # Explicit loop is faster than just broadcasting or using indices
+        # for advanced indexing, since it avoids creating a large array.
+        result = np.zeros(self.dynspec.shape[:-2] + self.theta.shape * 2,
+                          ddyn.dtype)
+        indices = theta_theta_indices(self.theta)
+        for i, j in zip(*indices):
+            amplitude = ((ddyn[..., j, :, :]
+                          * dynwave[..., i, :, :].conj()).mean((-2, -1))
+                         / np.sqrt(2.))
+            result[..., i, j] = amplitude
+            result[..., j, i] = amplitude.conj()
+
+        return result
 
     def locate_mu_eff(self, mu_eff_trials=None, verbose=True, use=True,
                       **kwargs):
+        """Try reproducing the dynamic spectrum for a range of proper motion.
+
+        For each proper motion, construct a theta-theta array, calculte the
+        largest eigenvalue and use the corresponding eigenvector as the model
+        one-dimensional screen.
+
+        Parameters
+        ----------
+        mu_eff_trials : `~astropy.units.Quantity`
+            Proper motions to try.
+        verbose : bool
+            Whether or not to give summary statistics for each trial.
+        use : bool
+            Whether to store the best-fit proper motion and corresponding
+            theta grid and magnifications on the instance.
+        **kwargs
+            Further parameters to use in calculating the theta grid for each
+            proper motion.
+
+        Returns
+        -------
+        curvature : `~astropy.table.QTable`
+            Table with the following columns:
+            - ``mu_eff`` : Input proper motions.
+            - ``theta`` : grid in theta used.
+            - ``w`` : Largest eigenvalue.
+            - ``recovered`` : corresponding eigenvector, i.e., magnifications.
+            - ``th_ms`` : Mean-square residual in theta-theta space.
+            - ``ndof`` : degrees of freedom ``n_dynspec - n_theta - 2``.
+            - ``redchi2`` : reduced chi2 ``((dynspec - model)/noise)**2/ndof``.
+
+        Notes
+        -----
+        The resulting table is also stored on the instance, as ``curvature``.
+        """
         if mu_eff_trials is None:
             mu_eff_trials = np.linspace(self.mu_eff * 0.8,
                                         self.mu_eff * 1.2, 21)
         r = QTable([mu_eff_trials], names=['mu_eff'])
         shape = (len(mu_eff_trials),) + self.dynspec.shape[:-2]
+        r['theta'] = np.zeros(len(mu_eff_trials), object)
         r['w'] = np.zeros(shape)
+        r['recovered'] = np.zeros(len(mu_eff_trials), object)
         r['th_ms'] = np.zeros(shape)
         r['ndof'] = 0
         r['redchi2'] = np.zeros(shape)
-        r['theta'] = np.zeros(len(mu_eff_trials), object)
-        r['recovered'] = np.zeros(len(mu_eff_trials), object)
         for i, mu_eff in enumerate(r['mu_eff']):
             th_th = self.theta_theta(mu_eff, **kwargs)
             w, v = eigh(th_th)
@@ -117,12 +249,12 @@ class DynamicSpectrum:
                     - self.theta.size - 2)
             redchi2 = (((self.dynspec-dynspec_r)**2).sum((-2, -1))
                        / self.noise**2) / ndof
+            r['theta'][i] = self.theta
+            r['w'][i] = w[..., -1]
+            r['recovered'][i] = recovered
+            r['th_ms'][i] = th_ms
             r['ndof'][i] = ndof
             r['redchi2'][i] = redchi2
-            r['th_ms'][i] = th_ms
-            r['w'][i] = w[..., -1]
-            r['theta'][i] = self.theta
-            r['recovered'][i] = recovered
             if verbose:
                 print(f'{mu_eff} {w[..., -1]} {ndof} {redchi2}')
 
@@ -142,6 +274,17 @@ class DynamicSpectrum:
         return r
 
     def model(self, magnification=None, mu_eff=None):
+        """Calculate a model dynamic spectrum.
+
+        Uses parameters on the instance if not otherwise specified.
+
+        Parameters
+        ----------
+        magnification : array-like, optional
+            Complex magnification for each theta value.
+        mu_eff : `~astropy.units.Quantity`, optional
+            Effective proper motion.
+        """
         if magnification is None:
             magnification = self.magnification
 
@@ -151,6 +294,10 @@ class DynamicSpectrum:
         return dynspec_r
 
     def residuals(self, magnification=None, mu_eff=None):
+        """Residuals compared to the model.
+
+        Parameters as for :meth:`~screens.dynspec.DynamicSpectrum.model`:
+        """
         model = self.model(magnification, mu_eff)
         return (self.dynspec - model) / self.noise
 
@@ -161,7 +308,7 @@ class DynamicSpectrum:
 
         .. math::
 
-           w(f, t) &= \sum_k \mu_k \exp[-j\phi(\theta_i, \mu_{eff}, f, t)]
+           w(f, t) &= \sum_k \mu_k \exp[-j\phi(\theta_i, \mu_{\rm eff}, f, t)]
                    &\equiv \sum_k \mu_k \Phi_k \\
            DS(f,t) &= |w(f, t)|^2 = w \bar{w}
 
@@ -173,8 +320,8 @@ class DynamicSpectrum:
            &= \left(\frac{\partial}{\partial z}
                   + \frac{\partial}{\partial\bar{z}}\right) \\
            \frac{\partial}{\partial y}
-           &= i \left(\frac{\partial}{\partial z}
-                     - \frac{\partial}{\partial\bar{z}}\rigt)
+           &= j \left(\frac{\partial}{\partial z}
+                     - \frac{\partial}{\partial\bar{z}}\right)
 
         Using this for the magnifications:
 
@@ -185,24 +332,24 @@ class DynamicSpectrum:
            \frac{\partial DS}{\partial\bar{\mu}}
            &= w \frac{\partial\bar{w}}{\partial\bar{\mu}} = w \bar{\Phi} \\
            \frac{\partial DS}{\partial x}
-           &= \left(\bar{w} \Phi + w \bar{Phi}\right) = 2Re(w\bar{Phi}) \\
+           &= \left(\bar{w} \Phi + w \bar{\Phi}\right) = 2\Re(w\bar{\Phi}) \\
            \frac{\partial DS}{\partial y}
-           &= i\left(\bar{w} \Phi - w \bar{Phi}\right) = 2Im(w\bar{Phi})
+           &= j\left(\bar{w} \Phi - w \bar{\Phi}\right) = 2\Im(w\bar{\Phi})
 
-        And for :math:`mu_{eff}`:
+        And for :math:`\mu_{\rm eff}`:
 
         .. math::
 
-           \frac{\partial w}{\partial\mu_{eff}}
+           \frac{\partial w}{\partial\mu_{\rm eff}}
            &= \sum_k\mu_k\Phi_k
-                \frac{\partial -i\phi_k}{\partial\mu_{eff}} \\
-           \frac{\partial\bar{w}}{\partial\mu_{eff}}
-           &= \sum_k\bar{\mu}_k\bar{Phi}_k
-               \frac{\partial i\phi_k}{\partial\mu_{eff}} \\
-           \frac{\partial DS}{\partial\mu_{eff}}
-           &= \bar{w} \frac{\partial w}{\partial\mu_{eff}}
-            +  w \frac{\partial\bar{w}}{\partial\mu_{eff}} \\
-           &= 2\sum_k\mu_k Phi_k \frac{\partial -i\phi}{\partial\mu_{eff}}
+                \frac{\partial -i\phi_k}{\partial\mu_{\rm eff}} \\
+           \frac{\partial\bar{w}}{\partial\mu_{\rm eff}}
+           &= \sum_k\bar{\mu}_k\bar{\Phi}_k
+               \frac{\partial i\phi_k}{\partial\mu_{\rm eff}} \\
+           \frac{\partial DS}{\partial\mu_{\rm eff}}
+           &= \bar{w} \frac{\partial w}{\partial\mu_{\rm eff}}
+            +  w \frac{\partial\bar{w}}{\partial\mu_{\rm eff}}
+            = -2j\sum_k\mu_k \Phi_k \frac{\partial\phi}{\partial\mu_{\rm eff}}
 
         """
         dyn_wave = self.dynamic_bases(mu_eff)
@@ -227,6 +374,7 @@ class DynamicSpectrum:
         return jac_mag, jac_mu
 
     def _combine_pars(self, magnification, mu_eff, mu_eff_scale):
+        """Turn complex parameters into the real ones used in the fits."""
         msh = magnification.shape[:-1]
         magnification = magnification.view('2f8')
         theta0 = self.theta == 0
@@ -241,6 +389,7 @@ class DynamicSpectrum:
         return pars
 
     def _separate_pars(self, pars, mu_eff_scale=None):
+        """Turn real parameters used in the fits into physical ones."""
         pars = np.asanyarray(pars)
         if len(pars) > 2*len(self.theta)-1:
             if mu_eff_scale is None:
@@ -299,6 +448,7 @@ class DynamicSpectrum:
         return mag_covar, mag_pseudo, mu_eff_cov, mu_eff_var
 
     def _model(self, unused_x_data, *pars):
+        """Calculate model for the fit routine."""
         magnification, mu_eff = self._separate_pars(pars)
         model = self.model(magnification, mu_eff)
         if self._prt:
@@ -308,12 +458,40 @@ class DynamicSpectrum:
         return model.ravel()
 
     def _jacobian(self, unused_x_data, *pars):
+        """Calculate jacobian for the fit routine."""
         magnification, mu_eff = self._separate_pars(pars)
         jac_mag, jac_mu_eff = self.jacobian(magnification, mu_eff)
         return self._combine_pars(jac_mag, jac_mu_eff,
                                   1/self.mu_eff_guess)
 
     def fit(self, guess=None, verbose=2, **kwargs):
+        """Fit the dynamic spectrum directly.
+
+        This needs good guesses, such as can be gotten from
+        :meth:`screens.dynspec.DynamicSpectrum.locate_mu_eff`.
+
+        Parameters
+        ----------
+        guess : initial guesses, optional
+            If `None`, use the current ``magnification`` and ``mu_eff`` on
+            the instance.  If ``curvature``, select the best value from the
+            ``curvature`` table on the instance (created by ``locate_mu_eff``).
+            If a tuple, guesses for ``magnification`` and ``mu_eff``.
+            If a single number, treat it as a guess for ``mu_eff`` and
+            determine initial guesses for the magnification using eigen-value
+            decomposition.
+        verbose : int
+            How much information to print during fitting.  A value of ``3``
+            forces the class itself to print a reduced chi2 any time ``mu_eff``
+            is updated.
+        **kwargs
+            Any further keyword arguments to pass on to
+            :func:`scipy.optimize.curve_fit`.
+
+        Notes
+        -----
+        This uses the ``model`` and ``jacobian`` methods on the instance.
+        """
         if guess is None:
             mu_eff_guess = self.mu_eff
             mag_guess = self.magnification
@@ -357,6 +535,12 @@ class DynamicSpectrum:
                 self.raw_mu_eff_fit, self.raw_mu_eff_err)
 
     def cleanup_fit(self, max_abs_err=0.1, max_rel_err=1000., verbose=True):
+        """Remove highly degenerate configurations from the fit.
+
+        Works by doing an singular value decomposition on the fit and
+        removing very small values, those that are either smaller than
+        ``max_abs_err`` or ``max_rel_err`` times the largest value.
+        """
         jm = self._jacobian(None, *self.popt)
         # Get bases for jacobian using SVD
         _, jms, jmvt = np.linalg.svd(jm, full_matrices=False)
