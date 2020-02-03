@@ -238,8 +238,7 @@ class DynamicSpectrum:
 
             th_ms = (np.abs(
                 th_th - (recovered[..., :, np.newaxis]
-                         * recovered[..., np.newaxis, :].conj())
-                )**2).mean()
+                         * recovered[..., np.newaxis, :].conj()))**2).mean()
             dynspec_r = self.model(recovered, mu_eff=mu_eff)
             # Mean of dynamic spectra should equal sum of all recovered powers.
             # Since we normalize that to (close to) 1, just rescale similarly.
