@@ -165,7 +165,8 @@ class DynamicSpectrum:
         # dynspec * dynwave[j] * dynwave[i].conj() / sqrt(2) for all j > i
         # Do first product ahead of time to speed up calculation
         # (remove constant parts of input spectrum to eliminate edge effects)
-        ddyn = (self.dynspec - self.dynspec.mean()) * dynwave
+        ddyn = dynwave * np.expand_dims(
+            self.dynspec - self.dynspec.mean(), -3)
         # Explicit loop is faster than just broadcasting or using indices
         # for advanced indexing, since it avoids creating a large array.
         result = np.zeros(self.dynspec.shape[:-2] + self.theta.shape * 2,
