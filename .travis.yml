@@ -59,17 +59,18 @@ matrix:
         # issues that are not picked up by a linux worker. We set language to
         # 'c' since 'python' doesn't work on non-Linux platforms.
         - name: Python 3.7 with required dependencies
-          stage: tests
+          python: 3.7
+          stage: Initial tests
           env: PYTHON_VERSION=3.7 TOXENV=py37-test
 
-    allow_failures:
-        # Do a PEP8 test with flake8
-        # (do allow to fail unless your code completely compliant)
-        # - os: linux
-        #   python: 3.8
-        #   name: Code style checks
-        #   stage: Initial tests
-        #   env: TOXENV=codestyle
+        - name: Code style checks
+          stage: Initial tests
+          python: 3.8
+          env: TOXENV=codestyle
+
+        - name: Documentation build
+          python: 3.8
+          env: TOXENV=build_docs
 
 script:
     - pip install tox
