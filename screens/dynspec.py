@@ -5,8 +5,6 @@ from astropy.table import QTable
 from scipy.optimize import curve_fit
 from numpy.linalg import eigh
 
-from scintillometry.io import hdf5
-
 from .fields import dynamic_field, theta_grid, theta_theta_indices
 
 
@@ -60,7 +58,11 @@ class DynamicSpectrum:
         """Read a dynamic spectrum from an HDF5 file.
 
         This includes its time and frequency axes.
+
+        Note: this needs the scintillometry package for HDF5 file access.
         """
+        from scintillometry.io import hdf5
+
         with hdf5.open(filename) as fh:
             dynspec = fh.read()
             f = fh.frequency
@@ -158,7 +160,8 @@ class DynamicSpectrum:
             self.mu_eff = mu_eff
 
         if theta_grid or (theta_grid is None and mu_eff is not None):
-            self.theta = self.theta_grid(mu_eff=mu_eff, **kwargs)
+            self.theta = self.theta_grid(**kwargs)
+            self._mu_eff_old = None
 
         dynwave = self.dynamic_bases()
         # Get intensities by brute-force mapping:
