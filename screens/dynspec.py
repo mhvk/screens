@@ -100,8 +100,8 @@ class DynamicSpectrum:
                           / oversample_tau)
         kwargs.setdefault('dfd', (1./self.t.ptp()).to(u.mHz)
                           / oversample_fd)
-        kwargs.setdefault('tau_max', 1/(self.f[2]-self.f[0]).min())
-        kwargs.setdefault('fd_max', 1/(self.t[2]-self.t[0]).min())
+        kwargs.setdefault('tau_max', 1/np.abs(self.f[2]-self.f[0]).min())
+        kwargs.setdefault('fd_max', 1/np.abs(self.t[2]-self.t[0]).min())
         return theta_grid(**kwargs)
 
     def dynamic_bases(self, mu_eff=None):
