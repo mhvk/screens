@@ -8,8 +8,16 @@ Sample usage::
 
 """
 import numpy as np
-from matplotlib.axes import Axes
-from matplotlib.transforms import Transform
+try:
+    from matplotlib.axes import Axes
+    from matplotlib.transforms import Transform
+except ImportError:
+    class Transform:
+        def __init__(self, *args, **kwargs):
+            raise ImportError('matplotlib is required in order to use this '
+                              'class.')
+
+    Axes = Transform
 
 
 __all__ = ['ThetaTheta', 'ThetaThetaTransform', 'ThetaThetaAxes']
