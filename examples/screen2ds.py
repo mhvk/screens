@@ -14,7 +14,7 @@ from astropy import units as u, constants as const
 from astropy.time import Time
 from astropy.visualization import quantity_support
 
-from scintillometry.io import hdf5
+from baseband.io import hdf5
 
 from screens.fields import dynamic_field, theta_grid, theta_theta_indices
 

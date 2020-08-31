@@ -59,9 +59,9 @@ class DynamicSpectrum:
 
         This includes its time and frequency axes.
 
-        Note: this needs the scintillometry package for HDF5 file access.
+        Note: this needs the baseband-tasks package for HDF5 file access.
         """
-        from scintillometry.io import hdf5
+        from baseband.io import hdf5
 
         with hdf5.open(filename) as fh:
             dynspec = fh.read()

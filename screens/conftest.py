@@ -19,7 +19,7 @@ else:
         PYTEST_HEADER_MODULES['Astropy'] = 'astropy'
         PYTEST_HEADER_MODULES['Numpy'] = 'numpy'
         PYTEST_HEADER_MODULES['Scipy'] = 'scipy'
-        PYTEST_HEADER_MODULES['scintillometry'] = 'numpy'
+        PYTEST_HEADER_MODULES['baseband-tasks'] = 'baseband_tasks'
 
         try:
             from .version import version

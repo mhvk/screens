@@ -10,7 +10,7 @@ from astropy import units as u
 from astropy.visualization import quantity_support
 from matplotlib import pyplot as plt
 
-from scintillometry.io import hdf5
+from baseband.io import hdf5
 
 from screens.fields import dynamic_field, theta_grid
 from screens.dynspec import DynamicSpectrum
