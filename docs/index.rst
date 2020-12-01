@@ -1,7 +1,4 @@
-Documentation
-=============
-
-This is the documentation for screens.  Right there are only API links.
+.. include:: ../README.rst
 
 Reference/API
 =============
