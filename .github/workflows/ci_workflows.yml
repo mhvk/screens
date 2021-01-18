@@ -37,6 +37,9 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
+    - name: Install system dependencies
+      if: startsWith(matrix.toxenv, 'build_docs')
+      run: sudo apt-get install graphviz
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
