@@ -16,7 +16,6 @@ from screens.visualization import ThetaTheta
 from screens import DynamicSpectrum
 
 
-plt.ion()
 quantity_support()
 
 dyn_chi2 = DynamicSpectrum.fromfile('dynspec.h5', d_eff=1.*u.kpc,
@@ -34,16 +33,16 @@ plt.plot(r['mu_eff'], r['redchi2'])
 th_th = dyn_chi2.theta_theta()
 th = dyn_chi2.theta
 th_kwargs = dict(extent=(th[0].value, th[-1].value)*2,
-                 origin=0, vmin=-7, vmax=0, cmap='Greys')
+                 origin='lower', vmin=-7, vmax=0, cmap='Greys')
 th_th_proj = ThetaTheta(dyn_chi2.theta)
 plt.subplot(3, 4, 2, projection=th_th_proj)
 plt.imshow(np.log10(np.maximum(np.abs(th_th)**2, 1e-30)), **th_kwargs)
 plt.xlabel(th.unit.to_string('latex'))
 plt.ylabel(th.unit.to_string('latex'))
 
-ds_kwargs = dict(extent=(dyn_chi2.t[0].value, dyn_chi2.t[-1].value,
+ds_kwargs = dict(extent=(dyn_chi2.t[0, 0].value, dyn_chi2.t[-1, 0].value,
                          dyn_chi2.f[0].value, dyn_chi2.f[-1].value),
-                 origin=0, aspect='auto', cmap='Greys',
+                 origin='lower', aspect='auto', cmap='Greys',
                  vmin=0, vmax=7)
 ibest = r['redchi2'].argmin()
 dynspec_r = dyn_chi2.model(r['recovered'][ibest],
@@ -94,3 +93,5 @@ plt.imshow(dyn_chi2.model(cln_mag_fit, cln_mu_eff_fit).T,
 plt.subplot(3, 4, 12)
 plt.imshow(dyn_chi2.residuals(cln_mag_fit, cln_mu_eff_fit).T,
            **res_kwargs)
+
+plt.show()
