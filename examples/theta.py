@@ -18,8 +18,6 @@ from screens.visualization import ThetaTheta
 
 
 quantity_support()
-plt.ion()
-plt.clf()
 
 
 with hdf5.open('dynspec.h5') as fh:
@@ -35,14 +33,16 @@ with hdf5.open('dynspec.h5') as fh:
 
 
 # Display simulated dynamic spectrum.
-ds_kwargs = dict(extent=(t[0].value, t[-1].value, f[0].value, f[-1].value),
-                 origin=0, aspect='auto', cmap='Greys', vmin=0, vmax=6)
+ds_extent = (t[0, 0].value, t[-1, 0].value, f[0].value, f[-1].value)
+ds_kwargs = dict(extent=ds_extent, origin='lower', aspect='auto',
+                 cmap='Greys', vmin=0, vmax=6)
 
 plt.subplot(321)
 plt.imshow(dynspec.T, **ds_kwargs)
 plt.xlabel(t.unit.to_string('latex'))
 plt.ylabel(f.unit.to_string('latex'))
 plt.colorbar()
+plt.title('Input Dynamic Spectrum')
 
 d_eff = 1 * u.kpc
 mu_eff = 100 * u.mas / u.yr
@@ -61,12 +61,13 @@ ds = DynamicSpectrum(dynspec, f=f, t=t, noise=noise, d_eff=d_eff,
 th_th = ds.theta_theta()
 
 th_kwargs = dict(extent=(th[0].value, th[-1].value)*2,
-                 origin=0, vmin=-7, vmax=0, cmap='Greys')
+                 origin='lower', vmin=-7, vmax=0, cmap='Greys')
 th_th_proj = ThetaTheta(th_r)
 ax = plt.subplot(322, projection=th_th_proj)
 ax.imshow(np.log10(np.maximum(np.abs(th_th)**2, 1e-30)), **th_kwargs)
 ax.set_xlabel(th.unit.to_string('latex'))
 ax.set_ylabel(th.unit.to_string('latex'))
+plt.title(r'raw $\theta-\theta$')
 
 # Calculate eigenvectors for inferred theta-theta.
 
@@ -82,6 +83,7 @@ ax.imshow(np.log10(np.abs(np.outer(recovered, recovered.conj())**2)),
           **th_kwargs)
 ax.set_xlabel(th.unit.to_string('latex'))
 ax.set_ylabel(th.unit.to_string('latex'))
+plt.title(r'largest eigenvector $\theta-\theta$')
 
 # As well as the corresponding dynamic spetrum.
 plt.subplot(323)
@@ -95,6 +97,7 @@ plt.imshow(dynspec_r.T, **ds_kwargs)
 plt.xlabel(t.unit.to_string('latex'))
 plt.ylabel(f.unit.to_string('latex'))
 plt.colorbar()
+plt.title('DS implied by largest eigenvector')
 
 print('Recovered red. chi2 ', ((dynspec-dynspec_r)**2).mean() / noise**2)
 
@@ -104,6 +107,7 @@ th_th_real = np.outer(realization, realization.conj())
 ax.imshow(np.log10(np.abs(th_th_real**2)), **th_kwargs)
 ax.set_xlabel(th.unit.to_string('latex'))
 ax.set_ylabel(th.unit.to_string('latex'))
+plt.title(r'Actual $\theta-\theta$ (not to scale)')
 
 w_real, v_real = np.linalg.eigh(th_th_real)
 
@@ -119,5 +123,9 @@ plt.imshow(dynspec_real.T, **ds_kwargs)
 plt.xlabel(t.unit.to_string('latex'))
 plt.ylabel(f.unit.to_string('latex'))
 plt.colorbar()
+plt.title('Input dynamic spectrum')
 
-print('Recovered red. chi2 ', ((dynspec-dynspec_real)**2).mean() / noise**2)
+print('Recovered - true, red. chi2 ',
+      ((dynspec-dynspec_real)**2).mean() / noise**2)
+
+plt.show()

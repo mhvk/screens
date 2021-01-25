@@ -19,9 +19,8 @@ from baseband.io import hdf5
 from screens.fields import dynamic_field, theta_grid, theta_theta_indices
 
 
-plt.ion()
 quantity_support()
-plt.clf()
+
 np.random.seed(654321)
 
 # Set scalings.
@@ -42,15 +41,15 @@ if simple:
     th = np.linspace(-7, 7, 28, endpoint=False) << u.mas
     th_perp = np.zeros_like(th)
     a = (0.3*np.exp(-0.5*(th/sig)**2)
-         + 0.03*np.exp(-0.5*((th-5*u.mas)/sig)**2)).to_value(1)
+         + 0.03*np.exp(-0.5*((th-5*u.mas)/sig)**2)).to_value(u.one)
 else:
     th1 = (np.linspace(-8, 8, 32, endpoint=False) << u.mas) * scale
     a1 = 0.3*np.exp(-0.5*(th1/sig)**2)
     th2 = np.array([4.5, 4.7, 4.8, 4.9, 5., 5.2, 5.5, 6.5, 8.5]) << u.mas
     a2 = 0.03 * np.exp(-0.5*((th2-5*u.mas)/sig)**2)
-    th = np.hstack((th1.value, th2.value)) << u.mas
-    a = np.hstack((a1.value, a2.value))
-    th_perp = np.hstack((-th1.value/20, .2*np.ones(th2.shape))) << u.mas
+    th = np.hstack((th1, th2))
+    a = np.hstack((a1, a2)).to_value(u.one)
+    th_perp = np.hstack((-th1/20, .2*u.mas*np.ones(th2.shape)))
 
 th *= scale
 th_perp *= scale
@@ -93,8 +92,10 @@ noise = 0.01
 dynspec += noise * np.random.normal(size=dynspec.shape)
 
 plt.subplot(132)
-ds_extent = (t[0].value, t[-1].value, f[0].value, f[-1].value)
-plt.imshow(dynspec.T, origin=0, aspect='auto', extent=ds_extent, cmap='Greys')
+# TODO: really, should just use a WCS!
+ds_extent = (t[0, 0].value, t[-1, 0].value, f[0].value, f[-1].value)
+plt.imshow(dynspec.T, origin='lower', aspect='auto', extent=ds_extent,
+           cmap='Greys')
 plt.xlabel(t.unit.to_string('latex'))
 plt.ylabel(f.unit.to_string('latex'))
 plt.colorbar()
@@ -129,12 +130,12 @@ i0, i1 = theta_theta_indices(th_g)
 plt.plot(fd_g[i0]-fd_g[i1], tau_g[i0]-tau_g[i1], 'bo', ms=0.2)
 plt.plot(fd_g, tau_g, 'ro', ms=0.4)
 sec_extent = (fd[0].value, fd[-1].value, tau[0].value, tau[-1].value)
-plt.imshow(np.log10(ss.T), origin=0, aspect='auto', extent=sec_extent,
+plt.imshow(np.log10(ss.T), origin='lower', aspect='auto', extent=sec_extent,
            cmap='Greys', vmin=-7, vmax=0)
 plt.xlabel(fd.unit.to_string('latex'))
 plt.ylabel(tau.unit.to_string('latex'))
 plt.colorbar()
-
+plt.show()
 
 # Save the simulated dynamic spectrum for later use.
 with hdf5.open('dynspec.h5', 'w', sample_shape=dynspec.shape[1:],
