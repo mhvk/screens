@@ -14,8 +14,6 @@ from screens import DynamicSpectrum
 
 
 quantity_support()
-plt.ion()
-plt.clf()
 
 
 a = np.load('dynamic_spectrum_arar.npz')
@@ -36,7 +34,6 @@ ds.locate_mu_eff(np.arange(30, 70, 2) << u.mas/u.yr, tau_max=tau_max,
 
 r = ds.curvature
 
-plt.clf()
 plt.subplot(3, 4, 1)
 plt.plot(r['mu_eff'], r['redchi2'])
 plt.plot(ds.mu_eff, r['redchi2'].min(), 'r+')
@@ -44,16 +41,16 @@ plt.plot(ds.mu_eff, r['redchi2'].min(), 'r+')
 th_th = ds.theta_theta()
 th = ds.theta
 th_kwargs = dict(extent=(th[0].value, th[-1].value)*2,
-                 origin=0, vmin=-7, vmax=0, cmap='Greys')
+                 origin='lower', vmin=-7, vmax=0, cmap='Greys')
 th_th_proj = ThetaTheta(ds.theta)
 plt.subplot(3, 4, 2, projection=th_th_proj)
 plt.imshow(np.log10(np.maximum(np.abs(th_th)**2, 1e-30)), **th_kwargs)
 plt.xlabel(th.unit.to_string('latex'))
 plt.ylabel(th.unit.to_string('latex'))
 
-ds_kwargs = dict(extent=(ds.t[0].value, ds.t[-1].value,
+ds_kwargs = dict(extent=(ds.t[0, 0].value, ds.t[-1, 0].value,
                          ds.f[0].value, ds.f[-1].value),
-                 origin=0, aspect='auto', cmap='Greys',
+                 origin='lower', aspect='auto', cmap='Greys',
                  vmin=0, vmax=7)
 dynspec_r = ds.model()
 dynspec_r *= ds.dynspec.mean()/dynspec_r.mean()
@@ -102,3 +99,5 @@ plt.imshow(ds.model(cln_mag_fit, cln_mu_eff_fit).T,
 plt.subplot(3, 4, 12)
 plt.imshow(ds.residuals(cln_mag_fit, cln_mu_eff_fit).T,
            **res_kwargs)
+
+plt.show()
