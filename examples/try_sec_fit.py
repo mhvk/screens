@@ -17,17 +17,15 @@ from screens.visualization import ThetaTheta
 from screens import DynamicSpectrum, SecondarySpectrum
 
 
-plt.ion()
-plt.clf()
 quantity_support()
 
 dyn_spec = DynamicSpectrum.fromfile('dynspec.h5', d_eff=1.*u.kpc,
                                     mu_eff=100*u.mas/u.yr)
 sec_spec = SecondarySpectrum.from_dynamic_spectrum(dyn_spec)
 
-sec_kwargs = dict(extent=(sec_spec.fd[0].value, sec_spec.fd[-1].value,
+sec_kwargs = dict(extent=(sec_spec.fd[0, 0].value, sec_spec.fd[-1, 0].value,
                           sec_spec.tau[0].value, sec_spec.tau[-1].value),
-                  cmap='Greys', vmin=-7, vmax=0, origin=0, aspect='auto')
+                  cmap='Greys', vmin=-7, vmax=0, origin='lower', aspect='auto')
 plt.subplot(321)
 plt.imshow(np.log10(np.abs(sec_spec.secspec)**2).T, **sec_kwargs)
 
@@ -87,3 +85,5 @@ sec_dr = np.fft.fftshift(sec_dr)
 sec_dr[(sec_spec.fd == 0) | (sec_spec.tau == 0)] = 0
 print("via dyn spec, red chi2 = ",
       (np.abs(secspec-sec_dr)**2).mean() / sec_noise**2)
+
+plt.show()
