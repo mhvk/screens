@@ -1,5 +1,13 @@
 .. include:: ../README.rst
 
+Tutorials
+=========
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/simple_examples
+
 Reference/API
 =============
 

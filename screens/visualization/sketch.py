@@ -115,9 +115,9 @@ class NeutronStar(object):
         return results
 
 
-def make_sketch(theta, beta=0.5, screen_y_scale=1.e7,
+def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, rotation=0.*u.deg,
                 tels=slice(0, 1), scatters=slice(0, None),
-                screens=True, direct=True, velocity=True, scales=False,
+                screens=True, direct=None, velocity=True, scales=False,
                 ax=None):
     """Draw a schematic of the thin-screen model of for scintillation.
 
@@ -130,6 +130,8 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7,
         to Earch, ``1 - d_lens / d_psr``. Default: 0.5
     screen_y_scale : float, optional
         Vertical magnification factor of scattering screen. Default: 1.e7
+    rotation : `~astropy.units.Quantity`, optional
+        Angle to rotate entire sketch. Default: 0. deg
     tels : slice, optional
         Slice object to select which telescopes to draw and use.
     scatters : slice, optinal
@@ -137,7 +139,8 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7,
     screens : bool, optional
         Whether or not to draw the scintillation screen.
     direct : bool, optional
-        Whether or not to draw direct line-or-sight beam.
+        Whether or not to draw direct line-or-sight beam.  Default:
+        infer from whether theta includes 0.
     velocity : bool, optional
         Whether or not to include an arrow to indicate the pulsar's motion.
     scales : bool, optional
@@ -155,59 +158,74 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7,
         tel = Telescope(angle=(180.*u.deg-location))
         xf, yf = tel.foot()
         tel_pos += [offset(rotate(scale(offset(tel(), (-xf, -yf)), tel_size),
-                                  location-90.*u.deg),
-                           rotate((1., 0.), location))]
+                                  rotation + location - 90.*u.deg),
+                           rotate((1., 0.), rotation + location))]
 
     # Pulsar
     ns = NeutronStar()
+    ns_x = -44.
     ns_size = 0.3
-    ns_offset = (-44., 0.)
-    ns_pos = offset(rotate(scale(ns(), ns_size), 60.*u.degree), ns_offset)
+    ns_offset = rotate((ns_x, 0.), rotation)
+    ns_pos = offset(rotate(scale(ns(), ns_size), rotation + 60.*u.degree),
+                    ns_offset)
     arrow_size = 1.5
     ns_vel = offset(rotate(offset(arrow(arrow_size), (0., 1.4)),
-                           225.*u.degree), ns_offset)
+                           rotation + 225.*u.degree), ns_offset)
+
+    # Scattering points
+    if direct is None:
+        direct = 0. in theta
 
     if direct:
         # Remove direct line of sight from input angles.
         # TODO: not strictly the same if the telescope is not at y=0!
         theta = theta[theta != 0]
-    screen_x = (1. - beta) * ns_offset[0]
-    screen_y = screen_x * np.tan(theta) * screen_y_scale
-    shortening = np.array([0.025, 0.5, 0.992])
+    lens_x = (1. - beta) * ns_x
+    lens_y = lens_x * np.tan(theta).value * screen_y_scale
+    lens_pos = []
+    for l_y in lens_y:
+        lens_pos += [rotate([lens_x, l_y], rotation)]
+
+    # Direct lines from pulsar to telescopes
+    shortening = np.array([0.025, beta, 0.992])
     tel_centers = [(t[2][0], t[3][0]) for t in tel_pos]
     p2t_pos = []
 
-    # Lines from screen to telescopes
     for tel_x, tel_y in tel_centers:
         p2t_pos += [[ns_offset[0] + shortening * (tel_x - ns_offset[0]),
                      ns_offset[1] + shortening * (tel_y - ns_offset[1])]]
 
     # Lines from pulsar to screen to telescopes
     p2s2t_pos = []
-    for s_y in screen_y:
+    for lens in lens_pos:
         p2s2t = []
         for p2t in p2t_pos:
             p = tuple(p.copy() for p in p2t)
-            p[0][1] = screen_x
-            p[1][1] = s_y
-            p[1][0] = s_y * shortening[0]/shortening[1]
+            p[0][1] = lens[0]
+            p[1][1] = lens[1]
+            p[0][0] = (ns_offset[0]
+                       + shortening[0]/shortening[1]
+                       * (lens[0] - ns_offset[0]))
+            p[1][0] = (ns_offset[1]
+                       + shortening[0]/shortening[1]
+                       * (lens[1] - ns_offset[1]))
             p2s2t += [p]
         p2s2t_pos += [p2s2t]
 
     # Scattering screen
+    screen_size = 12.
     screen_pos = []
     for a, f, p in zip([0.5, 0.2, 0.3],
                        [1., 0.7, 1.6] * u.cycle,
                        [0.1, 0.4, 0.5] * u.cycle):
-        y = np.linspace(-6., 6., 361) * u.dimensionless_unscaled
-        x = screen_x + a * np.cos(f*y + p)
-        screen_pos += [x, y]
+        y = (np.linspace(-screen_size/2., screen_size/2., 361)
+             * u.dimensionless_unscaled)
+        x = lens_x + a * np.cos(f*y + p)
+        screen_pos += rotate([x, y], rotation)
 
     if ax is None:
         ax = plt.gca()
     ax.axison = False
-    ax.set_xlim(-46, 2)
-    ax.set_ylim(-6., 6.)
     ax.set_aspect('equal')
 
     # Draw Earth and its telescopes
@@ -225,7 +243,7 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7,
         ax.plot(*(_v.value for _t in tel_pos[tels] for _v in _t),
                 color='black')
 
-    # Draw direct line-of-sight beam
+    # Draw direct line-of-sight beams
     if direct:
         ax.plot(*(_v.value for p2t in p2t_pos[tels] for _v in p2t),
                 linestyle='dashed', color='black')
@@ -239,27 +257,35 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7,
 
     # Draw physical scale bars
     if scales:
-        earth_bar = offset(rotate(bar(2.), 90.*u.degree), (1.3, 0.))
+        earth_bar = offset(rotate(bar(2.), rotation + 90.*u.degree),
+                           rotate((1.3, 0.), rotation))
         ax.plot(*(_v.value for _v in earth_bar), color='black')
-        ax.annotate(xy=(1.5, 0.), text='12000 km',
-                    verticalalignment='center')
-        off_x = ns_offset[0] - ns_size * 5
-        ns_bar = offset(rotate(bar(ns_size * 2), 90.*u.degree),
-                        (off_x, 0.))
-        ax.plot(*(_v.value for _v in ns_bar), color='black')
-        ax.annotate(xy=(off_x - 0.3, 0.), text='~20 km',
+        ax.annotate(xy=rotate((1.5, 0.), rotation), text='12000 km',
                     verticalalignment='center',
-                    horizontalalignment='right')
-        screen_bar = offset(rotate(bar(11.8, head_length=1.5),
-                                   90*u.degree), (screen_x + 0.7, -0.5))
+                    rotation=rotation.to(u.deg).value, rotation_mode='anchor')
+        off_x = ns_x - ns_size * 5
+        ns_bar = offset(rotate(bar(ns_size * 2), rotation + 90.*u.degree),
+                        rotate((off_x, 0.), rotation))
+        ax.plot(*(_v.value for _v in ns_bar), color='black')
+        ax.annotate(xy=rotate((off_x - 0.3, 0.), rotation), text='~20 km',
+                    verticalalignment='center',
+                    horizontalalignment='right',
+                    rotation=rotation.to(u.deg).value, rotation_mode='anchor')
+        screen_bar = offset(rotate(bar(screen_size-0.2, head_length=1.5),
+                                   rotation + 90*u.degree),
+                            rotate((lens_x + 0.7, 0.), rotation))
         ax.plot(*(_v.value for _v in screen_bar), color='black')
-        ax.annotate(xy=(screen_x + 1., -6.), text='~10 AU',
-                    verticalalignment='center')
-        distance_bar = offset(bar(-ns_offset[0], head_length=7.),
-                              (ns_offset[0] / 2., -5.))
+        ax.annotate(xy=rotate((lens_x + 1., -screen_size/2), rotation),
+                    text='~10 AU',
+                    verticalalignment='center',
+                    rotation=rotation.to(u.deg).value, rotation_mode='anchor')
+        distance_bar = offset(rotate(bar(-ns_x, head_length=7.),
+                                     rotation),
+                              rotate((ns_x / 2., -5.), rotation))
         ax.plot(*(_v for _v in distance_bar), color='black')
-        ax.annotate(xy=(ns_offset[0] / 3., -5.), text='~1 kpc',
-                    verticalalignment='center')
+        ax.annotate(xy=rotate((ns_x / 3., -5.), rotation), text='~1 kpc',
+                    verticalalignment='center',
+                    rotation=rotation.to(u.deg).value, rotation_mode='anchor')
 
     return ax
 
@@ -272,17 +298,15 @@ if __name__ == '__main__':
         filename = sys.argv[1]
         figures = sys.argv[2:]
 
-    if figures == '9' or figures == ['9']:
-        beta = 1. - 1. / 1.1
-        theta = [0.05743676, -0.05743676, -0.14399642, 0.10461666] << u.rad
-    else:
+    for figure in figures:
+
+        # defaults
         beta = 1. - 1. / 1.7
         theta = [0.08863083, -0.08863083, -0.22044899, 0.16087047] << u.rad
-
-    for figure in figures:
-        # defaults
         screens, direct, velocity, scales = True, True, False, False
+
         plt.figure(figsize=(12., 3.))
+
         if figure == '1':
             # Just one telescope with a direct line of sight.
             tels = slice(0, 1)
@@ -305,6 +329,8 @@ if __name__ == '__main__':
             direct = False
             velocity = True
         elif figure == '9':
+            beta = 1. - 1. / 1.1
+            theta = [0.05743676, -0.05743676, -0.14399642, 0.10461666] << u.rad
             tels = slice(0, 1)
             scatters = slice(1, None)
         else:
@@ -312,9 +338,8 @@ if __name__ == '__main__':
             scatters = slice(1, None)
             scales = True
 
-        make_sketch(theta, beta, 1., tels, scatters,
-                    screens, direct, velocity, scales,
-                    ax=None)
+        make_sketch(theta, beta, 1., 0.*u.deg, tels, scatters,
+                    screens, direct, velocity, scales)
 
         if filename:
             plt.savefig(filename.format(figure))
