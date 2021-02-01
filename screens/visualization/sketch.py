@@ -1,3 +1,14 @@
+# Licensed under the GPLv3 - see LICENSE
+"""Sketch the scattering screen geometry.
+
+Use interactively with,
+plt.ion()
+run -i visualization/sketch.py <fig no>
+
+Or create multiple figure files with
+
+python3 visualization/sketch.py 'fig{}.png' 1 2 3
+"""
 import sys
 import astropy.units as u
 import numpy as np
@@ -104,16 +115,38 @@ class NeutronStar(object):
         return results
 
 
-if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        figures = [None] if len(sys.argv) <= 1 else sys.argv[1]
-        filename = None
-        plt.ion()
-    else:
-        filename = sys.argv[1]
-        figures = sys.argv[2:]
-        plt.ioff()
+def make_sketch(theta, beta=0.5, screen_y_scale=1.e7,
+                tels=slice(0, 1), scatters=slice(0, None),
+                screens=True, direct=True, velocity=True, scales=False,
+                ax=None):
+    """Draw a schematic of the thin-screen model of for scintillation.
 
+    Parameters
+    ----------
+    theta : `~astropy.units.Quantity`
+        Angles of the scattering images from the core image.
+    beta : float, optional
+        Fractional distance of scattering screen, measured from the pulsar
+        to Earch, ``1 - d_lens / d_psr``. Default: 0.5
+    screen_y_scale : float, optional
+        Vertical magnification factor of scattering screen. Default: 1.e7
+    tels : slice, optional
+        Slice object to select which telescopes to draw and use.
+    scatters : slice, optinal
+        Slice object to select which scattering points to draw and use.
+    screens : bool, optional
+        Whether or not to draw the scintillation screen.
+    direct : bool, optional
+        Whether or not to draw direct line-or-sight beam.
+    velocity : bool, optional
+        Whether or not to include an arrow to indicate the pulsar's motion.
+    scales : bool, optional
+        Whether or not to include scale bars indicating physical sizes.
+    ax : `~matplotlib.axes.Axes`, optional
+        The Axes object in which to draw the sketch.
+    """
+
+    # Earth and telescopes
     earth_pos = circle()
     locations = [170., 100., 250.] * u.degree
     tel_size = 0.5
@@ -125,6 +158,7 @@ if __name__ == '__main__':
                                   location-90.*u.deg),
                            rotate((1., 0.), location))]
 
+    # Pulsar
     ns = NeutronStar()
     ns_size = 0.3
     ns_offset = (-44., 0.)
@@ -133,19 +167,22 @@ if __name__ == '__main__':
     ns_vel = offset(rotate(offset(arrow(arrow_size), (0., 1.4)),
                            225.*u.degree), ns_offset)
 
-    if figures == '9' or figures == ['9']:
-        screen_x = ns_offset[0] / 1.1
-    else:
-        screen_x = ns_offset[0] / 1.7
-    screen_y = [2.3, -2.3, -5.8, 4.2]
+    if direct:
+        # Remove direct line of sight from input angles.
+        # TODO: not strictly the same if the telescope is not at y=0!
+        theta = theta[theta != 0]
+    screen_x = (1. - beta) * ns_offset[0]
+    screen_y = screen_x * np.tan(theta) * screen_y_scale
     shortening = np.array([0.025, 0.5, 0.992])
     tel_centers = [(t[2][0], t[3][0]) for t in tel_pos]
     p2t_pos = []
 
+    # Lines from screen to telescopes
     for tel_x, tel_y in tel_centers:
         p2t_pos += [[ns_offset[0] + shortening * (tel_x - ns_offset[0]),
                      ns_offset[1] + shortening * (tel_y - ns_offset[1])]]
 
+    # Lines from pulsar to screen to telescopes
     p2s2t_pos = []
     for s_y in screen_y:
         p2s2t = []
@@ -157,26 +194,100 @@ if __name__ == '__main__':
             p2s2t += [p]
         p2s2t_pos += [p2s2t]
 
+    # Scattering screen
     screen_pos = []
     for a, f, p in zip([0.5, 0.2, 0.3],
                        [1., 0.7, 1.6] * u.cycle,
                        [0.1, 0.4, 0.5] * u.cycle):
-        y = np.linspace(-6.5, 5.5, 361) * u.dimensionless_unscaled
+        y = np.linspace(-6., 6., 361) * u.dimensionless_unscaled
         x = screen_x + a * np.cos(f*y + p)
         screen_pos += [x, y]
+
+    if ax is None:
+        ax = plt.gca()
+    ax.axison = False
+    ax.set_xlim(-46, 2)
+    ax.set_ylim(-6., 6.)
+    ax.set_aspect('equal')
+
+    # Draw Earth and its telescopes
+    ax.plot(*(_v.value for _v in earth_pos), color='blue')
+
+    # Draw Pulsar
+    ax.plot(*(_v.value for _v in ns_pos), color='black')
+
+    # Draw pulsar's velocity arrow
+    if velocity:
+        ax.plot(*(_v.value for _v in ns_vel), color='black')
+
+    # Draw telescopes
+    if tels:
+        ax.plot(*(_v.value for _t in tel_pos[tels] for _v in _t),
+                color='black')
+
+    # Draw direct line-of-sight beam
+    if direct:
+        ax.plot(*(_v.value for p2t in p2t_pos[tels] for _v in p2t),
+                linestyle='dashed', color='black')
+
+    # Draw scattering screen and scattered beams
+    if screens:
+        ax.plot(*(_v.value for _v in screen_pos), color='grey')
+        ax.plot(*(_v.value for p2s2t in p2s2t_pos[scatters]
+                  for _p in p2s2t[tels] for _v in _p),
+                linestyle='dotted', color='black')
+
+    # Draw physical scale bars
+    if scales:
+        earth_bar = offset(rotate(bar(2.), 90.*u.degree), (1.3, 0.))
+        ax.plot(*(_v.value for _v in earth_bar), color='black')
+        ax.annotate(xy=(1.5, 0.), text='12000 km',
+                    verticalalignment='center')
+        off_x = ns_offset[0] - ns_size * 5
+        ns_bar = offset(rotate(bar(ns_size * 2), 90.*u.degree),
+                        (off_x, 0.))
+        ax.plot(*(_v.value for _v in ns_bar), color='black')
+        ax.annotate(xy=(off_x - 0.3, 0.), text='~20 km',
+                    verticalalignment='center',
+                    horizontalalignment='right')
+        screen_bar = offset(rotate(bar(11.8, head_length=1.5),
+                                   90*u.degree), (screen_x + 0.7, -0.5))
+        ax.plot(*(_v.value for _v in screen_bar), color='black')
+        ax.annotate(xy=(screen_x + 1., -6.), text='~10 AU',
+                    verticalalignment='center')
+        distance_bar = offset(bar(-ns_offset[0], head_length=7.),
+                              (ns_offset[0] / 2., -5.))
+        ax.plot(*(_v for _v in distance_bar), color='black')
+        ax.annotate(xy=(ns_offset[0] / 3., -5.), text='~1 kpc',
+                    verticalalignment='center')
+
+    return ax
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 3:
+        figures = [None] if len(sys.argv) <= 1 else sys.argv[1]
+        filename = None
+    else:
+        filename = sys.argv[1]
+        figures = sys.argv[2:]
+
+    if figures == '9' or figures == ['9']:
+        beta = 1. - 1. / 1.1
+        theta = [0.05743676, -0.05743676, -0.14399642, 0.10461666] << u.rad
+    else:
+        beta = 1. - 1. / 1.7
+        theta = [0.08863083, -0.08863083, -0.22044899, 0.16087047] << u.rad
 
     for figure in figures:
         # defaults
         screens, direct, velocity, scales = True, True, False, False
-        plt.clf()
         plt.figure(figsize=(12., 3.))
-        plt.gca().axison = False
-        plt.xlim(-46, 2)
-        plt.ylim(-6.5, 5.5)
         if figure == '1':
             # Just one telescope with a direct line of sight.
             tels = slice(0, 1)
-            screens = None
+            scatters = slice(0)
+            screens = False
         elif figure == '2':
             # One telescope with a scattering screen.
             tels = slice(0, 1)
@@ -201,46 +312,12 @@ if __name__ == '__main__':
             scatters = slice(1, None)
             scales = True
 
-        plt.plot(*(_v.value for _v in earth_pos), color='blue')
-        plt.plot(*(_v.value for _v in ns_pos), color='black')
-        if velocity:
-            plt.plot(*(_v.value for _v in ns_vel), color='black')
-
-        if tels:
-            plt.plot(*(_v.value for _t in tel_pos[tels] for _v in _t),
-                     color='black')
-        if direct:
-            plt.plot(*(_v.value for p2t in p2t_pos[tels] for _v in p2t),
-                     linestyle='dashed', color='black')
-        if screens:
-            plt.plot(*(_v.value for _v in screen_pos), color='grey')
-            plt.plot(*(_v.value for p2s2t in p2s2t_pos[scatters]
-                       for _p in p2s2t[tels] for _v in _p),
-                     linestyle='dotted', color='black')
-        if scales:
-            earth_bar = offset(rotate(bar(2.), 90.*u.degree), (1.3, 0.))
-            plt.plot(*(_v.value for _v in earth_bar), color='black')
-            plt.annotate(xy=(1.5, 0.), s='12000 km',
-                         verticalalignment='center')
-            off_x = ns_offset[0] - ns_size * 5
-            ns_bar = offset(rotate(bar(ns_size * 2), 90.*u.degree),
-                            (off_x, 0.))
-            plt.plot(*(_v.value for _v in ns_bar), color='black')
-            plt.annotate(xy=(off_x - 0.3, 0.), s='~20 km',
-                         verticalalignment='center',
-                         horizontalalignment='right')
-            screen_bar = offset(rotate(bar(11.8, head_length=1.5),
-                                       90*u.degree), (screen_x + 0.7, -0.5))
-            plt.plot(*(_v.value for _v in screen_bar), color='black')
-            plt.annotate(xy=(screen_x + 1., -6.), s='~10 AU',
-                         verticalalignment='center')
-            distance_bar = offset(bar(-ns_offset[0], head_length=7.),
-                                  (ns_offset[0] / 2., -5.))
-            plt.plot(*(_v for _v in distance_bar), color='black')
-            plt.annotate(xy=(ns_offset[0] / 3., -5.), s='~1 kpc',
-                         verticalalignment='center')
+        make_sketch(theta, beta, 1., tels, scatters,
+                    screens, direct, velocity, scales,
+                    ax=None)
 
         if filename:
             plt.savefig(filename.format(figure))
+            plt.clf()
         else:
             plt.draw()
