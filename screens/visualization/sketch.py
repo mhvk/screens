@@ -1,3 +1,14 @@
+# Licensed under the GPLv3 - see LICENSE
+"""Sketch the scattering screen geometry.
+
+Use interactively with,
+plt.ion()
+run -i visualization/sketch.py <fig no>
+
+Or create multiple figure files with
+
+python3 visualization/sketch.py 'fig{}.png' 1 2 3
+"""
 import sys
 import astropy.units as u
 import numpy as np
@@ -157,6 +168,8 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7,
                            225.*u.degree), ns_offset)
 
     if direct:
+        # Remove direct line of sight from input angles.
+        # TODO: not strictly the same if the telescope is not at y=0!
         theta = theta[theta != 0]
     screen_x = (1. - beta) * ns_offset[0]
     screen_y = screen_x * np.tan(theta) * screen_y_scale
@@ -255,11 +268,9 @@ if __name__ == '__main__':
     if len(sys.argv) < 3:
         figures = [None] if len(sys.argv) <= 1 else sys.argv[1]
         filename = None
-        plt.ion()
     else:
         filename = sys.argv[1]
         figures = sys.argv[2:]
-        plt.ioff()
 
     if figures == '9' or figures == ['9']:
         beta = 1. - 1. / 1.1
