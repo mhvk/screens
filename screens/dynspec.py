@@ -42,7 +42,7 @@ class DynamicSpectrum:
         the dynamic spectrum.
     """
 
-    def __init__(self, dynspec, f, t, noise, d_eff, mu_eff=None,
+    def __init__(self, dynspec, f, t, noise=None, d_eff=None, mu_eff=None,
                  theta=None, magnification=None):
         self.dynspec = dynspec
         self.f = f
