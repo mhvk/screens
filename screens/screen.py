@@ -90,3 +90,34 @@ class Screen(ShapedLikeNDArray):
         new.source = source
         new.distance = distance
         return new
+
+
+class Screen1D(Screen):
+    """One-dimensional screen.
+
+    The assumption is that all scattering points are essentially on a line.
+    """
+    _shaped_attrs = ('pos', 'vel', 'magnification', 'normal')
+
+    def __init__(self, pos, normal, v_normal=0, magnification=1.,
+                 source=None, distance=None):
+        super().__init__(pos, vel=normal*v_normal, magnification=magnification,
+                         source=source, distance=distance)
+        self.normal = normal
+
+    @lazyproperty
+    def paths(self):
+        source = self.source
+        distance = self.distance
+        if source is None:
+            return (np.broadcast_to(self.magnification, self.shape),
+                    np.broadcast_to(0*u.us, self.shape),
+                    np.broadcast_to(0*u.us/u.s, self.shape))
+        # OK for single screen, but not for two...
+        rel_pos = (source.pos - self.pos).dot(self.normal)
+        rel_vel = (source.vel - self.vel).dot(self.normal)
+        theta = rel_pos / distance
+        tau = source.tau + distance / const.c * 0.5 * theta**2
+        taudot = source.taudot + theta * rel_vel / const.c
+        brightness = source.brightness * self.magnification
+        return brightness, tau, taudot
