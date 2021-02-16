@@ -29,26 +29,26 @@ class TestPhasor:
 
     @pytest.mark.parametrize('linear_axis', (None, -2))
     def test_ft_t(self, linear_axis):
-        expected = np.fft.fft(self.dw, axis=0)
+        expected = np.fft.ifft(self.dw, axis=0)
         # Regular FT is always relative to start of array.
         t = self.t - self.t[0]
         phs = phasor(t, self.fd[:, np.newaxis, np.newaxis],
                      linear_axis=linear_axis)
-        result = (self.dw*phs).sum(1)
+        result = np.mean(self.dw*phs, axis=1)
         assert_allclose(result, expected, atol=1e-8, rtol=0)
 
     @pytest.mark.parametrize('linear_axis', (None, -1))
     def test_ft_f(self, linear_axis):
-        expected = np.fft.fft(self.dw, axis=1)
+        expected = np.fft.ifft(self.dw, axis=1)
         # Regular FT is always relative to start of array.
         f = self.f - self.f[0]
         phs = phasor(f, self.tau[:, np.newaxis, np.newaxis],
                      linear_axis=linear_axis)
-        result = (self.dw*phs).sum(-1).T
+        result = np.mean(self.dw*phs, axis=-1).T
         assert_allclose(result, expected, atol=1e-8, rtol=0)
 
     def test_ft(self):
-        expected = np.fft.fft2(self.dw)
+        expected = np.fft.ifft2(self.dw)
         # Regular FT always has phase relative to start of array.
         t = self.t - self.t[0]
         f = self.f - self.f[0]
@@ -56,5 +56,5 @@ class TestPhasor:
                        linear_axis=-2)
         phs_f = phasor(f, self.tau[:, np.newaxis, np.newaxis],
                        linear_axis=-1)
-        result = (self.dw*phs_t*phs_f).sum((-2, -1))
+        result = np.mean(self.dw*phs_t*phs_f, axis=(-2, -1))
         assert_allclose(result, expected, atol=1e-8, rtol=0)

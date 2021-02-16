@@ -16,11 +16,11 @@ def expand(*arrays, n=2):
 def phasor(indep, transform, linear_axis=None):
     """Calculate phase part of a Fourier transform like operation.
 
-    Simply calcated ``exp(-j*indep*transform)``, where generally the two
+    Simply calcated ``exp(j*indep*transform)``, where generally the two
     inputs will be on different dimensions, so that they broadcast against
     each other.  If the independent variable spans a linearly spaced range,
     one can use ``linear_axis`` to speed up the calculation by only calculating
-    ``exp(-j*indep[0]*transform)`` and ``exp(-j*(indep[1]-indep[0])*tranform)``
+    ``exp(j*indep[0]*transform)`` and ``exp(j*(indep[1]-indep[0])*tranform)``
     and filling the array by cumulative multiplication.
 
     Parameters
@@ -37,7 +37,7 @@ def phasor(indep, transform, linear_axis=None):
         matter for most purposes.
     """
     if linear_axis is None:
-        phasor = -1j * (indep * transform * u.cycle).to_value(u.rad)
+        phasor = 1j * (indep * transform * u.cycle).to_value(u.rad)
         phasor = np.exp(phasor, out=phasor)
     else:
         if linear_axis > 0:
@@ -50,8 +50,8 @@ def phasor(indep, transform, linear_axis=None):
         dph = (np.diff(indep[ph01_index], axis=linear_axis)
                * transform * u.cycle).to_value(u.rad)
         phasor = np.empty(np.broadcast(indep, transform).shape, complex)
-        phasor[ph0_index] = np.exp(-1j * ph0)
-        phasor[dph0_index] = np.exp(-1j * dph)
+        phasor[ph0_index] = np.exp(1j * ph0)
+        phasor[dph0_index] = np.exp(1j * dph)
         phasor = np.cumprod(phasor, out=phasor, axis=linear_axis)
 
     return phasor
