@@ -7,6 +7,7 @@ from astropy.utils.shapes import ShapedLikeNDArray
 from astropy.utils.decorators import lazyproperty
 
 
+ZERO_POSITION = CartesianRepresentation(0., 0., 0., unit=u.AU)
 ZERO_VELOCITY = CartesianRepresentation(0., 0., 0., unit=u.km/u.s)
 
 
@@ -24,7 +25,7 @@ class Screen(ShapedLikeNDArray):
     """
     _shaped_attrs = ('pos', 'vel', 'magnification')
 
-    def __init__(self, pos, vel=ZERO_VELOCITY, magnification=1.,
+    def __init__(self, pos=ZERO_POSITION, vel=ZERO_VELOCITY, magnification=1.,
                  source=None, distance=None):
         self.pos = pos
         self.vel = vel
@@ -99,9 +100,9 @@ class Screen1D(Screen):
     """
     _shaped_attrs = ('pos', 'vel', 'magnification', 'normal')
 
-    def __init__(self, pos, normal, v_normal=0, magnification=1.,
+    def __init__(self, normal, p=0, v=0, magnification=1.,
                  source=None, distance=None):
-        super().__init__(pos, vel=normal*v_normal, magnification=magnification,
+        super().__init__(pos=normal*p, vel=normal*v, magnification=magnification,
                          source=source, distance=distance)
         self.normal = normal
 
