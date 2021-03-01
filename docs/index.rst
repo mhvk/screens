@@ -1,5 +1,13 @@
 .. include:: ../README.rst
 
+Background
+==========
+
+.. toctree::
+   :maxdepth: 1
+
+   background/multiple_screens
+
 Tutorials
 =========
 
