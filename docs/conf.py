@@ -43,6 +43,22 @@ conf = ConfigParser()
 conf.read([os.path.join(os.path.dirname(__file__), '..', 'setup.cfg')])
 setup_cfg = dict(conf.items('metadata'))
 
+
+# -- Plot options (adapted from Astropy docs/conf.py) -------------------------
+
+plot_rcparams = {}
+plot_rcparams['savefig.facecolor'] = 'none'
+plot_rcparams['savefig.bbox'] = 'tight'
+plot_rcparams['font.size'] = 12
+plot_apply_rcparams = True
+
+plot_html_show_source_link = False
+plot_html_show_formats = False
+plot_formats = ['png']
+# Don't use the default - which includes a numpy and matplotlib import
+plot_pre_code = ""
+
+
 # -- General configuration ----------------------------------------------------
 
 # By default, highlight as Python 3.
