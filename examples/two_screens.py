@@ -1,3 +1,16 @@
+# Licensed under the GPLv3 - see LICENSE
+"""Simulate scintillation through two screens.
+
+The setup is somewhat similar to what is seen in the Brisken data,
+with one screen that has a lot of images, and another that has only
+one.
+
+The geometry of the paths is shown, as well as inferred dynamic and
+secondary spectra.
+
+.. warning:: Usage quite likely to change.
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as u
@@ -5,14 +18,13 @@ from astropy.coordinates import (
     CartesianRepresentation, CylindricalRepresentation,
     UnitSphericalRepresentation)
 
-from screens.screen import Screen, Screen1D
+from screens.screen import Screen, Screen1D, ZHAT
 from screens.fields import phasor
 
 
 dp = 0.75*u.kpc
 d2 = 0.50*u.kpc
 d1 = 0.25*u.kpc
-zhat = CartesianRepresentation(0, 0, 1)
 
 
 pulsar = Screen(CartesianRepresentation([0., 0., 0.]*u.AU),
@@ -35,11 +47,15 @@ def axis_extent(x):
     return x[0]-0.5*dx, x[-1]+0.5*dx
 
 
+def unit_vector(c):
+    return c.represent_as(UnitSphericalRepresentation).to_cartesian()
+
+
 def plot_screen(ax, s, d, color='black', **kwargs):
     d = d.to_value(u.kpc)
     x = np.array(ax.get_xlim3d())
     y = np.array(ax.get_ylim3d())[:, np.newaxis]
-    ax.plot_surface([-2.1, 2.1], [[-2.1], [2.1]], d*np.ones((2, 2)),
+    ax.plot_surface([[-2.1, 2.1]]*2, [[-2.1]*2, [2.1]*2], d*np.ones((2, 2)),
                     alpha=0.1, color=color)
     x = ax.get_xticks()
     y = ax.get_yticks()[:, np.newaxis]
@@ -50,9 +66,10 @@ def plot_screen(ax, s, d, color='black', **kwargs):
                d, c=color, marker='+')
     if spos.shape:
         for pos in spos:
-            ax.plot([0, pos.x.to_value(u.AU)], [0, pos.y.to_value(u.AU)],
+            zo = np.arange(2)
+            ax.plot(pos.x.to_value(u.AU)*zo, pos.y.to_value(u.AU)*zo,
                     np.ones(2) * d, c=color, linestyle=':')
-            upos = pos + (zhat.cross(pos/pos.norm())
+            upos = pos + (ZHAT.cross(unit_vector(pos))
                           * ([-1.5, 1.5] * u.AU))
             ax.plot(upos.x.to_value(u.AU), upos.y.to_value(u.AU),
                     np.ones(2) * d, c=color, linestyle='-')
@@ -63,12 +80,8 @@ def plot_screen(ax, s, d, color='black', **kwargs):
                   arrow_length_ratio=0.05)
 
 
-def unit_vector(c):
-    return c.represent_as(UnitSphericalRepresentation).to_cartesian()
-
-
 if __name__ == '__main__':
-    print_check = True
+    print_check = False
 
     fig = plt.figure()
     fig.tight_layout()
@@ -91,7 +104,7 @@ if __name__ == '__main__':
     obs1 = telescope.observe(
         s1.observe(pulsar, distance=dp-d1),
         distance=d1)
-    path_shape = obs1.tau.shape  # Also trigger calculation
+    path_shape = obs1.tau.shape  # Also trigger calculation of pos, vel.
     tpos = obs1.pos
     scat1 = obs1.source.pos
     ppos = obs1.source.source.pos
@@ -113,7 +126,7 @@ if __name__ == '__main__':
             s2.observe(pulsar, distance=dp-d2),
             distance=d2-d1),
         distance=d1)
-    path_shape = obs2.tau.shape  # Also trigger calculation
+    path_shape = obs2.tau.shape  # Also trigger calculation of pos, vel.
     tpos = obs2.pos
     scat1 = obs2.source.pos
     scat2 = obs2.source.source.pos
@@ -132,17 +145,17 @@ if __name__ == '__main__':
         ax.scatter(_x[1:3], _y[1:3], _z[1:3], marker='o',
                    color=['red', 'orange'])
     if print_check:
-        ds1t = (zhat + (scat1-tpos)/d1).ravel()
-        ds21 = (zhat + (scat2-scat1)/(d2-d1)).ravel()
-        dps2 = (zhat + (ppos-scat2)/(dp-d2)).ravel()
-        uthat = zhat.cross(tpos/tpos.norm()).ravel()
+        ds1t = (ZHAT + (scat1-tpos)/d1).ravel()
+        ds21 = (ZHAT + (scat2-scat1)/(d2-d1)).ravel()
+        dps2 = (ZHAT + (ppos-scat2)/(dp-d2)).ravel()
+        uthat = ZHAT.cross(tpos/tpos.norm()).ravel()
         r1hat = obs2.source.normal
-        u1hat = zhat.cross(r1hat)
+        u1hat = ZHAT.cross(r1hat)
         r2hat = obs2.source.source.normal
-        u2hat = zhat.cross(r2hat)
+        u2hat = ZHAT.cross(r2hat)
         print("ς₀={!s}, α₀={!s} (asin(cross)={})".format(
             obs2.sigma, obs2.alpha, np.arcsin(
-                (ds1t.cross(zhat) / ds1t.norm()).dot(uthat)).to(
+                (ds1t.cross(ZHAT) / ds1t.norm()).dot(uthat)).to(
                     obs2.alpha.unit, u.dimensionless_angles())))
         print("ς₁={!s}, α₁={!s} (asin(cross)={})".format(
             obs2.source.sigma, obs2.source.alpha, np.arcsin(
@@ -161,6 +174,7 @@ if __name__ == '__main__':
         assert np.allclose(ds1t.dot(u1hat), ds21.dot(u1hat))
         assert np.allclose(ds21.dot(u2hat), dps2.dot(u2hat))
 
+    # Create dynamic spectrum using delay for each path.
     tau0 = np.hstack([obs1.tau.ravel(), obs2.tau.ravel()])
     taudot = np.hstack([obs1.taudot.ravel(), obs2.taudot.ravel()])
     brightness = np.hstack([
@@ -172,18 +186,20 @@ if __name__ == '__main__':
            + taudot[:, np.newaxis, np.newaxis] * t)
     ph = phasor(f, tau)
     dw = ph * brightness[:, np.newaxis, np.newaxis]
+    # Calculate and show dynamic spectrum.
     ds = np.abs(dw.sum(0))**2
-    ss = np.fft.fft2(ds)
-    ss /= ss[0, 0]
-    ss = np.fft.fftshift(ss)
-    tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0])).to(u.us)
-    fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0])).to(u.mHz)
     ax_ds = plt.subplot(233)
     ax_ds.imshow(ds.T, cmap='Greys',
                  extent=axis_extent(t) + axis_extent(f),
                  origin='lower', interpolation='none', aspect='auto')
     ax_ds.set_xlabel(t.unit.to_string('latex'))
     ax_ds.set_ylabel(f.unit.to_string('latex'))
+    # And the conjugate spectrum.
+    ss = np.fft.fft2(ds)
+    ss /= ss[0, 0]
+    ss = np.fft.fftshift(ss)
+    tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0])).to(u.us)
+    fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0])).to(u.mHz)
     ax_ss = plt.subplot(236)
     ax_ss.imshow(np.log10(np.abs(ss.T)**2), vmin=-7, vmax=0, cmap='Greys',
                  extent=axis_extent(fd) + axis_extent(tau),
@@ -192,3 +208,5 @@ if __name__ == '__main__':
     ax_ss.set_ylim(-10, 10)
     ax_ss.set_xlabel(fd.unit.to_string('latex'))
     ax_ss.set_ylabel(tau.unit.to_string('latex'))
+
+    plt.show()
