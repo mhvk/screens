@@ -31,7 +31,7 @@ class Screen(ShapedLikeNDArray):
                  source=None, distance=None):
         self.pos = pos
         self.vel = vel
-        self.magnification = magnification
+        self.magnification = np.asanyarray(magnification)
         self.source = source
         self.distance = distance
 
@@ -79,9 +79,7 @@ class Screen(ShapedLikeNDArray):
         source = self.source
         distance = self.distance
         if source is None:
-            return (np.broadcast_to(self.magnification, self.shape),
-                    np.broadcast_to(0*u.us, self.shape),
-                    np.broadcast_to(0*u.us/u.s, self.shape))
+            return self.magnification, 0*u.us, 0*u.us/u.s
 
         rel_pos, rel_vel = source._rel_posvel(self)
         rel_xy = rel_pos.get_xyz(xyz_axis=-1)[..., :2]
@@ -125,24 +123,26 @@ class Screen1D(Screen):
         # Setup arrays.
         sources = [other]
         distances = [0*other.distance, other.distance]
+        rs = [other.pos]
+        vs = [other.vel]
         rhats = [unit_vector(other.pos)]
-        rs = [other.pos.norm()]
-        vs = [other.vel.norm()]
         source = self
         while isinstance(source, Screen1D):
             sources.append(source)
             distances.append(source.distance)
+            rs.append(source.p * source.normal)
+            vs.append(source.v * source.normal)
             rhats.append(source.normal)
-            rs.append(source.p)
-            vs.append(source.v)
             source = source.source
         assert isinstance(source, Screen)
         sources.append(source)
+        rs.append(source.pos)
+        vs.append(source.vel)
         rhats.append(unit_vector(source.pos))
-        rs.append(source.pos.norm())
-        vs.append(source.vel.norm())
+
         distances = u.Quantity(distances).cumsum()
         uhats = [ZHAT.cross(rhat) for rhat in rhats]
+
         n = len(sources)-1
         A = np.zeros((n*2, n*2))
         for i, (rhat, uhat, distance) in enumerate(
@@ -166,10 +166,10 @@ class Screen1D(Screen):
         Bvel = np.zeros((n*2,) + vel_shape) << (u.km/u.s/u.kpc)
         for i, (r, v, rhat, distance) in enumerate(
                 zip(rs[1:], vs[1:], rhats[1:], distances[1:])):
-            theta = (r * rhat - other.pos) / distance
+            theta = (r - other.pos) / distance
             Bpos[i*2] = theta.x
             Bpos[i*2+1] = theta.y
-            mu = (v * rhat - other.vel) / distance
+            mu = (v - other.vel) / distance
             Bvel[i*2] = mu.x
             Bvel[i*2+1] = mu.y
 

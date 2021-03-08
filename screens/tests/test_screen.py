@@ -71,7 +71,7 @@ class TestLinearScreen:
         self.telescope = Screen(CartesianRepresentation(0, 0, 0, unit='m'),
                                 CartesianRepresentation(0, 0, 0, unit='km/s'))
 
-    @pytest.mark.parametrize('angle', [60*u.deg, 155*u.deg])
+    @pytest.mark.parametrize('angle', [60*u.deg, 135*u.deg])
     def test_observe_screened_pulsar(self, angle):
         d_scr = 0.5*u.kpc
         d_rel = self.d_psr - d_scr
@@ -92,6 +92,10 @@ class TestLinearScreen:
         assert u.allclose(obs.tau, tau_expected)
         taudot_expected = v_eff * theta / const.c
         assert u.allclose(obs.taudot, taudot_expected)
+
+        assert u.allclose(obs.source.sigma, 0., atol=1e-10)
+        mu_psr = -100 * u.km/u.s / self.d_psr
+        assert u.allclose(obs.source.sigma_dot, mu_psr * np.sin(angle))
 
     def test_observe_doubly_screened_pulsar_parallel(self):
         r"""Test with two linear screens which are exactly parallel.
@@ -175,7 +179,7 @@ class TestLinearScreen:
         d2 = 1.0*u.kpc
         dp = 1.5*u.kpc
         pulsar = Screen(
-            pos=CartesianRepresentation([0., 0., 0.]*u.AU),
+            pos=CartesianRepresentation([0., 1., 0.]*u.AU),
             vel=CartesianRepresentation(300., 0., 0., unit=u.km/u.s))
         telescope = Screen(CartesianRepresentation([0., 0.5, 0.]*u.AU))
         s1 = Screen1D(
