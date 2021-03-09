@@ -1,3 +1,10 @@
+# Licensed under the GPLv3 - see LICENSE
+"""
+Representations for sources, screens, and telescopes.
+
+.. warning:: experimental, i.e., API likely to change.  For an example,
+    see ``examples/two_screens.py``.
+"""
 import operator
 
 import numpy as np
@@ -8,32 +15,45 @@ from astropy.utils.shapes import ShapedLikeNDArray
 from astropy.utils.decorators import lazyproperty
 
 
+__all__ = ['Source', 'Screen', 'Telescope', 'Screen1D']
+
+
 ZERO_POSITION = CartesianRepresentation(0., 0., 0., unit=u.AU)
 ZERO_VELOCITY = CartesianRepresentation(0., 0., 0., unit=u.km/u.s)
 ZHAT = CartesianRepresentation(0., 0., 1., unit=u.one)
 
 
-class Screen(ShapedLikeNDArray):
-    """Screen passing through a source of radiation.
+class Source(ShapedLikeNDArray):
+    """Source of radiation at a given position and velocity.
 
     Parameters
     ----------
     pos : `~astropy.coordinates.CartesianRepresentation`
-        Position of the points
+        Position of the source.  Should not include the distance.
     vel : `~astropy.coordinates.CartesianRepresentation`
-        Corresponding velocities
+        Corresponding velocities.
     magnification : array-like
-        Brightness or magnification of the points.  Usually complex.
+        Brightness of the points.  Can be complex.
     """
     _shaped_attrs = ('pos', 'vel', 'magnification')
 
-    def __init__(self, pos=ZERO_POSITION, vel=ZERO_VELOCITY, magnification=1.,
-                 source=None, distance=None):
+    def __init__(self, pos=ZERO_POSITION, vel=ZERO_VELOCITY, magnification=1.):
         self.pos = pos
         self.vel = vel
         self.magnification = np.asanyarray(magnification)
-        self.source = source
-        self.distance = distance
+
+    def _repr_lines(self):
+        lines = [f"<{self.__class__.__name__}"]
+        for attr in self._shaped_attrs:
+            val = getattr(self, attr, None)
+            if val is not None:
+                lines.append(f"    {attr}={val},")
+
+        lines[-1] = lines[-1][:-1] + '>'
+        return lines
+
+    def __repr__(self):
+        return '\n'.join(self._repr_lines())
 
     @lazyproperty
     def shape(self):
@@ -52,35 +72,77 @@ class Screen(ShapedLikeNDArray):
                 value = method(value)
             setattr(new, attr, value)
 
-        new.source = self.source
-        new.distance = self.distance
         return new
 
     @property
     def brightness(self):
         """Brightness of each path."""
-        return self.paths[0]
+        return self._paths[0]
 
     @property
     def tau(self):
         """Delay for each path."""
-        return self.paths[1]
+        return self._paths[1]
 
     @property
     def taudot(self):
         """Time derivative of the delay for each path."""
-        return self.paths[2]
+        return self._paths[2]
 
     def _rel_posvel(self, other):
         return self.pos - other.pos, self.vel - other.vel
 
     @lazyproperty
-    def paths(self):
+    def _paths(self):
+        return self.magnification, 0*u.us, 0*u.us/u.s
+
+
+class Screen(Source):
+    """Screen passing through a source of radiation.
+
+    Parameters
+    ----------
+    pos : `~astropy.coordinates.CartesianRepresentation`
+        Position of the points, ignoring the distance.
+    vel : `~astropy.coordinates.CartesianRepresentation`
+        Corresponding velocities.
+    magnification : array-like
+        Magnification of the points.  Usually complex.
+    source : `~screens.screen.Source` or `~screens.screen.Screen`, optional
+        Possible source illuminating this screen.  Unless specific broadcasting
+        is required, it is recommended to use the `Screen.observe` method.
+    distance : `~astropy.units.Quantity`, optional
+        Possible distance from the source.  Only useful if ``source`` is given.
+    """
+    def __init__(self, pos=ZERO_POSITION, vel=ZERO_VELOCITY, magnification=1.,
+                 source=None, distance=None):
+        super().__init__(pos=pos, vel=vel, magnification=magnification)
+        self.source = source
+        self.distance = distance
+
+    def _repr_lines(self):
+        lines = super()._repr_lines()
+        if self.source is not None:
+            lines[-1] = lines[-1][:-1] + ','
+            source_lines = self.source._repr_lines()
+            lines.append(f"    source={source_lines[0]}")
+            lines.extend([f"    {ln}" for ln in source_lines[1:]])
+            lines[-1] += ','
+            lines.append(f"    distance={self.distance}>")
+        return lines
+
+    def _apply(self, method, *args, **kwargs):
+        new = super()._apply(method, *args, **kwargs)
+        new.source = self.source
+        new.distance = self.distance
+        return new
+
+    @lazyproperty
+    def _paths(self):
+        if self.source is None:
+            raise ValueError('can only calculate paths if ``source`` is set.')
         source = self.source
         distance = self.distance
-        if source is None:
-            return self.magnification, 0*u.us, 0*u.us/u.s
-
         rel_pos, rel_vel = source._rel_posvel(self)
         rel_xy = rel_pos.get_xyz(xyz_axis=-1)[..., :2]
         rel_vxy = rel_vel.get_xyz(xyz_axis=-1)[..., :2]
@@ -97,16 +159,53 @@ class Screen(ShapedLikeNDArray):
         return new
 
 
-def unit_vector(c):
-    return c.represent_as(UnitSphericalRepresentation).to_cartesian()
+class Telescope(Screen):
+    """Telescope detecting a source of radiation.
+
+    Parameters
+    ----------
+    pos : `~astropy.coordinates.CartesianRepresentation`
+        Position of the telescope, ignoring the distance.
+    vel : `~astropy.coordinates.CartesianRepresentation`
+        Corresponding velocity.
+    magnification : array-like
+        Magnification of the telescope.  Usually unity.
+    source : `~screens.screen.Source` or `~screens.screen.Screen`, optional
+        Possible source illuminating this screen.  Unless specific broadcasting
+        is required, it is recommended to use the `Screen.observe` method.
+    distance : `~astropy.units.Quantity`, optional
+        Possible distance from the source.  Only useful if ``source`` is given.
+    """
+    pass
 
 
 class Screen1D(Screen):
     """One-dimensional screen.
 
-    The assumption is that all scattering points are essentially on a line.
+    The assumption is that all scattering points are on lines, which represent
+    places where light can be bent perpendicular to the line, such that it
+    reaches the observer.  The positions of the scattering ponts along the
+    lines then depends on where the source and detector are.
+
+    Parameters
+    ----------
+    normal : `~astropy.coordinates.CartesianRepresentation`
+        Unit vector towards the line.  Should not include a z component, i.e.,
+        be perpendicular to both the line and the z axis.
+    p : `~astropy.units.Quantity`
+        Separations of the lines from the origin, along the normal.
+    v : `~astropy.units.Quantity`
+        Velocities of the lines along the normal.
+    magnification : array-like
+        Magnification of scattering points for the lines.  Can be complex.
+    source : `~screens.screen.Source` or `~screens.screen.Screen`, optional
+        Possible source illuminating this screen.  Unless specific broadcasting
+        is required, it is recommended to use the `Screen.observe` method.
+    distance : `~astropy.units.Quantity`, optional
+        Possible distance from the source.  Only useful if ``source`` is given.
+
     """
-    _shaped_attrs = ('pos', 'vel', 'magnification', 'normal', 'p', 'v')
+    _shaped_attrs = ('normal', 'p', 'v', 'magnification')
 
     def __init__(self, normal, p=0*u.AU, v=0*u.km/u.s, magnification=1.,
                  source=None, distance=None):
@@ -117,28 +216,38 @@ class Screen1D(Screen):
         self.p = p
         self.v = v
 
+    def _apply(self, method, *args, **kwargs):
+        new = super()._apply(method, *args, **kwargs)
+        new.pos = None
+        new.vel = None
+        return new
+
+    @staticmethod
+    def _unit_vector(c):
+        return c.represent_as(UnitSphericalRepresentation).to_cartesian()
+
     def _solve_positions(self, other):
         assert not isinstance(other, Screen1D)
         assert self.source is not None
         # Setup arrays.
         sources = [other]
         distances = [0*other.distance, other.distance]
-        rs = [other.pos]
-        vs = [other.vel]
-        rhats = [unit_vector(other.pos)]
+        poss = [other.pos]
+        vels = [other.vel]
+        rhats = [self._unit_vector(other.pos)]
         source = self
         while isinstance(source, Screen1D):
             sources.append(source)
             distances.append(source.distance)
-            rs.append(source.p * source.normal)
-            vs.append(source.v * source.normal)
+            poss.append(source.p * source.normal)
+            vels.append(source.v * source.normal)
             rhats.append(source.normal)
             source = source.source
-        assert isinstance(source, Screen)
+        assert isinstance(source, Source)
         sources.append(source)
-        rs.append(source.pos)
-        vs.append(source.vel)
-        rhats.append(unit_vector(source.pos))
+        poss.append(source.pos)
+        vels.append(source.vel)
+        rhats.append(self._unit_vector(source.pos))
 
         distances = u.Quantity(distances).cumsum()
         uhats = [ZHAT.cross(rhat) for rhat in rhats]
@@ -160,16 +269,18 @@ class Screen1D(Screen):
 
         Ainv = np.linalg.inv(A)
 
-        pos_shape = np.broadcast(*[np.empty(x.shape) for x in rs+rhats]).shape
+        pos_shape = np.broadcast(*[np.empty(x.shape)
+                                   for x in poss+rhats]).shape
         Bpos = np.zeros((n*2,) + pos_shape) << (u.AU/u.kpc)
-        vel_shape = np.broadcast(*[np.empty(x.shape) for x in vs+rhats]).shape
+        vel_shape = np.broadcast(*[np.empty(x.shape)
+                                   for x in vels+rhats]).shape
         Bvel = np.zeros((n*2,) + vel_shape) << (u.km/u.s/u.kpc)
-        for i, (r, v, rhat, distance) in enumerate(
-                zip(rs[1:], vs[1:], rhats[1:], distances[1:])):
-            theta = (r - other.pos) / distance
+        for i, (pos, vel, rhat, distance) in enumerate(
+                zip(poss[1:], vels[1:], rhats[1:], distances[1:])):
+            theta = (pos - other.pos) / distance
             Bpos[i*2] = theta.x
             Bpos[i*2+1] = theta.y
-            mu = (v - other.vel) / distance
+            mu = (vel - other.vel) / distance
             Bvel[i*2] = mu.x
             Bvel[i*2+1] = mu.y
 

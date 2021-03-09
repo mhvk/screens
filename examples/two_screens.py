@@ -18,7 +18,7 @@ from astropy.coordinates import (
     CartesianRepresentation, CylindricalRepresentation,
     UnitSphericalRepresentation)
 
-from screens.screen import Screen, Screen1D, ZHAT
+from screens.screen import Source, Screen1D, Telescope
 from screens.fields import phasor
 
 
@@ -27,9 +27,9 @@ d2 = 0.50*u.kpc
 d1 = 0.25*u.kpc
 
 
-pulsar = Screen(CartesianRepresentation([0., 0., 0.]*u.AU),
+pulsar = Source(CartesianRepresentation([0., 0., 0.]*u.AU),
                 vel=CartesianRepresentation(300., 0., 0., unit=u.km/u.s))
-telescope = Screen(CartesianRepresentation([0., 0., 0.]*u.AU))
+telescope = Telescope(CartesianRepresentation([0., 0., 0.]*u.AU))
 
 s1 = Screen1D(CylindricalRepresentation(1., -40*u.deg, 0.).to_cartesian(),
               [-0.711, -0.62, -0.53, -0.304, -0.111, -0.052, -0.031,
@@ -49,6 +49,9 @@ def axis_extent(x):
 
 def unit_vector(c):
     return c.represent_as(UnitSphericalRepresentation).to_cartesian()
+
+
+ZHAT = CartesianRepresentation(0., 0., 1., unit=u.one)
 
 
 def plot_screen(ax, s, d, color='black', **kwargs):

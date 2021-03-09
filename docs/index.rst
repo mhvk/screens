@@ -22,4 +22,5 @@ Reference/API
 .. automodapi:: screens.fields
 .. automodapi:: screens.dynspec
 .. automodapi:: screens.secspec
+.. automodapi:: screens.screen
 .. automodapi:: screens.visualization

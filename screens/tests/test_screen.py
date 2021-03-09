@@ -5,7 +5,7 @@ from astropy.coordinates import (
     CylindricalRepresentation)
 import pytest
 
-from screens.screen import Screen, Screen1D, ZHAT
+from screens.screen import Source, Screen, Screen1D, Telescope, ZHAT
 
 
 def repr_isclose(r1, r2, atol=0, rtol=0):
@@ -21,14 +21,13 @@ class TestSimpleScreen:
     def setup_class(self):
         self.d_psr = 1*u.kpc
         self.d_scr = 0.5*u.kpc
-        self.pulsar = Screen(CartesianRepresentation(0, 0, 0, unit='m'),
-                             CartesianRepresentation(100., 0, 0, unit='km/s'))
+        self.pulsar = Source(vel=CartesianRepresentation(100., 0, 0,
+                                                         unit='km/s'))
         self.screen = Screen(
             CartesianRepresentation([0., 10.], [0., 0.], [0., 0.], unit='AU'),
             CartesianRepresentation(0., 0., 0., unit='km/s'),
             magnification=np.array([1., 0.5j]))
-        self.telescope = Screen(CartesianRepresentation(0, 0, 0, unit='m'),
-                                CartesianRepresentation(0, 0, 0, unit='km/s'))
+        self.telescope = Telescope()
 
     def test_observe_pulsar(self):
         obs = self.telescope.observe(self.pulsar, distance=self.d_psr)
@@ -41,7 +40,7 @@ class TestSimpleScreen:
         d_rel = self.d_psr - self.d_scr
         screened = self.screen.observe(self.pulsar, distance=d_rel)
         assert screened.brightness.shape == (2,)
-        assert np.all(screened.brightness == self.screen.brightness)
+        assert np.all(screened.brightness == self.screen.magnification)
         theta = ([0, -10]*u.AU)/d_rel
         tau_expected = theta**2 * 0.5 * d_rel / const.c
         assert u.allclose(screened.tau, tau_expected)
@@ -53,7 +52,7 @@ class TestSimpleScreen:
         screened = self.screen.observe(self.pulsar, distance=d_rel)
         obs = self.telescope.observe(screened, distance=self.d_scr)
         assert obs.brightness.shape == (2,)
-        assert np.all(obs.brightness == self.screen.brightness)
+        assert np.all(obs.brightness == self.screen.magnification)
         d_eff = self.d_psr * self.d_scr / d_rel
         v_eff = self.d_scr / d_rel * 100 * u.km/u.s
         theta = ([0, -10]*u.AU) / self.d_scr
@@ -62,14 +61,16 @@ class TestSimpleScreen:
         taudot_expected = v_eff * theta / const.c
         assert u.allclose(obs.taudot, taudot_expected)
 
+        # Sanity check on repr
+        repr(obs)
+
 
 class TestLinearScreen:
     def setup_class(self):
         self.d_psr = 1.5*u.kpc
-        self.pulsar = Screen(CartesianRepresentation(0, 0, 0, unit='m'),
-                             CartesianRepresentation(100., 0, 0, unit='km/s'))
-        self.telescope = Screen(CartesianRepresentation(0, 0, 0, unit='m'),
-                                CartesianRepresentation(0, 0, 0, unit='km/s'))
+        self.pulsar = Source(vel=CartesianRepresentation(100., 0, 0,
+                                                         unit='km/s'))
+        self.telescope = Telescope()
 
     @pytest.mark.parametrize('angle', [60*u.deg, 135*u.deg])
     def test_observe_screened_pulsar(self, angle):
@@ -178,10 +179,10 @@ class TestLinearScreen:
         d1 = 0.5*u.kpc
         d2 = 1.0*u.kpc
         dp = 1.5*u.kpc
-        pulsar = Screen(
+        pulsar = Source(
             pos=CartesianRepresentation([0., 1., 0.]*u.AU),
             vel=CartesianRepresentation(300., 0., 0., unit=u.km/u.s))
-        telescope = Screen(CartesianRepresentation([0., 0.5, 0.]*u.AU))
+        telescope = Telescope(CartesianRepresentation([0., 0.5, 0.]*u.AU))
         s1 = Screen1D(
             CylindricalRepresentation(1., -40*u.deg, 0.).to_cartesian(),
             [-0.711, -0.62, -0.53, -0.304, -0.111, -0.052, -0.031,
@@ -236,3 +237,6 @@ class TestLinearScreen:
             assert u.allclose(np.abs(obs.source.source.alpha),
                               np.arcsin(ds21.cross(dps2).norm()
                                         / ds21.norm()/dps2.norm()))
+
+        # Sanity check on repr
+        repr(obs)
