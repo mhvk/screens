@@ -44,7 +44,7 @@ class SecondarySpectrum:
         the secondary spectrum.
     """
 
-    def __init__(self, secspec, tau, fd, noise, d_eff, mu_eff,
+    def __init__(self, secspec, tau, fd, noise=None, d_eff=None, mu_eff=None,
                  theta=None, magnification=None):
         self.secspec = secspec
         self.tau = tau
