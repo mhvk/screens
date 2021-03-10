@@ -345,10 +345,10 @@ class DynamicSpectrum:
 
            \frac{\partial w}{\partial\mu_{\rm eff}}
            &= \sum_k\mu_k\Phi_k
-                \frac{\partial i\phi_k}{\partial\mu_{\rm eff}} \\
+                \frac{\partial j\phi_k}{\partial\mu_{\rm eff}} \\
            \frac{\partial\bar{w}}{\partial\mu_{\rm eff}}
            &= \sum_k\bar{\mu}_k\bar{\Phi}_k
-               \frac{\partial -i\phi_k}{\partial\mu_{\rm eff}} \\
+               \frac{\partial -j\phi_k}{\partial\mu_{\rm eff}} \\
            \frac{\partial DS}{\partial\mu_{\rm eff}}
            &= \bar{w} \frac{\partial w}{\partial\mu_{\rm eff}}
             +  w \frac{\partial\bar{w}}{\partial\mu_{\rm eff}}
