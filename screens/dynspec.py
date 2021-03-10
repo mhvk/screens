@@ -311,7 +311,7 @@ class DynamicSpectrum:
 
         .. math::
 
-           w(f, t) &= \sum_k \mu_k \exp[-j\phi(\theta_i, \mu_{\rm eff}, f, t)]
+           w(f, t) &= \sum_k \mu_k \exp[j\phi(\theta_i, \mu_{\rm eff}, f, t)]
                    &\equiv \sum_k \mu_k \Phi_k \\
            DS(f,t) &= |w(f, t)|^2 = w \bar{w}
 
@@ -345,24 +345,24 @@ class DynamicSpectrum:
 
            \frac{\partial w}{\partial\mu_{\rm eff}}
            &= \sum_k\mu_k\Phi_k
-                \frac{\partial -i\phi_k}{\partial\mu_{\rm eff}} \\
+                \frac{\partial i\phi_k}{\partial\mu_{\rm eff}} \\
            \frac{\partial\bar{w}}{\partial\mu_{\rm eff}}
            &= \sum_k\bar{\mu}_k\bar{\Phi}_k
-               \frac{\partial i\phi_k}{\partial\mu_{\rm eff}} \\
+               \frac{\partial -i\phi_k}{\partial\mu_{\rm eff}} \\
            \frac{\partial DS}{\partial\mu_{\rm eff}}
            &= \bar{w} \frac{\partial w}{\partial\mu_{\rm eff}}
             +  w \frac{\partial\bar{w}}{\partial\mu_{\rm eff}}
-            = -2j\sum_k\mu_k \Phi_k \frac{\partial\phi}{\partial\mu_{\rm eff}}
+            = 2j\sum_k\mu_k \Phi_k \frac{\partial\phi}{\partial\mu_{\rm eff}}
 
         """
         dyn_wave = self.dynamic_bases(mu_eff)
         magdw = dyn_wave * magnification[:, np.newaxis, np.newaxis]
         magdw_sum = magdw.sum(0)
-        jac_mag = ((2. * self._dyn_wave.conj() * magdw_sum)
+        jac_mag = ((2. * dyn_wave.conj() * magdw_sum)
                    .transpose(1, 2, 0).reshape(self.dynspec.size, -1)
                    .view([('mag_real', 'f8'), ('mag_imag', 'f8')]))
         if mu_eff is not None:
-            dphidmu = (-1j * self.d_eff/const.c
+            dphidmu = (1j * self.d_eff/const.c
                        * u.cycle * self.f * self.t
                        * self.theta[:, np.newaxis, np.newaxis]).to(
                            1./self.mu_eff.unit, u.dimensionless_angles())
