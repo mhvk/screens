@@ -3,8 +3,10 @@ Single screen synthetic data example
 ************************************
 
 This tutorial describes how to generate synthetic data corresponding to a
-single one-dimensional scattering screen. The schematic below shows roughly
-what the screen in this examplewill look like.
+single-dish observation of a pulsar whose radiation is scattered by a single
+one-dimensional screen. The schematic below gives an overview of the system
+in this example, showing how beams of radiation go from the pulsar to Earth
+via the different images on the scattering screen.
 
 .. plot::
 
@@ -34,8 +36,8 @@ Start with some standard imports.
     from astropy import units as u
     from astropy import constants as const
 
-Import a colormap to use for phases. Preferably import the colormap from
-the local file ``hue_cycle_cmap``, available for download
+Set a colormap to use for phases. Preferably import the perceptually uniform
+colormap from the local file ``hue_cycle_cmap``, available for download
 :download:`here <./hue_cycle_cmap.py>`.
 The ``hsv`` colormap is used as fallback.
 
@@ -49,7 +51,7 @@ The ``hsv`` colormap is used as fallback.
         phasecmap = cm.hsv
 
 Also define a function to make two-dimensional phase-intensity colorbars,
-for plotting the electric field.
+for plotting dynamic wavefields.
 
 .. plot::
     :include-source:
@@ -84,22 +86,24 @@ for plotting the electric field.
 Setting up a scattering screen
 ==============================
 
-Set up the screen by defining angles of the scattering points parallel to
-:math:`\theta_\parallel` and perpendicular to :math:`\theta_\perp` the
-direction of effective velocity of the line of sight along the screen.
-For this example, we choose the one-dimensional screen to be perfectly alligned
-with the effective velocity vector, so the perpedicular angles are all zero.
+Set up the screen by defining the angles :math:`\boldsymbol{\theta}` between
+the line of sight and the scattering points, parallel to the direction of the
+effective velocity. In this example, we want to mimic a one-dimensional screen
+with three scattered images, along with the line-of-sight image. Hence, the
+array of angles :math:`\boldsymbol{\theta}` contains :math:`n_\theta = 4`
+points.
 
 .. plot::
     :include-source:
     :context:
 
-    th_par = [-4., -1., 0., 2.] << u.mas
-    th_perp = np.zeros_like(th_par)
+    theta = [-4., -1., 0., 2.] << u.mas
 
-Create a complex magnification for each of the scattering points (defining the
-amplitude and phase of the lens image). Normalise them so the amplitudes add up
-to unity.
+Create the complex magnifications :math:`\boldsymbol{\mu}` corresponding to the
+scattering points (setting the magnification amplitudes and the intrinsic
+phases of the lens images). For this example, normalize the magnifications
+so the amplitudes add up to unity (this will lead to a dynamic spectrum with a
+mean of unity).
 
 .. plot::
     :include-source:
@@ -111,20 +115,20 @@ to unity.
                      0.3 + 0.3j]
     magnification /= np.sqrt((np.abs(magnification)**2).sum())
 
-Have a look at the lens, using a scatter plot where the size of the points
-shows the amplitude of the magnifications and their colour shows the phase.
+Have a look at the lens, using a scatter plot where the sizes of the points
+show the amplitudes of the magnifications and their colours indicate the
+intrinsic phases imparted by the lens.
 
 .. plot::
     :include-source:
     :context:
 
     plt.figure(figsize=(12., 3.))
-    plt.scatter(th_par, np.zeros_like(th_par),
+    plt.scatter(theta, np.zeros_like(theta),
                 s=np.abs(magnification)*2000., c=np.angle(magnification),
                 cmap=phasecmap, vmin=-np.pi, vmax=np.pi)
 
-    plt.xlabel(rf"$\theta_\parallel$ ({th_par.unit.to_string('latex')})")
-    plt.ylabel(rf"$\theta_\perp$ ({th_par.unit.to_string('latex')})")
+    plt.xlabel(rf"$\theta$ ({theta.unit.to_string('latex')})")
 
     cbar = plt.colorbar(aspect=7.5)
     cbar.set_label('phase (rad)')
@@ -154,9 +158,9 @@ and the number of time bins :math:`n_t`.
     nf = 200
     nt = 180
 
-Set up a grid of observing frequencies and times.
-Then make the frequency grid a row vector and the time grid a column vector,
-so they will be broadcast against each other correctly.
+Set up grids of observing frequencies and times. Then make the frequency grid
+a row vector with shape (1, :math:`n_f`) and the time grid a column vector with
+shape (:math:`n_t`, 1), so they will be broadcast against each other correctly.
 
 .. plot::
     :include-source:
@@ -168,21 +172,21 @@ so they will be broadcast against each other correctly.
 
     f, t = np.meshgrid(f, t, sparse=True)
 
-Already define an ``extent`` for plotting the electric field and dynamic
+Already define an extent for plotting the dynamic wavefield and dynamic
 spectrum.
 
 .. plot::
     :include-source:
     :context:
 
-    ds_extent = (t[0][0].value - 0.5*(t[1][0].value - t[0][0].value),
+    ds_extent = (t[0][0].value  - 0.5*(t[1][0].value - t[0][0].value),
                  t[-1][0].value + 0.5*(t[1][0].value - t[0][0].value),
-                 f[0][0].value - 0.5*(f[0][1].value - f[0][0].value),
+                 f[0][0].value  - 0.5*(f[0][1].value - f[0][0].value),
                  f[0][-1].value + 0.5*(f[0][1].value - f[0][0].value))
 
 
-Generate the electric field
-===========================
+Generate the dynamic wavefield
+==============================
 
 Set the parameters of the system: the effective distance :math:`d_\mathrm{eff}`
 and the effective proper motion :math:`\mu_\mathrm{eff}`.
@@ -194,39 +198,60 @@ and the effective proper motion :math:`\mu_\mathrm{eff}`.
     d_eff = 0.5 * u.kpc
     mu_eff = 50. * u.mas / u.yr
 
-Create electric fields for each of the scattering points, given by
+Create the dynamic wavefields due to each of the scattering points.
+The dynamic wavefield :math:`W_j` of screen image :math:`j` is given by
 
 .. math::
 
-    E_i(f, t) = \mu_k \exp \left[ j f \frac{d_\mathrm{eff}}{2 c}
-                                  \theta_i^2 \right]
+    W_j(f, t) = \mu_j \exp \left[ i f \frac{d_\mathrm{eff}}{2 c}
+                                  (\theta_j + \mu_\mathrm{eff} t)^2 \right].
 
 .. plot::
     :include-source:
     :context:
     
-    th_par_t = th_par[:,np.newaxis,np.newaxis] + mu_eff * t
-    theta_t_squared = th_par_t**2 + th_perp[:,np.newaxis,np.newaxis]**2
-    tau_t = (((d_eff / (2*const.c)) * theta_t_squared)
+    theta_t = theta[:, np.newaxis, np.newaxis] + mu_eff * t
+    tau_t = (((d_eff / (2*const.c)) * theta_t**2)
              .to(u.s, equivalencies=u.dimensionless_angles()))
 
     phasor = np.exp(1j * (f * tau_t * u.cycle).to_value(u.rad))
-    efields = phasor * magnification[:,np.newaxis,np.newaxis]
+    dynwaves = phasor * magnification[:, np.newaxis, np.newaxis]
+
+In this calculation, the dimensions of the array of angles
+:math:`\boldsymbol{\theta}` and the array of complex magnifications
+:math:`\boldsymbol{\mu}` are increased to accommodate for the time and
+frequency grids. The end result is an array of shape (:math:`n_\theta`,
+:math:`n_t`, :math:`n_f`), each entry being a complex number that contains the
+amplitude and phase of the dynamic wavefield.
 
 .. note::
 
-    The ``screens`` package has a built-in function to quickly generate a cube
-    of electric fields from a one-dimensional lens.
+    The :py:mod:`screens.fields` module contains the function
+    `~screens.fields.dynamic_field` to quickly generate a cube of dynamic
+    wavefields from a set of scattering points defined by their angles and
+    magnifications.
+    
+    Because this function handles two-dimensional lenses, it is necessary to
+    pass it the angles both parallel to and perpendicular to the effective
+    velocity vector. For this example, we want to mimic a one-dimensional
+    screen, in which all points appear to be on a line that intersects with
+    the pulsar. Hence, we set the perpendicular angles to zero.
 
     .. code-block:: python
 
         from screens.fields import dynamic_field
 
-        efields = dynamic_field(th_par, th_perp, magnification,
-                                d_eff, mu_eff, f, t)
+        theta_par = theta
+        theta_perp = np.zeros_like(theta)
 
-Have a look at the electric fields associated with the individual scattered
-images.
+        dynwaves = dynamic_field(theta_par, theta_perp, magnification,
+                                 d_eff, mu_eff, f, t)
+
+Have a look at the dynamic wavefields associated with the individual scattered
+images. Each panel shows the interference pattern caused by the difference in
+arrival time of radiation travelling via the scattered beam and the
+line-of-sight beam. It is evident that the magnifications of some of the
+scattering points are stronger than those of others.
 
 .. plot::
     :include-source:
@@ -234,15 +259,13 @@ images.
 
     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12., 8.))
     plt.subplots_adjust(wspace=0.4, hspace=0.4)
-    for i in range(efields.shape[0]):
-        ax = axes.flat[i]
-        ax.imshow(np.angle(efields[i,...]).T,
-                  alpha=(np.abs(magnification[i])
-                         / np.max(np.abs(magnification))),
+    for ax, dynwave, th, mag in zip(axes.flat, dynwaves, theta, magnification):
+        ax.imshow(np.angle(dynwave).T,
+                  alpha=np.abs(mag) / np.max(np.abs(magnification)),
                   origin='lower', aspect='auto', interpolation='none',
                   cmap=phasecmap, extent=ds_extent, vmin=-np.pi, vmax=np.pi)
-        ax.set_title(rf"$\theta_\parallel = {th_par[i].value:.0f}$"
-                    rf" {th_par.unit.to_string('latex')}")
+        ax.set_title(rf"$\theta = {th.value:.0f}$"
+                     rf" {theta.unit.to_string('latex')}")
         ax.set_xlabel(rf"time $t$ ({t.unit.to_string('latex')})")
         ax.set_ylabel(rf"frequency $f$ ({f.unit.to_string('latex')})")
 
@@ -251,16 +274,16 @@ images.
 
     plt.show()
 
-The electric fields corresponding to the individual scattering points still
-have to be summed to create the electric field at the telescope.
+The dynamic wavefields corresponding to the individual scattering points still
+have to be summed to create the total dynamic wavefield at the telescope.
 
 .. plot::
     :include-source:
     :context: close-figs
 
-    efield = efields.sum(axis=0)
+    dynwave = dynwaves.sum(axis=0)
 
-Plot the combined electric field.
+Plot the combined dynamic wavefield.
 
 .. plot::
     :include-source:
@@ -268,16 +291,16 @@ Plot the combined electric field.
 
     fig = plt.figure(figsize=(12., 8.))
     ax = plt.subplot(111)
-    plt.imshow(np.angle(efield).T,
-               alpha=(np.abs(efield).T / np.max(np.abs(efield))),
+    plt.imshow(np.angle(dynwave).T,
+               alpha=(np.abs(dynwave).T / np.max(np.abs(dynwave))),
                origin='lower', aspect='auto', interpolation='none',
                cmap=phasecmap, extent=ds_extent, vmin=-np.pi, vmax=np.pi)
-    plt.title('electric field')
+    plt.title('dynamic wavefield')
     plt.xlabel(rf"time $t$ ({t.unit.to_string('latex')})")
     plt.ylabel(rf"frequency $f$ ({f.unit.to_string('latex')})")
 
     phase_intensity_colorbar(fig, ax, phasecmap,
-                             ampmax=np.max(np.abs(efield)))
+                             ampmax=np.max(np.abs(dynwave)))
 
     plt.show()
 
@@ -285,13 +308,13 @@ Plot the combined electric field.
 Create the dynamic spectrum
 ===========================
 
-The dynamic spectrum is the square modulus of the summed electric field.
+The dynamic spectrum is the square modulus of the summed dynamic wavefield.
 
 .. plot::
     :include-source:
     :context: close-figs
 
-    dynspec = np.abs(efield)**2
+    dynspec = np.abs(dynwave)**2
 
 
 Now, show the dynamic spectrum.
@@ -300,7 +323,6 @@ Now, show the dynamic spectrum.
     :include-source:
     :context:
 
-    # Plot dynamic spectrum
     plt.figure(figsize=(12., 8.))
     plt.imshow(dynspec.T,
                origin='lower', aspect='auto', interpolation='none',
