@@ -15,6 +15,7 @@ Tutorials
    :maxdepth: 1
 
    examples/simple_examples
+   examples/single_screen
 
 Reference/API
 =============
