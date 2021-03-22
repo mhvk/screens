@@ -56,7 +56,7 @@ class SecondarySpectrum:
         self.magnification = magnification
 
     @classmethod
-    def from_dynamic_spectrum(cls, dynspec, **kwargs):
+    def from_dynamic_spectrum(cls, dynspec, normalization='mean', **kwargs):
         """Create a secondary spectrum from a dynamic one.
 
         Easiest if the input is a `~screens.dynspec.DynamicSpectrum`
@@ -77,6 +77,9 @@ class SecondarySpectrum:
             be calculated.  If it has attributes ``f``, ``t``, ``d_eff``,
             ``theta``, ``magnification``, and ``noise``, those will be
             used as default inputs.  TODO: ``noise`` is likely wrong!
+        normalization : 'mean' or None
+            Normalize such that the 0, 0 element equals the mean of the
+            dynamic spectrum.
         **kwargs
             Other arguments to initialize the secondary spectrum.
         """
@@ -94,8 +97,9 @@ class SecondarySpectrum:
         t = kwargs.pop('t')
         fd = kwargs.pop('fd', None)
         if t.size in t.shape and fd is None:  # fast FFT possible.
-            sec = np.fft.fft2(dynspec)
-            fd = np.fft.fftfreq(t.size, t[1]-t[0]).to(u.mHz).reshape(t.shape)
+            sec = np.fft.fftshift(np.fft.fft2(dynspec))
+            fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0]).to(u.mHz)
+                                 .reshape(t.shape))
         else:
             # Time axis has slow FT or explicit fd given.
             # Time is assumed to be along axis -2.
@@ -103,31 +107,35 @@ class SecondarySpectrum:
             if fd is None:
                 t_step = np.abs(np.diff(t, axis=-2)).min()
                 n_t = round((t.ptp()/t_step).to_value(1).item()) + 1
-                fd = np.fft.fftfreq(n_t, t_step)
+                fd = np.fft.fftshift(np.fft.fftfreq(n_t, t_step).to(u.mHz))
 
             if fd.ndim == 1:
                 fd = expand(fd, n=dynspec.ndim)
 
-            dt = np.diff(t, axis=-1)
-            # Check whether our last axis (generally frequency) is linearly
-            # spaced, so we can speed up the calculation.
-            linear_axis = -1 if np.allclose(dt, dt[..., :1]) else None
-            factor = phasor(t, fd, linear_axis=linear_axis)
-            factor *= dynspec
+            if t.shape[-1] == 1:
+                factor = phasor(t, fd, linear_axis=None).conj() * dynspec
+            else:
+                dt = np.diff(t, axis=-1)
+                # Check whether our last axis (generally frequency) is linearly
+                # spaced, so we can speed up the calculation.
+                linear_axis = -1 if np.allclose(dt, dt[..., :1]) else None
+                factor = phasor(t, fd, linear_axis=linear_axis).conj()
+                factor *= dynspec
+
             step1 = factor.sum(-2, keepdims=True).swapaxes(0, -2).squeeze(0)
-            sec = np.fft.fft(step1, axis=-1)
+            sec = np.fft.fftshift(np.fft.fft(step1, axis=-1), axes=-1)
             fd.shape = sec.shape[-2], 1
 
-        sec /= sec[0, 0]
-        tau = np.fft.fftfreq(f.size, f[1]-f[0]).to(u.us)
-        tau.shape = f.shape
+        if normalization == 'mean':
+            normalization = sec[sec.shape[-2] // 2, sec.shape[-1] // 2]
+            sec /= normalization
 
-        sec = np.fft.fftshift(sec)
-        tau = np.fft.fftshift(tau) << tau.unit
-        fd = np.fft.fftshift(fd) << fd.unit
+        tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0]).to(u.us))
+        tau.shape = f.shape
         self = cls(sec, tau, fd, **kwargs)
         self.f = f
         self.t = t
+        self.normalization = normalization
         return self
 
     def theta_grid(self, oversample_tau=2, oversample_fd=4, **kwargs):
