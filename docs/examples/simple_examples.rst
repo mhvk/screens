@@ -9,10 +9,13 @@ observation will look rather plain. In the secondary spectrum, there will be a
 single non-zero point at the origin.
 
 .. plot::
+    :context:
 
+    import numpy as np
     from astropy import units as u
     import matplotlib.pyplot as plt
-    from example_figure import simple_figure
+    
+    from example_figure import generate_magnification, simple_figure
 
     theta = [0.] << u.mas
     magnification = [1.]
@@ -40,11 +43,7 @@ data (the interference pattern) do not distinguish which of the two images
 arrives first.
 
 .. plot::
-
-    import numpy as np
-    from astropy import units as u
-    import matplotlib.pyplot as plt
-    from example_figure import simple_figure
+    :context: close-figs
 
     theta = [0., 2.] << u.mas
     magnification = [1., 0.3 + 0.3j]
@@ -70,11 +69,7 @@ to the differential Doppler shift corresponding to the effective velocity of
 the system.
 
 .. plot::
-
-    import numpy as np
-    from astropy import units as u
-    import matplotlib.pyplot as plt
-    from example_figure import simple_figure
+    :context: close-figs
 
     theta = [0., 2.] << u.mas
     magnification = [1., 0.3 + 0.3j]
@@ -103,11 +98,7 @@ the direct line-of-sight beam, and two weaker ones that correspond to the
 mutual interaction of the two scattered beams.
 
 .. plot::
-
-    import numpy as np
-    from astropy import units as u
-    import matplotlib.pyplot as plt
-    from example_figure import simple_figure
+    :context: close-figs
 
     theta = [-4., 0., 2.] << u.mas
     magnification = [-0.1 - 0.1j, 1., 0.3 + 0.3j]
@@ -121,11 +112,7 @@ Three beams
 Adding more beams further complicates the interference pattern.
 
 .. plot::
-
-    import numpy as np
-    from astropy import units as u
-    import matplotlib.pyplot as plt
-    from example_figure import simple_figure
+    :context: close-figs
 
     theta = [-4., -1., 0., 2.] << u.mas
     magnification = [-0.1 - 0.1j, 0.7 - 0.3j, 1., 0.3 + 0.3j]
@@ -144,16 +131,12 @@ frequency (known as "scintils") against a less bright background.
 
 In the secondary spectrum, the points arrising from interaction of a scattered
 image with the central one line up along parabolas with their extrema at the
-origin. The points caused by mutual interaction of scattered beam form
+origin. The points caused by mutual interaction of scattered beams form
 "arclets", inverted parabolas positioned along the main parabolas.
 
 
 .. plot::
-
-    import numpy as np
-    from astropy import units as u
-    import matplotlib.pyplot as plt
-    from example_figure import generate_magnification, simple_figure
+    :context: close-figs
 
     theta = np.linspace(-4.5, 4.5, 23) << u.mas
     magnification = generate_magnification(theta)
@@ -161,7 +144,7 @@ origin. The points caused by mutual interaction of scattered beam form
     simple_figure(theta, magnification)
 
 .. note::
-    For the purposes of generating simulated data in the examples shown here,
+    For the purpose of generating simulated data in the examples shown here,
     we assume that the pulsars radio spectrum is flat and that there are no
     sources of noise in the observation. We use the following parameter values
     for the pulsar and the observation:

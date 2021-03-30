@@ -113,7 +113,7 @@ def simple_figure(th_par, magnification,
                alpha=np.abs(dynwave).T / np.max(np.abs(dynwave).T),
                origin='lower', aspect='auto', interpolation='none',
                cmap=phasecmap, extent=ds_extent, vmin=-np.pi, vmax=np.pi)
-    plt.title('electric field')
+    plt.title('dynamic wavefield')
     plt.xlabel(rf"time $t$ ({t.unit.to_string('latex')})")
     plt.ylabel(rf"frequency $f$ ({f.unit.to_string('latex')})")
     plt.xlim(t_lims)
@@ -149,7 +149,7 @@ def simple_figure(th_par, magnification,
                      origin='lower', aspect='auto', interpolation='none',
                      cmap='Greys', extent=ss_extent,
                      norm=mcolors.LogNorm(vmin=1.e-2, vmax=1.))
-    plt.title('wavefield')
+    plt.title('conjugate wavefield')
     plt.xlabel(r"differential Doppler shift $f_\mathrm{{D}}$"
                rf"({fd.unit.to_string('latex')})")
     plt.ylabel(r"relative geometric delay $\tau$ "
