@@ -13,8 +13,10 @@ document. As in that document, the practical example here uses the parameter
 values for the pulsar PSR J0437--4715 as studied by `Reardon et al. (2020)
 <https://ui.adsabs.harvard.edu/abs/2020ApJ...904..104R/abstract>`_.
 
-Imports
-=======
+Preliminaries
+=============
+
+Imports.
 
 .. plot::
     :include-source:
@@ -30,6 +32,16 @@ Imports
     from astropy.coordinates import SkyCoord, SkyOffsetFrame, EarthLocation
 
     from astropy.visualization import quantity_support, time_support
+
+Set up support for plotting :py:class:`~astropy.units.quantity.Quantity` and
+:py:class:`~astropy.time.Time` objects.
+
+  .. plot::
+    :include-source:
+    :context:
+
+    quantity_support()
+    time_support(format='iso')
 
 Initializing parameters
 =======================
@@ -78,11 +90,16 @@ Set the parameters of the pulsar system:
 
     * - orbital inclination
       - :math:`i_\mathrm{p}`
-      - between :math:`0^\circ` (face-on) and :math:`90^\circ` (edge-on)
+      - :math:`0^\circ \leq i_\mathrm{p} < 180^\circ`,
+        with :math:`i_\mathrm{p} = 90^\circ` for an edge-on orbit;
+        for :math:`i_\mathrm{p} < 90^\circ`, the binary rotates
+        counterclockwise on the sky (from north through east),
+        for :math:`i_\mathrm{p} \geq 90^\circ` it rotates clockwise
 
     * - longitude of ascending node
-      - :math:`\mathit{\Omega}_\mathrm{p}`
-      - measured from north through east
+      - :math:`\Omega_\mathrm{p}`
+      - measured from the celestial north through east,
+        :math:`0^\circ \leq \Omega_\mathrm{p} < 360^\circ`
 
     * - time of ascending node
       - :math:`T_\mathrm{asc,p}`
@@ -100,13 +117,15 @@ Set the parameters of the pulsar system:
       - :math:`d_\mathrm{s}`
       - from Earth
 
-    * - position angle of the lens
-      - :math:`\mathit{\Omega}_\mathrm{s}`
-      - measured from north through east to the direction of motion on the sky
+    * - position angle of the lensed images
+      - :math:`\Omega_\mathrm{s}`
+      - measured from the celestial north, through east, to the line of images
+        formed by the lens
+        :math:`0^\circ \leq \Omega_\mathrm{s} < 360^\circ`
 
-    * - velocity of the interstellar medium
-      - :math:`v_\mathrm{ISM}`
-      - projected onto the screen direction
+    * - velocity of the lens
+      - :math:`v_\mathrm{lens}`
+      - component along the screen direction
 
 .. plot::
     :include-source:
@@ -116,12 +135,12 @@ Set the parameters of the pulsar system:
     asini_p = 3.3667144 * const.c * u.s
     i_p = 137.56 * u.deg
     omega_p = 207. * u.deg
-    t0_p = Time(54501.4671, format='mjd')
+    t0_p = Time(54501.4671, format='mjd', scale='tdb')
 
     d_p = 156.79 * u.pc
     d_s = 90.6 * u.pc
     omega_s = 134.6 * u.deg
-    v_ism = -31.9 * u.km / u.s
+    v_lens = -31.9 * u.km / u.s
 
 The coordinates should be placed directly in a
 :py:class:`~astropy.coordinates.SkyCoord` object, that includes the pulsar
@@ -131,8 +150,7 @@ system's position on the sky, its distance, and its proper motion.
     :include-source:
     :context:
 
-    psr_coord = SkyCoord('04 37 15.99744 -47 15 09.7170',
-                         unit=(u.hourangle, u.deg),
+    psr_coord = SkyCoord('04h37m15.99744s -47d15m09.7170s',
                          distance=d_p,
                          pm_ra_cosdec=121.4385 * u.mas / u.yr,
                          pm_dec=-71.4754 * u.mas / u.yr)
@@ -146,7 +164,7 @@ Calculate some derived quantities:
     * - Parameter
       - Equation
 
-    * - semi-amplitude of the pulsar's projected velocity
+    * - pulsar's radial-velocity amplitude
       - 
         .. math::
             
@@ -163,15 +181,13 @@ Calculate some derived quantities:
       - 
         .. math::
         
-            d_\mathrm{eff} = \frac{ d_\mathrm{p} d_\mathrm{s} }
-                                  { d_\mathrm{p} - d_\mathrm{s} }
+            d_\mathrm{eff} = \frac{ 1 - s }{ s } d_\mathrm{p}
 
     * - angle from the lens to the pulsar orbit's line of nodes
       - 
         .. math::
         
-            \mathit{\Delta\Omega}_\mathrm{p}
-              = \mathit{\Omega}_\mathrm{s} - \mathit{\Omega}_\mathrm{p}
+            \Delta\Omega_\mathrm{p} = \Omega_\mathrm{s} - \Omega_\mathrm{p}
 
 .. plot::
     :include-source:
@@ -184,14 +200,15 @@ Calculate some derived quantities:
 
     delta_omega_p = omega_s - omega_p
 
-Define a grid of times :math:`t` for which you want to calculate curvatures.
+Define grid of observing times :math:`t` for which you want to calculate
+velocities using a a :py:class:`~astropy.time.Time` object.
 
 .. plot::
     :include-source:
     :context:
 
     t_mjd = np.arange(55000., 55700., 0.25)
-    t = Time(t_mjd, format='mjd')
+    t = Time(t_mjd, format='mjd', scale='utc')
 
 The lens frame
 ==============
@@ -206,8 +223,8 @@ system, rotated to the one-dimensional lens.
     lens_frame = SkyOffsetFrame(origin=psr_coord, rotation=omega_s)
 
 On its own, ``SkyOffsetFrame(origin=psr_coord)`` creates a spherical frame with
-its primary direction pointing along the line of sight, longitude in the
-direction of Dec, and latitude in the direction of RA. By passing the argument
+its primary direction pointing along the line of sight, latitude in the
+direction of Dec, and longitude in the direction of RA. By passing the argument
 ``rotation=omega_s``, the longitude and latitude dimensions rotate so longitude
 is perpedicular to the lens and latitude parallel to the lens. When converting
 positions or velocities in this frame to cartesian representation, the x-axis
@@ -231,14 +248,13 @@ separately:
       - :math:`v_\mathrm{E}( t )`
     * - pulsar's orbital velocity as a function of time
       - :math:`v_\mathrm{p,orb}( t )`
-    * - pulsar system's barycentric velocity
-        (corresponding to the proper motion)
-      - :math:`v_\mathrm{p,pm}`
-    * - velocity of the interstellar medium at the lens (known in this example)
-      - :math:`v_\mathrm{ISM}`
+    * - pulsar systemic velocity (corresponding to the proper motion)
+      - :math:`v_\mathrm{p,sys}`
+    * - velocity of the lens (known in this example)
+      - :math:`v_\mathrm{lens}`
 
-All these refer to the component of the velocity projected onto the
-one-dimensional lens.
+All these refer to the component of the velocity along the line of images
+formed by the lens.
 
 Earth's velocity
 ----------------
@@ -272,9 +288,9 @@ Compute the pulsar's orbital velocity projected onto the screen
 
     v_\mathrm{p,orb} = - \frac{ K_\mathrm{p} }{ \sin( i_\mathrm{p} ) }
                          \left[ \cos( i_\mathrm{p} )
-                                \sin( \mathit{\Delta\Omega}_\mathrm{p} )
+                                \sin( \Delta\Omega_\mathrm{p} )
                                 \cos( \theta_\mathrm{p} )
-                              - \cos( \mathit{\Delta\Omega}_\mathrm{p} )
+                              - \cos( \Delta\Omega_\mathrm{p} )
                                 \sin( \theta_\mathrm{p} )
                          \right].
 
@@ -285,23 +301,23 @@ from its ascending node.
     :include-source:
     :context:
 
-    th_p = ((t - t0_p) / p_b).to('') * u.cycle
+    th_p = ((t - t0_p) / p_b).to(u.dimensionless_unscaled) * u.cycle
 
     v_p_orb = (-k_p / np.sin(i_p)
                * (np.cos(i_p) * np.sin(delta_omega_p) * np.cos(th_p)
                               - np.cos(delta_omega_p) * np.sin(th_p)))
 
-Pulsar system barycentre velocity
----------------------------------
+Pulsar systemic velocity
+------------------------
 
-The pulsar system barycentre velocity projected onto the screen is given by
+The pulsar systemic velocity projected onto the screen is given by
 
 .. math::
 
-    v_\mathrm{p,pm} \simeq d_\mathrm{p}
-                           \left[ \mu_\alpha \sin( \mathit{\Omega}_\mathrm{s} )
-                                + \mu_\delta \cos( \mathit{\Omega}_\mathrm{s} )
-                           \right].
+    v_\mathrm{p,sys} \simeq d_\mathrm{p}
+                              \left[ \mu_\alpha \sin( \Omega_\mathrm{s} )
+                                   + \mu_\delta \cos( \Omega_\mathrm{s} )
+                              \right].
 
 This can be computed manually, but it can also be retrieved from the
 :py:class:`~astropy.coordinates.SkyCoord` of the pulsar system (which contains
@@ -311,7 +327,7 @@ the system's proper motion) by transforming it to ``lens_frame``.
     :include-source:
     :context:
     
-    v_p_pm = psr_coord.transform_to(lens_frame).velocity.d_z
+    v_p_sys = psr_coord.transform_to(lens_frame).velocity.d_z
 
 Effective velocity
 ------------------
@@ -321,16 +337,39 @@ velocity
 
 .. math::
 
-    v_\mathrm{eff} = \frac{1}{s} v_\mathrm{ISM}
-                     - \frac{1 - s}{s} ( v_\mathrm{p,orb} + v_\mathrm{p,pm} )
+    v_\mathrm{eff} = \frac{1}{s} v_\mathrm{lens}
+                     - \frac{1 - s}{s} ( v_\mathrm{p,orb} + v_\mathrm{p,sys} )
                      - v_\mathrm{E}
 
 .. plot::
     :include-source:
     :context:
     
-    v_eff = 1. / s * v_ism - ((1 - s) / s) * (v_p_orb + v_p_pm) - v_earth
+    v_eff = 1. / s * v_lens - ((1 - s) / s) * (v_p_orb + v_p_sys) - v_earth
 
+Have a look at the contribution of each of the terms to the effective velocity.
+
+.. plot::
+    :include-source:
+    :context:
+
+    plt.figure(figsize=(12., 6.))
+    
+    plt.plot(t, - v_earth)
+    plt.plot(t, - ((1 - s) / s) * v_p_orb)
+    plt.plot(t[::len(t)-1], 1. / s * v_lens * [1, 1])
+    plt.plot(t[::len(t)-1], - ((1 - s) / s) * v_p_sys * [1, 1])
+    plt.plot(t, v_eff)
+    plt.legend([r'$-v_\mathrm{E}$',
+                r'$-((1 - s) / s) v_\mathrm{p,orb}$',
+                r'$(1. / s) v_\mathrm{lens}$',
+                r'$-((1 - s) / s) v_\mathrm{p,sys}$',
+                r'$v_\mathrm{eff}$'],
+               bbox_to_anchor=(1.04,1), loc='upper left')
+    plt.xlim(t[0], t[-1])
+    plt.ylabel(r'velocity (km/s)')
+    
+    plt.show()
 
 Curvature and scaled effective velocity
 =======================================
@@ -347,7 +386,7 @@ light.
 
 .. plot::
     :include-source:
-    :context:
+    :context: close-figs
 
     lambda_obs = (1400. * u.MHz).to(u.m, equivalencies=u.spectral())
 
@@ -361,11 +400,8 @@ Have a look at the curvature at a function of time.
 
     plt.figure(figsize=(12., 6.))
     
-    quantity_support()
-    time_support(format='iso')
-    
     plt.plot(t, eta.to(u.s**3))
-
+    plt.xlim(t[0], t[-1])
     plt.ylabel(r'curvature $\eta$ (s$^3$)')
     
     plt.show()
@@ -395,15 +431,11 @@ Plot this quantity as function of time.
 
     plt.figure(figsize=(12., 6.))
     
-    quantity_support()
-    time_support(format='iso')
-    
     plt.plot(t, dveff)
-
+    plt.xlim(t[0], t[-1])
     dveff_lbl = (r'scaled effective velocity '
                  r'$\frac{ | v_\mathrm{eff} | }{ \sqrt{ d_\mathrm{eff} } }$ '
                  r'$\left( \frac{\mathrm{km/s}}{\sqrt{\mathrm{pc}}} \right)$')
-    
     plt.ylabel(dveff_lbl)
     
     plt.show()
@@ -420,13 +452,12 @@ pulsar's orbital motion and that of the Earth, it can be useful to make a
 
     plt.hexbin(t.jyear % 1., th_p.value % 1., C=dveff.value,
                reduce_C_function=np.median, gridsize=19)
-
     plt.xlim(0., 1.)
     plt.ylim(0., 1.)
-
     plt.xlabel('Earth orbit phase (from Jan 1st)')
     plt.ylabel('Pulsar orbit phase (from ascending node)')
-
     cbar = plt.colorbar()
     cbar.set_label(dveff_lbl)
+
+    plt.show()
 
