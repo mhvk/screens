@@ -16,6 +16,7 @@ Tutorials
 
    examples/simple_examples
    examples/single_screen
+   examples/gen_velocities
 
 Reference/API
 =============
