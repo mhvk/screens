@@ -9,7 +9,7 @@ observation will look rather plain. In the secondary spectrum, there will be a
 single non-zero point at the origin.
 
 .. plot::
-    :context:
+    :context: close-figs
 
     import numpy as np
     from astropy import units as u

@@ -38,7 +38,7 @@ Imports.
 Set up support for plotting :py:class:`~astropy.units.quantity.Quantity` and
 :py:class:`~astropy.time.Time` objects.
 
-  .. plot::
+.. plot::
     :include-source:
     :context:
 
@@ -203,8 +203,8 @@ Calculate some derived quantities:
 
     delta_omega_p = omega_s - omega_p
 
-Define grid of observing times :math:`t` for which you want to calculate
-velocities using a a :py:class:`~astropy.time.Time` object.
+Define a grid of observing times :math:`t` for which you want to calculate
+velocities using a :py:class:`~astropy.time.Time` object.
 
 .. plot::
     :include-source:
