@@ -7,7 +7,9 @@ a pulsar in a circular orbit and a single one-dimensional screen, both with
 known parameters.
 
 Further explanations and derivations of the equations seen here can be found in
-Daniel Baker's "`Orbital Parameters and Distances
+`Marten's scintillometry page
+<http://www.astro.utoronto.ca/~mhvk/scintillometry.html#org5ea6450>`_
+and Daniel Baker's "`Orbital Parameters and Distances
 <https://eor.cita.utoronto.ca/images/4/44/DB_Orbital_Parameters.pdf>`_"
 document. As in that document, the practical example here uses the parameter
 values for the pulsar PSR J0437--4715 as studied by `Reardon et al. (2020)
@@ -98,8 +100,9 @@ Set the parameters of the pulsar system:
 
     * - longitude of ascending node
       - :math:`\Omega_\mathrm{p}`
-      - measured from the celestial north through east,
-        :math:`0^\circ \leq \Omega_\mathrm{p} < 360^\circ`
+      - measured from the celestial north through east;
+        :math:`0^\circ \leq \Omega_\mathrm{p} < 360^\circ`;
+        note that this angle has a :math:`180^\circ` ambiguity
 
     * - time of ascending node
       - :math:`T_\mathrm{asc,p}`
@@ -120,7 +123,7 @@ Set the parameters of the pulsar system:
     * - position angle of the lensed images
       - :math:`\Omega_\mathrm{s}`
       - measured from the celestial north, through east, to the line of images
-        formed by the lens
+        formed by the lens;
         :math:`0^\circ \leq \Omega_\mathrm{s} < 360^\circ`
 
     * - velocity of the lens
