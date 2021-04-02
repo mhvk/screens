@@ -178,6 +178,11 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 extensions += ['jupyter_sphinx']
 
 
+# -- Add sphinx_copybutton extension ------------------------------------------
+
+extensions += ['sphinx_copybutton']
+
+
 # -- Options for the edit_on_github extension ---------------------------------
 
 if setup_cfg.get('edit_on_github').lower() == 'true':
