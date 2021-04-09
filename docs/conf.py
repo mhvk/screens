@@ -168,6 +168,11 @@ man_pages = [('index', project.lower(), project + u' Documentation',
               [author], 1)]
 
 
+# -- Add the jupyter_sphinx extension -----------------------------------------
+
+extensions += ['jupyter_sphinx']
+
+
 # -- Options for the edit_on_github extension ---------------------------------
 
 if setup_cfg.get('edit_on_github').lower() == 'true':
