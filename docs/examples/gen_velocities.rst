@@ -15,8 +15,13 @@ document. As in that document, the practical example here uses the parameter
 values for the pulsar PSR J0437--4715 as studied by `Reardon et al. (2020)
 <https://ui.adsabs.harvard.edu/abs/2020ApJ...904..104R/abstract>`_.
 
-A Jupyter notebook of the codeblocks in this tutorial can be downloaded here:
-:jupyter-download:nb:`gen_velocities.ipynb <gen_velocities>`
+The combined codeblocks in this tutorial can be downloaded as a Python script
+and as a Jupyter notebook:
+
+:Python script:
+    :jupyter-download:script:`gen_velocities.py <gen_velocities>`
+:Jupyter notebook:
+    :jupyter-download:notebook:`gen_velocities.ipynb <gen_velocities>`
 
 Preliminaries
 =============
@@ -78,7 +83,7 @@ Set the parameters of the pulsar system:
       -
 
     * - proper motion in right ascension
-      - :math:`\mu_{\alpha*}`
+      - :math:`\mu_{\alpha\ast}`
       - including the :math:`\cos(\delta)` term
 
     * - **Orbital elements of the pulsar binary**
@@ -173,7 +178,7 @@ Calculate some derived quantities:
             K_\mathrm{p} = \frac{ 2 \pi a_\mathrm{p} \sin( i_\mathrm{p} ) }
                                 { P_\mathrm{b} }
 
-    * - fractional distance to the screen (from Earth)
+    * - fractional distance to the screen (from the pulsar)
       - 
         .. math::
             
@@ -283,21 +288,21 @@ Compute the pulsar's orbital velocity projected onto the screen
     v_\mathrm{p,orb} = - \frac{ K_\mathrm{p} }{ \sin( i_\mathrm{p} ) }
                          \left[ \cos( i_\mathrm{p} )
                                 \sin( \Delta\Omega_\mathrm{p} )
-                                \cos( \theta_\mathrm{p} )
+                                \cos( \phi_\mathrm{p} )
                               - \cos( \Delta\Omega_\mathrm{p} )
-                                \sin( \theta_\mathrm{p} )
+                                \sin( \phi_\mathrm{p} )
                          \right].
 
-Here, :math:`\theta_\mathrm{p}( t )` is the phase of pulsar orbit as measured
+Here, :math:`\phi_\mathrm{p}( t )` is the phase of pulsar orbit as measured
 from its ascending node.
 
 .. jupyter-execute::
 
-    th_p = ((t - t0_p) / p_b).to(u.dimensionless_unscaled) * u.cycle
+    ph_p = ((t - t0_p) / p_b).to(u.dimensionless_unscaled) * u.cycle
 
     v_p_orb = (-k_p / np.sin(i_p)
-               * (np.cos(i_p) * np.sin(delta_omega_p) * np.cos(th_p)
-                              - np.cos(delta_omega_p) * np.sin(th_p)))
+               * (np.cos(i_p) * np.sin(delta_omega_p) * np.cos(ph_p)
+                              - np.cos(delta_omega_p) * np.sin(ph_p)))
 
 Pulsar systemic velocity
 ------------------------
@@ -307,8 +312,8 @@ The pulsar systemic velocity projected onto the screen is given by
 .. math::
 
     v_\mathrm{p,sys} \simeq d_\mathrm{p}
-                              \left[ \mu_\alpha \sin( \Omega_\mathrm{s} )
-                                   + \mu_\delta \cos( \Omega_\mathrm{s} )
+                              \left[ \mu_{\alpha\ast} \sin( \Omega_\mathrm{s} )
+                                         + \mu_\delta \cos( \Omega_\mathrm{s} )
                               \right].
 
 This can be computed manually, but it can also be retrieved from the
@@ -419,14 +424,14 @@ Plot this quantity as function of time.
     plt.show()
     
 To visualize the modulation in scintillation velocity caused by both the
-pulsar's orbital motion and that of the Earth, it can be useful to make a
-2D histogram.
+pulsar's orbital motion and that of the Earth, we can make a 2D phase fold of
+the data.
 
 .. jupyter-execute::
 
     plt.figure(figsize=(10., 6.))
 
-    plt.hexbin(t.jyear % 1., th_p.value % 1., C=dveff.value,
+    plt.hexbin(t.jyear % 1., ph_p.value % 1., C=dveff.value,
                reduce_C_function=np.median, gridsize=19)
     plt.xlim(0., 1.)
     plt.ylim(0., 1.)
