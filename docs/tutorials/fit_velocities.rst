@@ -231,7 +231,7 @@ that it is clear how its free parameters affect the model in data space (hence,
 when fitting the model to data, it is clear how the fit can be improved by
 changing the the values of the free parameters). However, it obscures how the
 model depends on the physical parameters of interest. A
-:doc:`follow-up tutorial <extract_phys_pars>` describes how the free parameters
+:doc:`follow-up tutorial <infer_phys_pars>` describes how the free parameters
 in this equation are related to the physical parameters of the system.
 
 When putting the model equation into a Python function, it is useful to keep
@@ -803,7 +803,7 @@ functions, we'll convert this array into the appropriate dictionary of Astropy
         print(f'{par_name:8s} {pars_opt[par_name]:8.2f}')
 
 How these parameters can be converted to the physical parameters of interest is
-covered in a :doc:`follow-up tutorial <extract_phys_pars>`.
+covered in a :doc:`follow-up tutorial <infer_phys_pars>`.
 
 Let's quantify the goodness of fit.
 
