@@ -311,8 +311,12 @@ relatively sparse compared to the pulsar's orbital period, so to make the
 pulsar's orbit visible in the time series, we have to also evaluate the model
 at a higher time resolution.
 
+.. raw:: html
+
+    <details>
+        <summary>function definition</summary>
+
 .. jupyter-execute::
-    :hide-code:
 
     def visualize_model_full(pars):
 
@@ -369,6 +373,10 @@ at a higher time resolution.
 
         plt.show()
 
+.. raw:: html
+
+    </details>
+
 .. jupyter-execute::
 
     visualize_model_full(pars_try)
@@ -384,8 +392,12 @@ compared with the data minus the remaining model components, and likewise for
 the pulsar. For these plots to show a good agreement between data and model,
 all model components need to be accurate.
 
+.. raw:: html
+
+    <details>
+        <summary>function definition</summary>
+
 .. jupyter-execute::
-    :hide-code:
 
     def visualize_model_folded(pars):
         
@@ -436,6 +448,10 @@ all model components need to be accurate.
 
         plt.show()
 
+.. raw:: html
+
+    </details>
+
 .. jupyter-execute::
 
     visualize_model_folded(pars_try)
@@ -444,8 +460,12 @@ all model components need to be accurate.
 Finally, the 2D phase fold of the data can be compared with the same 2D phase
 fold of the full model.
 
+.. raw:: html
+
+    <details>
+        <summary>function definition</summary>
+
 .. jupyter-execute::
-    :hide-code:
 
     def visualize_model_fold2d(pars):
 
@@ -497,6 +517,10 @@ fold of the full model.
         cbar.set_label(dveff_lbl, labelpad=labelpad)
 
         plt.show()
+
+.. raw:: html
+
+    </details>
 
 .. jupyter-execute::
 
