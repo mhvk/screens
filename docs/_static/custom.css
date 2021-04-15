@@ -15,3 +15,19 @@ details > summary:before {
 details[open] > summary:before {
     content: "Hide ";
 }
+
+details.jupyter_container {
+    margin: 0 0 18px 0;
+    background-color: #FFF;
+    border: 1px solid #CCC;
+    -moz-box-shadow: 2px 2px 4px rgba(87, 87, 87, 0.2);
+    -webkit-box-shadow: 2px 2px 4px rgba(87, 87, 87, 0.2);
+    box-shadow: 2px 2px 4px rgba(87, 87, 87, 0.2);
+}
+
+details.jupyter_container > div.jupyter_container {
+    border: 0;
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}

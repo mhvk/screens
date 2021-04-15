@@ -313,7 +313,7 @@ at a higher time resolution.
 
 .. raw:: html
 
-    <details>
+    <details class="jupyter_container">
         <summary>function definition</summary>
 
 .. jupyter-execute::
@@ -394,7 +394,7 @@ all model components need to be accurate.
 
 .. raw:: html
 
-    <details>
+    <details class="jupyter_container">
         <summary>function definition</summary>
 
 .. jupyter-execute::
@@ -462,7 +462,7 @@ fold of the full model.
 
 .. raw:: html
 
-    <details>
+    <details class="jupyter_container">
         <summary>function definition</summary>
 
 .. jupyter-execute::
