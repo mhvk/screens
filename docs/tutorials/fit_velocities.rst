@@ -33,6 +33,8 @@ Imports.
 
     import numpy as np
     import matplotlib.pyplot as plt
+    import matplotlib.colors as mcolors
+    # Note: matplotlib.colors.CenteredNorm requires matplotlib version >= 3.4.0
 
     from astropy import units as u
 
@@ -455,43 +457,42 @@ fold of the full model.
         gridsize = 19
         labelpad = 16
             
-        ax1 = plt.subplot(131)
-        hb = plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1.,
-                        C=dveff_obs.value, reduce_C_function=np.median,
-                        gridsize=gridsize)
+        plt.subplot(131)
+        plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1., C=dveff_obs.value,
+                   reduce_C_function=np.median, gridsize=gridsize)
         plt.xlim(0., 1.)
         plt.ylim(0., 1.)
         plt.xlabel('Earth orbit phase')
         plt.ylabel('Pulsar orbit phase')
         plt.title('data', **title_kwargs,
                   fontdict={'color': 'w', 'fontweight': 'bold'})
-        cbar = plt.colorbar(hb, ax=[ax1], location='top')
+        cbar = plt.colorbar(location='top')
         cbar.ax.invert_xaxis()
         cbar.set_label(dveff_lbl, labelpad=labelpad)
         
-        ax2 = plt.subplot(132)
-        hb = plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1.,
-                        C=dveff_mdl.value, reduce_C_function=np.median,
-                        gridsize=gridsize)
+        plt.subplot(132)
+        plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1., C=dveff_mdl.value,
+                   reduce_C_function=np.median, gridsize=gridsize)
         plt.xlim(0., 1.)
         plt.ylim(0., 1.)
         plt.xlabel('Earth orbit phase')
         plt.title('model', **title_kwargs,
                 fontdict={'color': 'w', 'fontweight': 'bold'})
-        cbar = plt.colorbar(hb, ax=[ax2], location='top')
+        cbar = plt.colorbar(location='top')
         cbar.ax.invert_xaxis()
         cbar.set_label(dveff_lbl, labelpad=labelpad)
         
-        ax3 = plt.subplot(133)
-        hb = plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1.,
-                        C=dveff_res.value, reduce_C_function=np.median,
-                        gridsize=gridsize, cmap='coolwarm')
+        plt.subplot(133)
+        plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1., C=dveff_res.value,
+                   reduce_C_function=np.median, gridsize=gridsize,
+                   norm=mcolors.CenteredNorm(), cmap='coolwarm')
+        # Note: CenteredNorm requires matplotlib version >= 3.4.0
         plt.xlim(0., 1.)
         plt.ylim(0., 1.)
         plt.xlabel('Earth orbit phase')
         plt.title('residuals', **title_kwargs,
                   fontdict={'color': 'k', 'fontweight': 'bold'})
-        cbar = plt.colorbar(hb, ax=[ax3], location='top')
+        cbar = plt.colorbar(location='top')
         cbar.ax.invert_xaxis()
         cbar.set_label(dveff_lbl, labelpad=labelpad)
 
