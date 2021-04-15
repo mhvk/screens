@@ -1,3 +1,17 @@
 div.jupyter_container + p {
     margin-top: 18px;
 }
+
+details > summary {
+    padding: .4em;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+details > summary:before {
+    content: "Show ";
+}
+
+details[open] > summary:before {
+    content: "Hide ";
+}
