@@ -151,6 +151,11 @@ html_title = '{0} v{1}'.format(project, release)
 # Output file base name for HTML help builder.
 htmlhelp_basename = project + 'doc'
 
+# Static files to copy after template files
+html_static_path = ['_static']
+
+# Custom style files
+html_css_files=['custom.css']
 
 # -- Options for LaTeX output -------------------------------------------------
 
