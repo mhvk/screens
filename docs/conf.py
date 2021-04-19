@@ -151,6 +151,11 @@ html_title = '{0} v{1}'.format(project, release)
 # Output file base name for HTML help builder.
 htmlhelp_basename = project + 'doc'
 
+# Static files to copy after template files
+html_static_path = ['_static']
+
+# Custom style files
+html_css_files=['custom.css']
 
 # -- Options for LaTeX output -------------------------------------------------
 
@@ -166,6 +171,11 @@ latex_documents = [('index', project + '.tex', project + u' Documentation',
 # (source start file, name, description, authors, manual section).
 man_pages = [('index', project.lower(), project + u' Documentation',
               [author], 1)]
+
+
+# -- Add the jupyter_sphinx extension -----------------------------------------
+
+extensions += ['jupyter_sphinx']
 
 
 # -- Options for the edit_on_github extension ---------------------------------

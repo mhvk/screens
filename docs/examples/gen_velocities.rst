@@ -15,15 +15,21 @@ document. As in that document, the practical example here uses the parameter
 values for the pulsar PSR J0437--4715 as studied by `Reardon et al. (2020)
 <https://ui.adsabs.harvard.edu/abs/2020ApJ...904..104R/abstract>`_.
 
+The combined codeblocks in this tutorial can be downloaded as a Python script
+and as a Jupyter notebook:
+
+:Python script:
+    :jupyter-download:script:`gen_velocities.py <gen_velocities>`
+:Jupyter notebook:
+    :jupyter-download:notebook:`gen_velocities.ipynb <gen_velocities>`
+
 Preliminaries
 =============
 
 Imports.
 
-.. plot::
-    :include-source:
-    :context:
-    
+.. jupyter-execute::
+
     import numpy as np
     import matplotlib.pyplot as plt
 
@@ -35,15 +41,17 @@ Imports.
 
     from astropy.visualization import quantity_support, time_support
 
-Set up support for plotting :py:class:`~astropy.units.quantity.Quantity` and
-:py:class:`~astropy.time.Time` objects.
+Set up support for plotting astropy's
+:py:class:`~astropy.units.quantity.Quantity` and :py:class:`~astropy.time.Time`
+objects, and make sure that the output of plotting commands is displayed inline
+(i.e., directly below the code cell that produced it).
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     quantity_support()
     time_support(format='iso')
+
+    %matplotlib inline
 
 Initializing parameters
 =======================
@@ -75,7 +83,7 @@ Set the parameters of the pulsar system:
       -
 
     * - proper motion in right ascension
-      - :math:`\mu_{\alpha*}`
+      - :math:`\mu_{\alpha\ast}`
       - including the :math:`\cos(\delta)` term
 
     * - **Orbital elements of the pulsar binary**
@@ -101,8 +109,7 @@ Set the parameters of the pulsar system:
     * - longitude of ascending node
       - :math:`\Omega_\mathrm{p}`
       - measured from the celestial north through east;
-        :math:`0^\circ \leq \Omega_\mathrm{p} < 360^\circ`;
-        note that this angle has a :math:`180^\circ` ambiguity
+        :math:`0^\circ \leq \Omega_\mathrm{p} < 360^\circ`
 
     * - time of ascending node
       - :math:`T_\mathrm{asc,p}`
@@ -124,15 +131,14 @@ Set the parameters of the pulsar system:
       - :math:`\Omega_\mathrm{s}`
       - measured from the celestial north, through east, to the line of images
         formed by the lens;
-        :math:`0^\circ \leq \Omega_\mathrm{s} < 360^\circ`
+        :math:`0^\circ \leq \Omega_\mathrm{s} < 360^\circ`;
+        note that this angle has a :math:`180^\circ` ambiguity
 
     * - velocity of the lens
       - :math:`v_\mathrm{lens}`
       - component along the screen direction
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     p_b = 5.7410459 * u.day
     asini_p = 3.3667144 * const.c * u.s
@@ -149,9 +155,7 @@ The coordinates should be placed directly in a
 :py:class:`~astropy.coordinates.SkyCoord` object, that includes the pulsar
 system's position on the sky, its distance, and its proper motion.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     psr_coord = SkyCoord('04h37m15.99744s -47d15m09.7170s',
                          distance=d_p,
@@ -174,7 +178,7 @@ Calculate some derived quantities:
             K_\mathrm{p} = \frac{ 2 \pi a_\mathrm{p} \sin( i_\mathrm{p} ) }
                                 { P_\mathrm{b} }
 
-    * - fractional distance to the screen (from Earth)
+    * - fractional distance to the screen (from the pulsar)
       - 
         .. math::
             
@@ -192,9 +196,7 @@ Calculate some derived quantities:
         
             \Delta\Omega_\mathrm{p} = \Omega_\mathrm{s} - \Omega_\mathrm{p}
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     k_p = 2.*np.pi * asini_p / p_b
 
@@ -206,9 +208,7 @@ Calculate some derived quantities:
 Define a grid of observing times :math:`t` for which you want to calculate
 velocities using a :py:class:`~astropy.time.Time` object.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     t_mjd = np.arange(55000., 55700., 0.25)
     t = Time(t_mjd, format='mjd', scale='utc')
@@ -219,9 +219,7 @@ The lens frame
 Make a :py:class:`~astropy.coordinates.SkyOffsetFrame` centered on the pulsar
 system, rotated to the one-dimensional lens.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     lens_frame = SkyOffsetFrame(origin=psr_coord, rotation=omega_s)
 
@@ -274,9 +272,7 @@ Velocities can then be extracted using the
 finally :py:attr:`~astropy.coordinates.CartesianDifferential.d_z` isolates the
 z-component of the velocity (in the direction of the screen).
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     earth_loc = EarthLocation('148°15′47″E', '32°59′52″S')
     
@@ -292,23 +288,21 @@ Compute the pulsar's orbital velocity projected onto the screen
     v_\mathrm{p,orb} = - \frac{ K_\mathrm{p} }{ \sin( i_\mathrm{p} ) }
                          \left[ \cos( i_\mathrm{p} )
                                 \sin( \Delta\Omega_\mathrm{p} )
-                                \cos( \theta_\mathrm{p} )
+                                \cos( \phi_\mathrm{p} )
                               - \cos( \Delta\Omega_\mathrm{p} )
-                                \sin( \theta_\mathrm{p} )
+                                \sin( \phi_\mathrm{p} )
                          \right].
 
-Here, :math:`\theta_\mathrm{p}( t )` is the phase of pulsar orbit as measured
+Here, :math:`\phi_\mathrm{p}( t )` is the phase of pulsar orbit as measured
 from its ascending node.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
-    th_p = ((t - t0_p) / p_b).to(u.dimensionless_unscaled) * u.cycle
+    ph_p = ((t - t0_p) / p_b).to(u.dimensionless_unscaled) * u.cycle
 
     v_p_orb = (-k_p / np.sin(i_p)
-               * (np.cos(i_p) * np.sin(delta_omega_p) * np.cos(th_p)
-                              - np.cos(delta_omega_p) * np.sin(th_p)))
+               * (np.cos(i_p) * np.sin(delta_omega_p) * np.cos(ph_p)
+                              - np.cos(delta_omega_p) * np.sin(ph_p)))
 
 Pulsar systemic velocity
 ------------------------
@@ -318,17 +312,15 @@ The pulsar systemic velocity projected onto the screen is given by
 .. math::
 
     v_\mathrm{p,sys} \simeq d_\mathrm{p}
-                              \left[ \mu_\alpha \sin( \Omega_\mathrm{s} )
-                                   + \mu_\delta \cos( \Omega_\mathrm{s} )
+                              \left[ \mu_{\alpha\ast} \sin( \Omega_\mathrm{s} )
+                                         + \mu_\delta \cos( \Omega_\mathrm{s} )
                               \right].
 
 This can be computed manually, but it can also be retrieved from the
 :py:class:`~astropy.coordinates.SkyCoord` of the pulsar system (which contains
 the system's proper motion) by transforming it to ``lens_frame``.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
     
     v_p_sys = psr_coord.transform_to(lens_frame).velocity.d_z
 
@@ -344,17 +336,13 @@ velocity
                      - \frac{1 - s}{s} ( v_\mathrm{p,orb} + v_\mathrm{p,sys} )
                      - v_\mathrm{E}
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
     
     v_eff = 1. / s * v_lens - ((1 - s) / s) * (v_p_orb + v_p_sys) - v_earth
 
 Have a look at the contribution of each of the terms to the effective velocity.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     plt.figure(figsize=(12., 6.))
     
@@ -387,9 +375,7 @@ according to
 where :math:`\lambda` is the observing wavelength and :math:`c` is the speed of
 light.
 
-.. plot::
-    :include-source:
-    :context: close-figs
+.. jupyter-execute::
 
     lambda_obs = (1400. * u.MHz).to(u.m, equivalencies=u.spectral())
 
@@ -397,9 +383,7 @@ light.
 
 Have a look at the curvature at a function of time.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     plt.figure(figsize=(12., 6.))
     
@@ -420,17 +404,13 @@ secondary spectrum parabola in a space of "scaled effective velocity"
     \frac{ \lambda }{ \sqrt{ 2 \eta c } }
       = \frac{  \left| v_\mathrm{eff} \right| }{ \sqrt{ d_\mathrm{eff} } }
 
-.. plot::
-    :include-source:
-    :context: close-figs
+.. jupyter-execute::
     
     dveff = np.abs(v_eff) / np.sqrt(d_eff)
     
 Plot this quantity as function of time.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     plt.figure(figsize=(12., 6.))
     
@@ -444,16 +424,14 @@ Plot this quantity as function of time.
     plt.show()
     
 To visualize the modulation in scintillation velocity caused by both the
-pulsar's orbital motion and that of the Earth, it can be useful to make a
-2D histogram.
+pulsar's orbital motion and that of the Earth, we can make a 2D phase fold of
+the data.
 
-.. plot::
-    :include-source:
-    :context: close-figs
+.. jupyter-execute::
 
     plt.figure(figsize=(10., 6.))
 
-    plt.hexbin(t.jyear % 1., th_p.value % 1., C=dveff.value,
+    plt.hexbin(t.jyear % 1., ph_p.value % 1., C=dveff.value,
                reduce_C_function=np.median, gridsize=19)
     plt.xlim(0., 1.)
     plt.ylim(0., 1.)
