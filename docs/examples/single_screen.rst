@@ -8,6 +8,14 @@ one-dimensional screen. The schematic below gives an overview of the system
 in this example, showing how beams of radiation go from the pulsar to Earth
 via the different images on the scattering screen.
 
+The combined codeblocks in this tutorial can be downloaded as a Python script
+and as a Jupyter notebook:
+
+:Python script:
+    :jupyter-download:script:`single_screen.py <single_screen>`
+:Jupyter notebook:
+    :jupyter-download:notebook:`single_screen.ipynb <single_screen>`
+
 .. plot::
 
     from astropy import units as u
@@ -26,9 +34,7 @@ Preliminaries
 
 Start with some standard imports.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     import numpy as np
     import matplotlib.pyplot as plt
@@ -41,9 +47,7 @@ colormap from the local file ``hue_cycle_cmap``, available for download
 :download:`here <./hue_cycle_cmap.py>`.
 The ``hsv`` colormap is used as fallback.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     try:
         from hue_cycle_cmap import cmap as phasecmap
@@ -53,9 +57,7 @@ The ``hsv`` colormap is used as fallback.
 Also define a function to make two-dimensional phase-intensity colorbars,
 for plotting dynamic wavefields.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     def phase_intensity_colorbar(fig, ax, phasecmap, ampmax=1.):
 
@@ -93,9 +95,7 @@ with three scattered images, along with the line-of-sight image. Hence, the
 array of angles :math:`\boldsymbol{\theta}` contains :math:`n_\theta = 4`
 points.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     theta = [-4., -1., 0., 2.] << u.mas
 
@@ -105,9 +105,7 @@ phases of the lens images). For this example, normalize the magnifications
 so the amplitudes add up to unity (this will lead to a dynamic spectrum with a
 mean of unity).
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     magnification = [-0.1 - 0.1j,
                      0.7 - 0.3j,
@@ -119,9 +117,7 @@ Have a look at the lens, using a scatter plot where the sizes of the points
 show the amplitudes of the magnifications and their colours indicate the
 intrinsic phases imparted by the lens.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     plt.figure(figsize=(12., 3.))
     plt.scatter(theta, np.zeros_like(theta),
@@ -148,9 +144,7 @@ the observation length :math:`\Delta t`,
 the number of frequency channels :math:`n_f`,
 and the number of time bins :math:`n_t`.
 
-.. plot::
-    :include-source:
-    :context: close-figs
+.. jupyter-execute::
 
     fobs = 316. * u.MHz
     delta_f = 2. * u.MHz
@@ -162,9 +156,7 @@ Set up grids of observing frequencies and times. Then make the frequency grid
 a row vector with shape (1, :math:`n_f`) and the time grid a column vector with
 shape (:math:`n_t`, 1), so they will be broadcast against each other correctly.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     f = (fobs + np.linspace(-0.5*delta_f, 0.5*delta_f, nf, endpoint=False)
          + 0.5*delta_f/nf)
@@ -175,9 +167,7 @@ shape (:math:`n_t`, 1), so they will be broadcast against each other correctly.
 Already define an extent for plotting the dynamic wavefield and dynamic
 spectrum.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     ds_extent = (t[0][0].value  - 0.5*(t[1][0].value - t[0][0].value),
                  t[-1][0].value + 0.5*(t[1][0].value - t[0][0].value),
@@ -191,9 +181,7 @@ Generate the dynamic wavefield
 Set the parameters of the system: the effective distance :math:`d_\mathrm{eff}`
 and the effective proper motion :math:`\mu_\mathrm{eff}`.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     d_eff = 0.5 * u.kpc
     mu_eff = 50. * u.mas / u.yr
@@ -206,9 +194,7 @@ The dynamic wavefield :math:`W_j` of screen image :math:`j` is given by
     W_j(f, t) = \mu_j \exp \left[ i f \frac{d_\mathrm{eff}}{2 c}
                                   (\theta_j + \mu_\mathrm{eff} t)^2 \right].
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
     
     theta_t = theta[:, np.newaxis, np.newaxis] + mu_eff * t
     tau_t = (((d_eff / (2*const.c)) * theta_t**2)
@@ -253,9 +239,7 @@ arrival time of radiation travelling via the scattered beam and the
 line-of-sight beam. It is evident that the magnifications of some of the
 scattering points are stronger than those of others.
 
-.. plot::
-    :include-source:
-    :context: close-figs
+.. jupyter-execute::
 
     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12., 8.))
     plt.subplots_adjust(wspace=0.4, hspace=0.4)
@@ -277,17 +261,13 @@ scattering points are stronger than those of others.
 The dynamic wavefields corresponding to the individual scattering points still
 have to be summed to create the total dynamic wavefield at the telescope.
 
-.. plot::
-    :include-source:
-    :context: close-figs
+.. jupyter-execute::
 
     dynwave = dynwaves.sum(axis=0)
 
 Plot the combined dynamic wavefield.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     fig = plt.figure(figsize=(12., 8.))
     ax = plt.subplot(111)
@@ -310,18 +290,14 @@ Create the dynamic spectrum
 
 The dynamic spectrum is the square modulus of the summed dynamic wavefield.
 
-.. plot::
-    :include-source:
-    :context: close-figs
+.. jupyter-execute::
 
     dynspec = np.abs(dynwave)**2
 
 
 Now, show the dynamic spectrum.
 
-.. plot::
-    :include-source:
-    :context:
+.. jupyter-execute::
 
     plt.figure(figsize=(12., 8.))
     plt.imshow(dynspec.T,
