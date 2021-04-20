@@ -5,8 +5,7 @@ import numpy as np
 from astropy import units as u
 from screens.fields import dynamic_field
 from screens.secspec import SecondarySpectrum
-from screens.visualization import make_sketch
-from hue_cycle_cmap import cmap as phasecmap
+from screens.visualization import make_sketch, phasecmap
 
 
 def generate_magnification(th):

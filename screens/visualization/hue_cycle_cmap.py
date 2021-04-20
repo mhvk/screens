@@ -264,4 +264,4 @@ colors = np.array([
     [0.65121289, 0.47406244, 0.05044367],
     [0.65830839, 0.46993917, 0.04941288]])
 
-cmap = mcolors.ListedColormap(colors)
+phasecmap = mcolors.ListedColormap(colors)

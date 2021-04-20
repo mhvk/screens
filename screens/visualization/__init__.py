@@ -2,3 +2,4 @@
 
 from .thetatheta import ThetaTheta   # noqa
 from .sketch import make_sketch   # noqa
+from .hue_cycle_cmap import phasecmap   # noqa

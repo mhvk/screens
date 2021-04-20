@@ -43,14 +43,13 @@ Start with some standard imports.
     from astropy import constants as const
 
 Set a colormap to use for phases. Preferably import the perceptually uniform
-colormap from the local file ``hue_cycle_cmap``, available for download
-:download:`here <./hue_cycle_cmap.py>`.
-The ``hsv`` colormap is used as fallback.
+colormap `phasecmap` from :py:mod:`screens.visualization`.
+The `hsv` colormap from :py:mod:`matplotlib.cm` is used as fallback.
 
 .. jupyter-execute::
 
     try:
-        from hue_cycle_cmap import cmap as phasecmap
+        from screens.visualization import phasecmap
     except ImportError:
         phasecmap = cm.hsv
 
@@ -213,9 +212,9 @@ amplitude and phase of the dynamic wavefield.
 .. note::
 
     The :py:mod:`screens.fields` module contains the function
-    `~screens.fields.dynamic_field` to quickly generate a cube of dynamic
-    wavefields from a set of scattering points defined by their angles and
-    magnifications.
+    :py:func:`~screens.fields.dynamic_field` to quickly generate a cube of
+    dynamic wavefields from a set of scattering points defined by their angles
+    and magnifications.
     
     Because this function handles two-dimensional lenses, it is necessary to
     pass it the angles both parallel to and perpendicular to the effective
