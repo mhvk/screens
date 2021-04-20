@@ -6,17 +6,27 @@ Background
 .. toctree::
    :maxdepth: 1
 
+   background/simple_examples
    background/multiple_screens
 
 Tutorials
 =========
 
+Generating and processing scintillometry data
+---------------------------------------------
+
 .. toctree::
    :maxdepth: 1
 
-   examples/simple_examples
-   examples/single_screen
-   examples/gen_velocities
+   tutorials/single_screen
+
+Modelling scintillation velocities
+----------------------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   tutorials/gen_velocities
 
 Reference/API
 =============
