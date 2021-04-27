@@ -43,7 +43,7 @@ Imports.
 
     from astropy.visualization import quantity_support, time_support
 
-    from scipy.optimize import minimize
+    from scipy.optimize import curve_fit
 
 Set up support for plotting Astropy's
 :py:class:`~astropy.units.quantity.Quantity` and :py:class:`~astropy.time.Time`
@@ -182,6 +182,12 @@ that of the Earth in one plot, one should make a 2D phase fold of the dataset.
 
     cbar = plt.colorbar()
     cbar.set_label(dveff_lbl)
+
+.. note::
+
+    For data sets in which the effective velocity flips sign (generally because
+    the source has a low projected proper motion), the above plots will look
+    qualitatively different.
 
 The phenomenological model
 ==========================
@@ -380,15 +386,20 @@ at a higher time resolution.
     visualize_model_full(pars_try)
 
 Next, let's make plots in which the data is folded over the Earth's and the
-pulsar's orbital period. To do this, it is necessary to generate the scaled-
-effective-velocity terms due to Earth's orbit and the pulsar's orbit
+pulsar's orbital period. To do this, it is necessary to generate the
+scaled-effective-velocity terms due to Earth's orbit and the pulsar's orbit
 separately. This can be achieved using the ``model_dveff_signed()`` function
-(which does not include the modulus operation) and with specific parameters set
-to zero. (When copying a dictionary of parameters, pay attention not to modify
-the original dictionary.) A model of only the Earth's component can then be
-compared with the data minus the remaining model components, and likewise for
-the pulsar. For these plots to show a good agreement between data and model,
-all model components need to be accurate.
+(which does not include the modulus operation) and with the parameters of the
+other components set to zero. (When copying a dictionary of parameters, pay
+attention not to modify the original dictionary.) A model of only the Earth's
+component can then be compared with the data minus the remaining model
+components, and likewise for the pulsar.
+
+For these plots to show a good agreement between data and model, all model
+components need to be accurate, not just the ones being displayed. Also, this
+model-data comparison will only work properly if the modulus operation in eq.
+:math:`\ref{eq_model}` can effectively be ignored, so it will fail for data
+sets with low absolute effective velocities.
 
 .. raw:: html
 
@@ -533,8 +544,9 @@ we will compute its :math:`\chi^2` statistic.
 
 .. jupyter-execute::
 
-    def get_chi2(mdl, obs, err):
-        chi2 = np.sum(((obs - mdl) / err)**2)
+    def get_chi2(pars):
+        dveff_mdl = model_dveff_abs(pars, t_obs)
+        chi2 = np.sum(((dveff_obs - dveff_mdl) / dveff_err)**2)
         return chi2
 
 One can now evaluate the model for a given set of parameter values and compute
@@ -543,8 +555,7 @@ reduced :math:`\chi^2` statistic.
 
 .. jupyter-execute::
 
-    dveff_mdl = model_dveff_abs(pars_try, t_obs)
-    chi2 = get_chi2(dveff_mdl, dveff_obs, dveff_err)
+    chi2 = get_chi2(pars_try)
     print(f'chi2     {chi2:8.2f}')
 
     ndof = len(t_obs) - len(pars_try)
@@ -555,10 +566,24 @@ Algorithmic maximum likelihood estimation
 =========================================
 
 While the above results already look quite good, fitting by eye obviously has
-its limitations. To improve our determination of the parameter values that give
-the maximum likelihood, we can use an optimization algorithm. Specifically, we
-can use :py:func:`scipy.optimize.minimize` to find a local minimum in
-:math:`\chi^2` given an initial guess.
+its limitations. To improve on this result, we will now use an optimization
+algorithm to find the parameter values that give the maximum likelihood.
+Specifically, we will perform a non-linear least-squares fit using the
+`Levenberg-Marquardt algorithm
+<https://en.wikipedia.org/wiki/Levenberg%E2%80%93Marquardt_algorithm>`_
+as implemented by the SciPy function :py:func:`scipy.optimize.curve_fit`.
+
+.. note::
+
+    For data sets with high absolute effective velocities (i.e., with all data
+    points far away from zero), one can also ignore the modulus operation in
+    the model equation (eq. :math:`\ref{eq_model}`) and perform a (weighted)
+    linear least-squares fit, for example using :py:func:`scipy.linalg.lstsq`.
+    While the data in the example given here conform to this criterion and a
+    linear least-squares fit would be more efficient, the non-linear method
+    presented in this tutorial is more generally applicable. It also works on
+    data sets with effective velocities around zero, such that the modulus
+    operation cannot be ignored.
 
 
 An algorithm-friendly model function
@@ -567,25 +592,26 @@ An algorithm-friendly model function
 The model equation (eq. :math:`\ref{eq_model}`) has some properties that make
 it inconvenient for algorithmic fitting:
 
-- The amplitudes :math:`A_\mathrm{p}` and :math:`A_\mathrm{E}` are
-  non-negative, so the optimization algorithm would need to be configured to
-  avoid the disallowed regions of parameter space.
+- The amplitudes :math:`A_\mathrm{p}` and :math:`A_\mathrm{E}` are constrained
+  to be non-negative (:math:`A_\mathrm{p} \geq 0`,
+  :math:`A_\mathrm{E} \geq 0`), so the optimization algorithm would need to be
+  configured to avoid the disallowed regions of parameter space.
 - The phase offsets :math:`\xi_\mathrm{p}` and :math:`\xi_\mathrm{E}` are
   periodic, with a period of :math:`360^\circ`. This could cause issues for
   some fitting algorithms, for example, if the step size in one of these
   parameters is close to their period.
+- The equation contains some relatively expensive calculations that can be
+  optimized out to speed up the fitting significantly.
 
-To avoid these complications, we should reformulate the optimization problem,
-so the optimizer can work in a parameter space that doesn't have these issues.
-The model equation can be recast as
+To avoid these complications, the model equation can be recast as
 
 .. math::
 
     \frac{ \left| v_\mathrm{eff} \right| }{ \sqrt{d_\mathrm{eff}} }
       = \left| A_\mathrm{ps} \sin( \phi_\mathrm{p} )
-             + A_\mathrm{pc} \cos( \phi_\mathrm{p} )
+             - A_\mathrm{pc} \cos( \phi_\mathrm{p} )
              + A_\mathrm{Es} \sin( \phi_\mathrm{E} )
-             + A_\mathrm{Ec} \cos( \phi_\mathrm{E} ) + C
+             - A_\mathrm{Ec} \cos( \phi_\mathrm{E} ) + C
         \right|,
 
 where the amplitudes are related to the amplitudes and phase offsets in eq.
@@ -593,31 +619,60 @@ where the amplitudes are related to the amplitudes and phase offsets in eq.
 
 .. math::
 
-    \DeclareMathOperator{\sgn}{sgn}
+    \DeclareMathOperator{\arctantwo}{arctan2}
 
-    A_\mathrm{p}^2 &= A_\mathrm{ps}^2 + A_\mathrm{pc}^2,
+    A_\mathrm{ps} &= A_\mathrm{p} \cos( \xi_\mathrm{p} ),
     \qquad &
-    \tan( \xi_\mathrm{p} ) &= \frac{ A_\mathrm{pc} }{ A_\mathrm{ps} },
+    A_\mathrm{pc} &= A_\mathrm{p} \sin( \xi_\mathrm{p} ), \\
+    A_\mathrm{Es} &= A_\mathrm{E} \cos( \xi_\mathrm{E} ),
     \qquad &
-    \sgn\left[ \sin( \xi_\mathrm{p} ) \right] &= \sgn( A_\mathrm{ps} ), \\
-    A_\mathrm{E}^2 &= A_\mathrm{Es}^2 + A_\mathrm{Ec}^2,
-    \qquad &
-    \tan( \xi_\mathrm{E} ) &= \frac{ A_\mathrm{Ec} }{ A_\mathrm{Es} },
-    \qquad &
-    \sgn\left[ \sin( \xi_\mathrm{E} ) \right] &= \sgn( A_\mathrm{Es} ), \\
+    A_\mathrm{Ec} &= A_\mathrm{E} \sin( \xi_\mathrm{E} ). \\
 
-while the constant scaled-effective-velocity offset :math:`C` remains the same.
+Results of the fitting can be converted back to the amplitudes and phase
+offsets in eq. :math:`\ref{eq_model}` using
 
-To let the optimization algorithm fit for the new set of free parameters
-:math:`(A_\mathrm{ps}, A_\mathrm{pc}, A_\mathrm{Es}, A_\mathrm{Ec}, C)`, we
-first build a function that converts these fitting parameters to the parameters
-used in eq. :math:`\ref{eq_model}`. The input of this function should be a
-NumPy :py:class:`~numpy.ndarray` of (unitless) floats, because that's what
-:py:func:`~scipy.optimize.minimize` uses. The output should be a dictionary of
-Astropy :py:class:`~astropy.units.quantity.Quantity` objects, because that's
-the format expected by the model function ``model_dveff_abs()``.
+.. math::
+
+    \DeclareMathOperator{\arctantwo}{arctan2}
+
+    A_\mathrm{p} &= \sqrt{ A_\mathrm{ps}^2 + A_\mathrm{pc}^2 },
+    \qquad &
+    \xi_\mathrm{p} &= \arctantwo(A_\mathrm{pc}, A_\mathrm{ps} ), \\
+    A_\mathrm{E} &= \sqrt{ A_\mathrm{Es}^2 + A_\mathrm{Ec}^2 },
+    \qquad &
+    \xi_\mathrm{E} &= \arctantwo(A_\mathrm{Ec}, A_\mathrm{Es} ), \\
+
+where :math:`\arctantwo(y, x)` refers to the `2-argument arctangent function
+<https://en.wikipedia.org/wiki/Atan2>`_. The constant scaled-effective-velocity
+offset :math:`C` remains the same in both formulations.
+
+Let's start with building two functions that convert between the two sets of
+free parameters,
+:math:`(A_\mathrm{p}, \xi_\mathrm{p}, A_\mathrm{E}, \xi_\mathrm{E}, C)` and
+:math:`(A_\mathrm{ps}, A_\mathrm{pc}, A_\mathrm{Es}, A_\mathrm{Ec}, C)`.
+Because :py:func:`~scipy.optimize.curve_fit` requires the free parameters as
+(unitless) floats, these conversion functions also need to convert between a
+dictionary of Astropy :py:class:`~astropy.units.quantity.Quantity` objects and
+a NumPy :py:class:`~numpy.ndarray`.
 
 .. jupyter-execute::
+
+    def pars_mdl2fit(pars_mdl):
+
+        amp_p = pars_mdl['amp_p'].to_value(u.km/u.s/u.pc**0.5)
+        amp_e = pars_mdl['amp_e'].to_value(u.km/u.s/u.pc**0.5)
+        xi_p = pars_mdl['xi_p'].to_value(u.rad)
+        xi_e = pars_mdl['xi_e'].to_value(u.rad)
+        dveff_c = pars_mdl['dveff_c'].to_value(u.km/u.s/u.pc**0.5)
+
+        amp_ps = amp_p * np.cos(xi_p)
+        amp_pc = amp_p * np.sin(xi_p)
+        amp_es = amp_e * np.cos(xi_e)
+        amp_ec = amp_e * np.sin(xi_e)
+
+        pars_fit = np.array([amp_ps, amp_pc, amp_es, amp_ec, dveff_c])
+        
+        return pars_fit
 
     def pars_fit2mdl(pars_fit):
 
@@ -625,8 +680,8 @@ the format expected by the model function ``model_dveff_abs()``.
 
         amp_p = np.sqrt(amp_ps**2 + amp_pc**2)
         amp_e = np.sqrt(amp_es**2 + amp_ec**2)
-        xi_p = np.arctan(amp_pc / amp_ps) + (np.sign(amp_ps) == -1) * np.pi
-        xi_e = np.arctan(amp_ec / amp_es) + (np.sign(amp_es) == -1) * np.pi
+        xi_p = np.arctan2(amp_pc, amp_ps)
+        xi_e = np.arctan2(amp_ec, amp_es)
 
         pars_mdl = {
             'amp_p': amp_p * u.km/u.s/u.pc**0.5,
@@ -638,107 +693,112 @@ the format expected by the model function ``model_dveff_abs()``.
         
         return pars_mdl
 
-Now, define the function that :py:func:`~scipy.optimize.minimize` will actually
-minimize. This function should compute the :math:`\chi^2` statistic given a set
-of fitting parameters. Internally, it needs to converts the fitting parameters
-into the dictionary expected by the model function, call the model function,
-and compute the corresponding :math:`\chi^2` value. To comply with the call
-signature of :py:func:`~scipy.optimize.minimize`, its first argument should be
-the array of fitting parameters (see below).
+Next, to speed up the fitting, we can precompute the independent variables
+:math:`\sin(\phi_\mathrm{p})`, :math:`\cos(\phi_\mathrm{p})`
+:math:`\sin(\phi_\mathrm{E})`, and :math:`\cos(\phi_\mathrm{E})` for the
+observation times. Again, to comply with the requirements of
+:py:func:`~scipy.optimize.curve_fit`, we convert these to floats and store them
+in a single NumPy :py:class:`~numpy.ndarray`.
 
 .. jupyter-execute::
 
-    def fit_wrapper(pars_fit, t_obs, dveff_obs, dveff_err):
-        pars_mdl = pars_fit2mdl(pars_fit)
-        dveff_mdl = model_dveff_abs(pars_mdl, t_obs)
-        chi2 = get_chi2(dveff_mdl, dveff_obs, dveff_err)
-        return chi2
+    sin_cos_ph_obs = np.array([
+        np.sin(ph_p_obs).value,
+        np.cos(ph_p_obs).value,
+        np.sin(ph_e_obs).value,
+        np.cos(ph_e_obs).value,
+    ])
 
+Now define the fitting function. To comply with the call signature of
+:py:func:`~scipy.optimize.curve_fit`, its first argument should be
+the array of independent variables and the following arguments are the fitting
+parameters (see below).
 
+.. jupyter-execute::
+
+    def model_dveff_fit(sin_cos_ph, *pars):
+
+        amp_ps, amp_pc, amp_es, amp_ec, dveff_c = pars
+
+        sin_ph_p = sin_cos_ph[0,:]
+        cos_ph_p = sin_cos_ph[1,:]
+        sin_ph_e = sin_cos_ph[2,:]
+        cos_ph_e = sin_cos_ph[3,:]
+
+        dveff_p = amp_ps * sin_ph_p - amp_pc * cos_ph_p
+        dveff_e = amp_es * sin_ph_e - amp_ec * cos_ph_e
+
+        dveff = np.abs(dveff_p + dveff_e + dveff_c)
+
+        return dveff
 
 Running the optimizer
 ---------------------
 
-As an initial guess we can use the set of free-parameter values tried earlier,
-``pars_try``, converted to the fitting parameters, and cast in the unitless
-array format expected by :py:func:`~scipy.optimize.minimize`.
+As a starting point for the fitting, the algorithm needs an initial guess of
+the parameter values, ideally already close to the final solution. We can use
+the set of parameter values found earlier, ``pars_try``, converted to the
+fitting parameters, and cast in the unitless array format expected by
+:py:func:`~scipy.optimize.curve_fit`.
 
 .. jupyter-execute::
 
-    amp_p = pars_try['amp_p'].to_value(u.km/u.s/u.pc**0.5)
-    amp_e = pars_try['amp_e'].to_value(u.km/u.s/u.pc**0.5)
-    xi_p = pars_try['xi_p'].to_value(u.rad)
-    xi_e = pars_try['xi_e'].to_value(u.rad)
-    dveff_c = pars_try['dveff_c'].to_value(u.km/u.s/u.pc**0.5)
+    init_guess = pars_mdl2fit(pars_try)
 
-    amp_ps = amp_p / np.sqrt(1. + np.tan(xi_p)**2) * np.sign(np.sin(xi_p))
-    amp_pc = amp_ps * np.tan(xi_p)
-    amp_es = amp_e / np.sqrt(1. + np.tan(xi_e)**2) * np.sign(np.sin(xi_e))
-    amp_ec = amp_es * np.tan(xi_e)
-
-    init_guess = np.array([amp_ps, amp_pc, amp_es, amp_es, dveff_c])
-
-    par_names = ['amp_ps', 'amp_pc', 'amp_es', 'amp_es', 'dveff_c']
+    par_names = ['amp_ps', 'amp_pc', 'amp_es', 'amp_ec', 'dveff_c']
     for (par_name, par_value) in zip(par_names, init_guess):
         print(f'{par_name:8s} {par_value:8.2f}')
 
-Everything is now ready to run :py:func:`~scipy.optimize.minimize`. It may be
+Everything is now ready to run :py:func:`~scipy.optimize.curve_fit`. It may be
 useful to review its call signature:
 
-- The first argument is the function to be minimized, whose first argument in
-  turn needs to be the array of parameters to be adjusted.
-- The second argument is an array of parameter values that serve as an initial
-  guess. The length of this array sets the number of independent variables.
-- The ``args`` argument is a tuple of extra arguments that are passed to the
-  function to be minimized (i.e., in addition to the array of fitting
-  parameters).
-- The ``method`` argument specifies which solver/algorithm is used to do the
-  minimization. For this problem, the `Nelder--Mead method
-  <https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method>`_ seems to work.
-- The ``options`` argument is a dictionary of options for the solver, and its
-  ``maxiter`` key specifies the maximum number of iterations the algorithm is
-  allowed to do, after which the minimization is terminated.
+- The first argument is the function to be optimized. Its first argument in
+  turn needs to be the array of independent variables and its remaining
+  arguments are the parameters to adjust.
+- The second argument is the array of independent variables.
+- The thrird argument contains the observed data to be fit.
+- The ``p0`` argument is an array of parameter values that serve as an initial
+  guess.
+- The ``sigma`` argument is a array of uncertainties on the observed data.
+  
+The return values are ``popt``, the optimal parameters found by the algorithm,
+and ``pcov``, the covariance matrix of the solution.
 
 .. jupyter-execute::
     
-    res = minimize(fit_wrapper, init_guess, args=(t_obs, dveff_obs, dveff_err),
-                   method='Nelder-Mead', options={'maxiter': 10000})
+    popt, pcov = curve_fit(model_dveff_fit, sin_cos_ph_obs, dveff_obs.value,
+                           p0=init_guess, sigma=dveff_err.value)
 
 Checking the result
 -------------------
 
-The return value of the :py:func:`~scipy.optimize.minimize` function, ``res``,
-is a :py:class:`scipy.optimize.OptimizeResult` object, which contains a bunch
-of additional information about the fitting process. The actual solution of the
-minimization is contained as a NumPy :py:class:`~numpy.ndarray` in its ``x``
-attribute. Let's see what solution the algorithm found.
+Let's see what solution the algorithm found.
 
 .. jupyter-execute::
 
-    par_names = ['amp_ps', 'amp_pc', 'amp_es', 'amp_es', 'dveff_c']
-    for (par_name, par_value) in zip(par_names, res.x):
+    par_names = ['amp_ps', 'amp_pc', 'amp_es', 'amp_ec', 'dveff_c']
+    for (par_name, par_value) in zip(par_names, popt):
         print(f'{par_name:8s} {par_value:8.2f}')
 
-To make the result more meaningful and ready as input for our model functions,
-we'll convert this array into the appropriate dictionary of Astropy
+To make the result more meaningful and ready as input for our other model
+functions, we'll convert this array into the appropriate dictionary of Astropy
 :py:class:`~astropy.units.quantity.Quantity` objects.
 
 .. jupyter-execute::
 
-    pars_res = pars_fit2mdl(res.x)
+    pars_opt = pars_fit2mdl(popt)
         
-    for par_name in pars_res:
-        print(f'{par_name:8s} {pars_res[par_name]:8.2f}')
+    for par_name in pars_opt:
+        print(f'{par_name:8s} {pars_opt[par_name]:8.2f}')
 
-How these fitted free parameters can be converted to the physical parameters of
-interest is covered in a :doc:`follow-up tutorial <extract_phys_pars>`.
+How these parameters can be converted to the physical parameters of interest is
+covered in a :doc:`follow-up tutorial <extract_phys_pars>`.
 
-Let's find out if the :math:`\chi^2` minimization worked.
+Let's quantify the goodness of fit.
 
 .. jupyter-execute::
 
-    dveff_mdl = model_dveff_abs(pars_res, t_obs)
-    chi2 = get_chi2(dveff_mdl, dveff_obs, dveff_err)
+    chi2 = get_chi2(pars_opt)
     chi2_red = chi2 / ndof
 
     print(f'\nchi2     {chi2:8.2f}'
@@ -750,6 +810,6 @@ made earlier:
 
 .. jupyter-execute::
 
-    visualize_model_full(pars_res)
-    visualize_model_folded(pars_res)
-    visualize_model_fold2d(pars_res)
+    visualize_model_full(pars_opt)
+    visualize_model_folded(pars_opt)
+    visualize_model_fold2d(pars_opt)
