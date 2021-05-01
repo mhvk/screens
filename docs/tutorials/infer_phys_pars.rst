@@ -61,15 +61,15 @@ of two sinusoids (with known periods) and an offset:
 .. math::
 
     \frac{ \left| v_\mathrm{eff} \right| }{ \sqrt{d_\mathrm{eff}} }
-      = \left| A_\mathrm{p} \sin( \phi_\mathrm{p} - \xi_\mathrm{p} )
-             + A_\mathrm{E} \sin( \phi_\mathrm{E} - \xi_\mathrm{E} ) + C
+      = \left| A_\mathrm{p} \sin( \phi_\mathrm{p} - \chi_\mathrm{p} )
+             + A_\mathrm{E} \sin( \phi_\mathrm{E} - \chi_\mathrm{E} ) + C
         \right|.
 
 The free parameters in this equation are the amplitudes of the pulsar's and the
 Earth's orbital scaled-effective-velocity modulation :math:`A_\mathrm{p}` and
 :math:`A_\mathrm{E}` (assumed to be non-negative, :math:`A_\mathrm{p} \geq 0`,
-:math:`A_\mathrm{E} \geq 0`), their phase offsets :math:`\xi_\mathrm{p}` and
-:math:`\xi_\mathrm{E}`, and a constant scaled-effective-velocity offset
+:math:`A_\mathrm{E} \geq 0`), their phase offsets :math:`\chi_\mathrm{p}` and
+:math:`\chi_\mathrm{E}`, and a constant scaled-effective-velocity offset
 :math:`C`. The model parameters are related to the physical parameters of the
 system according to
 
@@ -82,11 +82,11 @@ system according to
     A_\mathrm{E} &= \frac{ v_\mathrm{orb,E} }{ \sqrt{ d_\mathrm{eff} } }
                     b_\mathrm{E},
 
-    \tan( \xi_\mathrm{p} ) &= \tan( \Delta\Omega_\mathrm{p} )
-                              \cos( i_\mathrm{p} ),
+    \tan( \chi_\mathrm{p} ) &= \tan( \Delta\Omega_\mathrm{p} )
+                               \cos( i_\mathrm{p} ),
 
-    \tan( \xi_\mathrm{E} ) &= \tan( \Delta\Omega_\mathrm{E} )
-                              \cos( i_\mathrm{E} ),
+    \tan( \chi_\mathrm{E} ) &= \tan( \Delta\Omega_\mathrm{E} )
+                               \cos( i_\mathrm{E} ),
 
     C &= \pm \frac{ v_\mathrm{lens} }{ s \sqrt{ d_\mathrm{eff} } }
          \mp \frac{ v_\mathrm{p,sys,eff} }{ \sqrt{ d_\mathrm{eff} } }.
@@ -97,9 +97,9 @@ ascending node of the orbit of the pulsar and the Earth, respectively, i.e.,
 
 .. math::
 
-    \Delta\Omega_\mathrm{p} = \Omega_\mathrm{s} - \Omega_\mathrm{p},
+    \Delta\Omega_\mathrm{p} = \xi - \Omega_\mathrm{p},
     \qquad
-    \Delta\Omega_\mathrm{E} = \Omega_\mathrm{s} - \Omega_\mathrm{E}.
+    \Delta\Omega_\mathrm{E} = \xi - \Omega_\mathrm{E}.
 
 The factors :math:`b_\mathrm{p}` and :math:`b_\mathrm{E}` modifying the
 amplitudes (with :math:`0 < b < 1`) are given by
@@ -115,8 +115,8 @@ velocity, given by
 .. math::
 
     v_\mathrm{p,sys,eff} \simeq d_\mathrm{eff}
-                              \left[ \mu_{\alpha\ast} \sin( \Omega_\mathrm{s} )
-                                         + \mu_\delta \cos( \Omega_\mathrm{s} )
+                              \left[ \mu_{\alpha\ast} \sin( \xi )
+                                         + \mu_\delta \cos( \xi )
                               \right].
 
 Set known parameters
@@ -161,15 +161,15 @@ numbers in your own case, make sure to use non-negative amplitudes
 
     amp_p =     1.38 * u.km/u.s/u.pc**0.5
     amp_e =     1.91 * u.km/u.s/u.pc**0.5
-    xi_p =     67.63 * u.deg
-    xi_e =     65.13 * u.deg
+    chi_p =    67.63 * u.deg
+    chi_e =    65.13 * u.deg
     dveff_c =  14.68 * u.km/u.s/u.pc**0.5
 
 Constraints on physical parameters
 ==================================
 
 These are the physical parameters of interest:
-the position angle of the screen :math:`\Omega_\mathrm{s}`,
+the position angle of the screen :math:`\xi`,
 the pulsar's longitude of ascending node :math:`\Omega_\mathrm{p}`,
 the pulsar's orbital inclination :math:`i_\mathrm{p}`,
 the distance to the pulsar :math:`d_\mathrm{p}`,
@@ -186,87 +186,85 @@ The position angle of the screen
 --------------------------------
 
 The first physical parameter to infer from the free parameters of our model is
-the position angle of the screen :math:`\Omega_\mathrm{s}`. This parameter can
+the position angle of the screen :math:`\xi`. This parameter can
 be computed from the fitted phase offset of Earth's orbital velocity signature
-:math:`\xi_\mathrm{E}` and the known orientation of Earth's orbit
+:math:`\chi_\mathrm{E}` and the known orientation of Earth's orbit
 (:math:`i_\mathrm{E}` and :math:`\Omega_\mathrm{E}`), using the equation
 
 .. math::
 
-    \Omega_\mathrm{s} = \Omega_\mathrm{E} + \Delta\Omega_\mathrm{E},
+    \xi = \Omega_\mathrm{E} + \Delta\Omega_\mathrm{E},
     \qquad \mathrm{with} \qquad
-    \tan( \Delta\Omega_\mathrm{E} ) = \frac{ \tan( \xi_\mathrm{E} ) }
+    \tan( \Delta\Omega_\mathrm{E} ) = \frac{ \tan( \chi_\mathrm{E} ) }
                                            { \cos( i_\mathrm{E} ) }.
 
-Note that for a given :math:`\xi_\mathrm{E}`, there are two possible solutions
-for :math:`\Delta\Omega_\mathrm{E}` to this equation. These correspond to
-rotating the screen by :math:`180^\circ` on the sky, and either one is
-acceptable, since the sign (direction) of the lens velocity cannot be retrieved
-from the data in hand (the norms of the scaled effective velocities).
+Note that for a given value of :math:`\chi_\mathrm{E}`, there are two possible
+solutions to the right-hand-side equation for :math:`\Delta\Omega_\mathrm{E}`,
+offset by :math:`180^\circ`. These correspond to rotating the screen by
+:math:`180^\circ` on the sky and this ambiguity in screen orientation cannot be
+resolved using single-telescope data. The angle :math:`\xi`, however, is
+restricted to the range :math:`0^\circ \leq \xi < 180^\circ` (because we use
+the convention that :math:`\xi` refers to the position angle of the *eastern*
+half of the line of lensed images). So, for the purpose of inferring
+:math:`\xi`, it is only necessary to consider one of the two
+:math:`\Delta\Omega_\mathrm{E}` solutions. We use Astropy's
+:py:class:`~astropy.coordinates.Angle` class and its
+:py:meth:`~astropy.coordinates.Angle.wrap_at` method to restrict the value of
+:math:`\xi` to its allowed range.
 
 .. jupyter-execute::
 
-    delta_omega_e1 = np.arctan(np.tan(xi_e) / np.cos(i_e))
-    delta_omega_e2 = delta_omega_e1 + 180.*u.deg
-    omega_s1 = delta_omega_e1 + omega_e
-    omega_s2 = delta_omega_e2 + omega_e
+    delta_omega_e = np.arctan(np.tan(chi_e) / np.cos(i_e))
+    xi = delta_omega_e + omega_e
+    xi = Angle(xi).wrap_at(180.*u.deg).deg * u.deg
 
-    print(f'omega_s1: {omega_s1.to(u.deg):8.2f}')
-    print(f'omega_s2: {omega_s2.to(u.deg):8.2f}')
+    print(f'xi: {xi.to(u.deg):8.2f}')
 
 
 The orientation of the pulsar's orbit
 -------------------------------------
 
-Knowing :math:`\Omega_\mathrm{s}`, it is possible to retrieve a relation
-between :math:`\Omega_\mathrm{p}` and :math:`i_\mathrm{p}` from the equation
+Knowing :math:`\xi`, it is possible to retrieve a relation between
+:math:`\Omega_\mathrm{p}` and :math:`i_\mathrm{p}` from the equation
 
 .. math::
 
-    \Omega_\mathrm{p} = \Omega_\mathrm{s} - \Delta\Omega_\mathrm{p},
+    \Omega_\mathrm{p} = \xi - \Delta\Omega_\mathrm{p},
     \qquad \mathrm{with} \qquad
-    \tan( \Delta\Omega_\mathrm{p} ) = \frac{ \tan( \xi_\mathrm{p} ) }
+    \tan( \Delta\Omega_\mathrm{p} ) = \frac{ \tan( \chi_\mathrm{p} ) }
                                            { \cos( i_\mathrm{p} ) }.
 
-The :math:`180^\circ` ambiguity in :math:`\Omega_\mathrm{s}` does not matter
-for this calculation of :math:`\Delta\Omega_\mathrm{p}`, since both solutions
-of :math:`\Omega_\mathrm{s}` give the same value for
-:math:`\tan( \Delta\Omega_\mathrm{p} )`. However, when computing
-:math:`\Omega_\mathrm{p}`, it is important to consider the ambiguity again:
-there are two possible :math:`i_\mathrm{p}`-:math:`\Omega_\mathrm{p}`
+Again, for a given value of :math:`\chi_\mathrm{p}`, there are two possible
+solutions for :math:`\Delta\Omega_\mathrm{p}`, offset by :math:`180^\circ`.
+Hence, there are two possible :math:`i_\mathrm{p}`--:math:`\Omega_\mathrm{p}`
 relations, offset by :math:`180^\circ` in :math:`\Omega_\mathrm{p}`.
 
 .. jupyter-execute::
 
     i_p = np.linspace(0., 180., 181) << u.deg
 
-    delta_omega_p = np.arctan(np.tan(xi_p) / np.cos(i_p))
+    delta_omega_p1 = np.arctan(np.tan(chi_p) / np.cos(i_p))
+    delta_omega_p2 = delta_omega_p1 + 180.*u.deg
 
-    omega_p1 = omega_s1 - delta_omega_p
-    omega_p2 = omega_p1 + 180.*u.deg
+    omega_p1 = xi - delta_omega_p1
+    omega_p2 = xi - delta_omega_p2
 
+    omega_p1 = Angle(omega_p1).wrap_at(360.*u.deg).deg * u.deg
+    omega_p2 = Angle(omega_p2).wrap_at(360.*u.deg).deg * u.deg
 
-For plotting, we use astropy's :py:class:`~astropy.coordinates.Angle` class and
-its :py:meth:`~astropy.coordinates.Angle.wrap_at` method to restrict the values
-of :math:`\Omega_\mathrm{p}` to the range
-:math:`0^\circ \leq \Omega_\mathrm{p} < 360^\circ`.
-Also, the two branches are disjointed at :math:`i_\mathrm{p} = 90^\circ`
-(where :math:`\cos( i_\mathrm{p} )` changes sign). We stitch the two halves of
-the two branches together appropriately to create two continuous curves in
-:math:`i_\mathrm{p}`-:math:`\Omega_\mathrm{p}` space.
+The two :math:`i_\mathrm{p}`--:math:`\Omega_\mathrm{p}` relations are
+disjointed at :math:`i_\mathrm{p} = 90^\circ` (where
+:math:`\cos( i_\mathrm{p} )` changes sign). For plotting, we stitch the two
+halves of the two solutions together appropriately to create two continuous
+curves in :math:`i_\mathrm{p}`--:math:`\Omega_\mathrm{p}` space.
 
 .. jupyter-execute::
-
-    omega_p1_wrap = Angle(omega_p1).wrap_at(360.*u.deg).deg * u.deg
-    omega_p2_wrap = Angle(omega_p2).wrap_at(360.*u.deg).deg * u.deg
 
     ii_ccw = (i_p <= 90.*u.deg)
     ii_cw =  (i_p >  90.*u.deg)
 
-    omega_p_stitch1 = np.concatenate((omega_p1_wrap[ii_ccw],
-                                      omega_p2_wrap[ii_cw]))
-    omega_p_stitch2 = np.concatenate((omega_p2_wrap[ii_ccw],
-                                      omega_p1_wrap[ii_cw]))
+    omega_p_stitch1 = np.concatenate((omega_p1[ii_ccw], omega_p2[ii_cw]))
+    omega_p_stitch2 = np.concatenate((omega_p2[ii_ccw], omega_p1[ii_cw]))
 
 .. jupyter-execute::
 
@@ -282,7 +280,6 @@ the two branches together appropriately to create two continuous curves in
     plt.ylabel(r'$\Omega_\mathrm{p}$')
 
     plt.show()
-
 
 Plotting the relations shows how :math:`\Omega_\mathrm{p}` is restricted to two
 ranges of values (while :math:`i_\mathrm{p}` is still unrestricted).
@@ -308,7 +305,7 @@ Next, the effective distance :math:`d_\mathrm{eff}` can be calculated using
 
 .. jupyter-execute::
 
-    b2_e = (1 - np.sin(i_e)**2) / (1 - np.sin(i_e)**2 * np.cos(xi_e)**2)
+    b2_e = (1 - np.sin(i_e)**2) / (1 - np.sin(i_e)**2 * np.cos(chi_e)**2)
     d_eff = v_orb_e**2 / amp_e**2 * b2_e
 
     print(f'd_eff:   {d_eff.to(u.pc):8.2f}')
@@ -377,7 +374,7 @@ can be used to derive a relation between the distance to the pulsar system
     nsini_p = 400
     sini_p = np.arange(0.5/nsini_p, 1., 1./nsini_p)
 
-    b2_p = (1 - sini_p**2) / (1 - sini_p**2 * np.cos(xi_p)**2)
+    b2_p = (1 - sini_p**2) / (1 - sini_p**2 * np.cos(chi_p)**2)
     d_p = v_orb_e * k_p / (amp_e * amp_p) * np.sqrt(b2_e * b2_p) / sini_p
 
 .. jupyter-execute::
@@ -400,10 +397,10 @@ can be used to derive a relation between the distance to the pulsar system
 The lens velocity
 -----------------
 
-Finally, it is possible to find a constraint on the lens velocity
+Finally, it is possible to find a constraint on the projected lens velocity
 :math:`v_\mathrm{lens}`. This is best expressed in terms of some intermediate
-quantities derived above (:math:`\Omega_\mathrm{s}` and :math:`d_\mathrm{eff}`)
-and as a function the fractional pulsar-screen distance :math:`s`:
+quantities derived above (:math:`\xi` and :math:`d_\mathrm{eff}`) and as a
+function the fractional pulsar-screen distance :math:`s`:
 
 .. math::
 
@@ -411,48 +408,47 @@ and as a function the fractional pulsar-screen distance :math:`s`:
                                \pm \sqrt{ d_\mathrm{eff} } C \right),
     \qquad \mathrm{with} \qquad
     v_\mathrm{p,sys,eff} \simeq d_\mathrm{eff}
-                              \left[ \mu_{\alpha\ast} \sin( \Omega_\mathrm{s} )
-                                         + \mu_\delta \cos( \Omega_\mathrm{s} )
+                              \left[ \mu_{\alpha\ast} \sin( \xi )
+                                         + \mu_\delta \cos( \xi )
                               \right].
 
-Note that the two possible values of the screen position angle
-:math:`\Omega_\mathrm{s}` yield different solutions for the lens velocity
-:math:`v_\mathrm{lens}` (because they make different angles with the
-proper-motion vector).
-
 To compute a velocity from a proper motion and a distance, we use the
-:py:func:`~astropy.units.equivalencies.dimensionless_angles` equivalency, which
-takes care of handling :py:mod:`astropy.units` correctly when using the
-small-angle approximation (see the `Astropy documentation about equivalencies
-<https://docs.astropy.org/en/stable/units/equivalencies.html>`_
-for further explanation).
+:py:func:`~astropy.units.equivalencies.dimensionless_angles` equivalency. This
+takes care of handling the units of Astropy :py:mod:`~astropy.units.Quantity`
+objects correctly when using the small-angle approximation
+(for further explanation, see the `Astropy documentation about equivalencies
+<https://docs.astropy.org/en/stable/units/equivalencies.html>`_).
 
 .. jupyter-execute::
 
     s = [0., 1.]
 
-    v_p_sys_eff1 = ((d_eff * (mu_alpha_star * np.sin(omega_s1)
-                                 + mu_delta * np.cos(omega_s1)))
-                    .to(u.km/u.s, equivalencies=u.dimensionless_angles()))
-    v_p_sys_eff2 = ((d_eff * (mu_alpha_star * np.sin(omega_s2)
-                                 + mu_delta * np.cos(omega_s2)))
-                    .to(u.km/u.s, equivalencies=u.dimensionless_angles()))
+    v_p_sys_eff = ((d_eff * (mu_alpha_star * np.sin(xi)
+                                + mu_delta * np.cos(xi)))
+                   .to(u.km/u.s, equivalencies=u.dimensionless_angles()))
 
-    v_lens1p = s * (np.sqrt(d_eff) *  dveff_c + v_p_sys_eff1)
-    v_lens1m = s * (np.sqrt(d_eff) * -dveff_c + v_p_sys_eff1)
-    v_lens2p = s * (np.sqrt(d_eff) *  dveff_c + v_p_sys_eff2)
-    v_lens2m = s * (np.sqrt(d_eff) * -dveff_c + v_p_sys_eff2)
+    v_lens1 = s * (np.sqrt(d_eff) *  dveff_c + v_p_sys_eff)
+    v_lens2 = s * (np.sqrt(d_eff) * -dveff_c + v_p_sys_eff)
+
+Because only the *norm* of the scintillation velocity can be measured, there
+are two possible solutions for :math:`v_\mathrm{lens}`: one in which the lens
+motion and the pulsar's systemic motion add up to a large offset in
+scintillation velocity, and one in which they counteract one another's
+contribution to the scintillation-velocity offset. For known values of the
+scaled-scintillation-velocity offset :math:`C` and the pulsar's systemic
+effective velocity :math:`v_\mathrm{p,sys,eff}`, this translates to solutions
+for :math:`v_\mathrm{lens}` with low and high absolute values, respectively.
 
 .. jupyter-execute::
 
     plt.figure(figsize=(7., 6.))
 
-    plt.plot(s, v_lens1p.to(u.km/u.s), c='C0',
-        label=rf'$\Omega_\mathrm{{s}} = {omega_s1.to(u.deg).value:.0f}^\circ$')
-    plt.plot(s, v_lens1m.to(u.km/u.s), c='C0')
-    plt.plot(s, v_lens2p.to(u.km/u.s), c='C1',
-        label=rf'$\Omega_\mathrm{{s}} = {omega_s2.to(u.deg).value:.0f}^\circ$')
-    plt.plot(s, v_lens2m.to(u.km/u.s), c='C1')
+    plt.plot(s, v_lens1.to(u.km/u.s),
+             label=r'$\mathrm{{sgn}}(v_\mathrm{{lens}}) \neq '
+                   r'\mathrm{{sgn}}(v_\mathrm{{p,sys}})$')
+    plt.plot(s, v_lens2.to(u.km/u.s),
+             label=r'$\mathrm{{sgn}}(v_\mathrm{{lens}}) = '
+                   r'\mathrm{{sgn}}(v_\mathrm{{p,sys}})$')
 
     plt.xlim(0., 1.)
 
@@ -463,5 +459,3 @@ for further explanation).
 
     plt.show()
 
-TODO: check this
-               
