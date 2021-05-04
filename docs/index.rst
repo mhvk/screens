@@ -27,6 +27,8 @@ Modelling scintillation velocities
    :maxdepth: 1
 
    tutorials/gen_velocities
+   tutorials/fit_velocities
+   tutorials/extract_phys_pars
 
 Reference/API
 =============

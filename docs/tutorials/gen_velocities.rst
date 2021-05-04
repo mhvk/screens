@@ -12,7 +12,7 @@ Further explanations and derivations of the equations seen here can be found in
 and Daniel Baker's "`Orbital Parameters and Distances
 <https://eor.cita.utoronto.ca/images/4/44/DB_Orbital_Parameters.pdf>`_"
 document. As in that document, the practical example here uses the parameter
-values for the pulsar PSR J0437--4715 as studied by `Reardon et al. (2020)
+values for the pulsar PSR J0437--4715 as derived by `Reardon et al. (2020)
 <https://ui.adsabs.harvard.edu/abs/2020ApJ...904..104R/abstract>`_.
 
 The combined codeblocks in this tutorial can be downloaded as a Python script
@@ -41,7 +41,7 @@ Imports.
 
     from astropy.visualization import quantity_support, time_support
 
-Set up support for plotting astropy's
+Set up support for plotting Astropy's
 :py:class:`~astropy.units.quantity.Quantity` and :py:class:`~astropy.time.Time`
 objects, and make sure that the output of plotting commands is displayed inline
 (i.e., directly below the code cell that produced it).
@@ -128,11 +128,9 @@ Set the parameters of the pulsar system:
       - from Earth
 
     * - position angle of the lensed images
-      - :math:`\Omega_\mathrm{s}`
+      - :math:`\xi`
       - measured from the celestial north, through east, to the line of images
-        formed by the lens;
-        :math:`0^\circ \leq \Omega_\mathrm{s} < 360^\circ`;
-        note that this angle has a :math:`180^\circ` ambiguity
+        formed by the lens; :math:`0^\circ \leq \xi < 180^\circ`
 
     * - velocity of the lens
       - :math:`v_\mathrm{lens}`
@@ -148,7 +146,7 @@ Set the parameters of the pulsar system:
 
     d_p = 156.79 * u.pc
     d_s = 90.6 * u.pc
-    omega_s = 134.6 * u.deg
+    xi = 134.6 * u.deg
     v_lens = -31.9 * u.km / u.s
 
 The coordinates should be placed directly in a
@@ -194,7 +192,7 @@ Calculate some derived quantities:
       - 
         .. math::
         
-            \Delta\Omega_\mathrm{p} = \Omega_\mathrm{s} - \Omega_\mathrm{p}
+            \Delta\Omega_\mathrm{p} = \xi - \Omega_\mathrm{p}
 
 .. jupyter-execute::
 
@@ -203,7 +201,7 @@ Calculate some derived quantities:
     s = 1 - d_s / d_p
     d_eff = d_p * d_s / (d_p - d_s)
 
-    delta_omega_p = omega_s - omega_p
+    delta_omega_p = xi - omega_p
 
 Define a grid of observing times :math:`t` for which you want to calculate
 velocities using a :py:class:`~astropy.time.Time` object.
@@ -221,12 +219,12 @@ system, rotated to the one-dimensional lens.
 
 .. jupyter-execute::
 
-    lens_frame = SkyOffsetFrame(origin=psr_coord, rotation=omega_s)
+    lens_frame = SkyOffsetFrame(origin=psr_coord, rotation=xi)
 
 On its own, ``SkyOffsetFrame(origin=psr_coord)`` creates a spherical frame with
 its primary direction pointing along the line of sight, latitude in the
 direction of Dec, and longitude in the direction of RA. By passing the argument
-``rotation=omega_s``, the longitude and latitude dimensions rotate so longitude
+``rotation=xi``, the longitude and latitude dimensions rotate so longitude
 is perpedicular to the lens and latitude parallel to the lens. When converting
 positions or velocities in this frame to cartesian representation, the x-axis
 will point along the line of sight, the y-axis perpendicular to the screen, and
@@ -312,8 +310,8 @@ The pulsar systemic velocity projected onto the screen is given by
 .. math::
 
     v_\mathrm{p,sys} \simeq d_\mathrm{p}
-                              \left[ \mu_{\alpha\ast} \sin( \Omega_\mathrm{s} )
-                                         + \mu_\delta \cos( \Omega_\mathrm{s} )
+                              \left[ \mu_{\alpha\ast} \sin( \xi )
+                                         + \mu_\delta \cos( \xi )
                               \right].
 
 This can be computed manually, but it can also be retrieved from the
