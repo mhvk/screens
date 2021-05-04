@@ -12,7 +12,7 @@ Further explanations and derivations of the equations seen here can be found in
 and Daniel Baker's "`Orbital Parameters and Distances
 <https://eor.cita.utoronto.ca/images/4/44/DB_Orbital_Parameters.pdf>`_"
 document. As in that document, the practical example here uses the parameter
-values for the pulsar PSR J0437--4715 as studied by `Reardon et al. (2020)
+values for the pulsar PSR J0437--4715 as derived by `Reardon et al. (2020)
 <https://ui.adsabs.harvard.edu/abs/2020ApJ...904..104R/abstract>`_.
 
 The combined codeblocks in this tutorial can be downloaded as a Python script
@@ -41,7 +41,7 @@ Imports.
 
     from astropy.visualization import quantity_support, time_support
 
-Set up support for plotting astropy's
+Set up support for plotting Astropy's
 :py:class:`~astropy.units.quantity.Quantity` and :py:class:`~astropy.time.Time`
 objects, and make sure that the output of plotting commands is displayed inline
 (i.e., directly below the code cell that produced it).

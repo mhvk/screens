@@ -4,8 +4,10 @@ Fitting scintillation velocities
 
 This tutorial describes how to fit a phenomenological model to a time series of
 scintillation velocities for a pulsar in a circular orbit and a single
-one-dimensional screen. It requires a file containing synthetic data:
-:download:`fake-data-J0437.npz <../fake-data-J0437.npz>`
+one-dimensional screen. It builds upon a :doc:`preceding tutorial
+<gen_velocities>` that explains how such a time series can be artificially
+generated. A pre-made time series (with artificial noise) is available for
+download: :download:`fake-data-J0437.npz <../data/fake-data-J0437.npz>`
 
 Further explanations and derivations of the equations seen here can be found in
 `Marten's scintillometry page
@@ -13,7 +15,7 @@ Further explanations and derivations of the equations seen here can be found in
 and Daniel Baker's "`Orbital Parameters and Distances
 <https://eor.cita.utoronto.ca/images/4/44/DB_Orbital_Parameters.pdf>`_"
 document. As in that document, the practical example here uses the parameter
-values for the pulsar PSR J0437-4715 as studied by `Reardon et al. (2020)
+values for the pulsar PSR J0437-4715 as derived by `Reardon et al. (2020)
 <https://ui.adsabs.harvard.edu/abs/2020ApJ...904..104R/abstract>`_.
 
 The combined codeblocks in this tutorial can be downloaded as a Python script
@@ -33,7 +35,7 @@ Imports.
 
     import numpy as np
     import matplotlib.pyplot as plt
-    import matplotlib.colors as mcolors
+    from matplotlib.colors import CenteredNorm
     # Note: matplotlib.colors.CenteredNorm requires matplotlib version >= 3.4.0
 
     from astropy import units as u
@@ -114,18 +116,27 @@ ascending node :math:`T_\mathrm{asc,E}` from the pulsar's coordinates.
     
     t_asc_e = t_equinox + ascnod_eclip_lon.cycle * p_e
 
+.. warning::
+
+    This calculation assumes that Earth's orbit is circular, which is of course
+    not completely accurate. As noted above, the pulsar's orbit is also assumed
+    to be circular. These simplifications result in a model in which it is
+    clear how the scintillation velocities depend on the physical parameters
+    of the system, but this model can clearly be improved by implementing more
+    realistic orbits for the pulsar and Earth.
+
 Load and inspect the data
 =========================
 
 Load the data (available for download here:
-:download:`fake-data-J0437.npz <../fake-data-J0437.npz>`)
+:download:`fake-data-J0437.npz <../data/fake-data-J0437.npz>`)
 and convert the NumPy arrays that are stored in the file to Astropy
 :py:class:`~astropy.time.Time` and :py:class:`~astropy.units.quantity.Quantity`
 objects.
 
 .. jupyter-execute::
 
-    data = np.load('fake-data-J0437.npz')
+    data = np.load('./data/fake-data-J0437.npz')
 
     t_obs = Time(data['t_mjd'], format='mjd', scale='utc')
     dveff_obs = data['dveff_obs'] * u.km/u.s/u.pc**0.5
@@ -514,7 +525,7 @@ fold of the full model.
         plt.subplot(133)
         plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1., C=dveff_res.value,
                    reduce_C_function=np.median, gridsize=gridsize,
-                   norm=mcolors.CenteredNorm(), cmap='coolwarm')
+                   norm=CenteredNorm(), cmap='coolwarm')
         # Note: CenteredNorm requires matplotlib version >= 3.4.0
         plt.xlim(0., 1.)
         plt.ylim(0., 1.)
