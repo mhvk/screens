@@ -215,14 +215,14 @@ Thus, the model is given by
 .. math::
 
     \frac{ \left| v_\mathrm{eff} \right| }{ \sqrt{d_\mathrm{eff}} }
-      = \left| A_\mathrm{p} \sin( \phi_\mathrm{p} - \xi_\mathrm{p} )
-             + A_\mathrm{E} \sin( \phi_\mathrm{E} - \xi_\mathrm{E} ) + C
+      = \left| A_\mathrm{p} \sin( \phi_\mathrm{p} - \chi_\mathrm{p} )
+             + A_\mathrm{E} \sin( \phi_\mathrm{E} - \chi_\mathrm{E} ) + C
         \right|. \label{eq_model} \tag{1}
 
 There are five free parameters: the amplitudes of the pulsar's and the Earth's
 orbital scaled-effective-velocity modulation, :math:`A_\mathrm{p}` and
-:math:`A_\mathrm{E}`, their phase offsets, :math:`\xi_\mathrm{p}` and
-:math:`\xi_\mathrm{E}`, and a constant scaled-effective-velocity offset,
+:math:`A_\mathrm{E}`, their phase offsets, :math:`\chi_\mathrm{p}` and
+:math:`\chi_\mathrm{E}`, and a constant scaled-effective-velocity offset,
 :math:`C`. The amplitudes should be non-negative (:math:`A_\mathrm{p} \geq 0`,
 :math:`A_\mathrm{E} \geq 0`).
 
@@ -245,8 +245,8 @@ to model the individual components of the scaled effective velocity separately.
         ph_p = ((t - t_asc_p) / p_b).to(u.dimensionless_unscaled) * u.cycle
         ph_e = ((t - t_asc_e) / p_e).to(u.dimensionless_unscaled) * u.cycle
         
-        dveff_p = pars['amp_p'] * np.sin(ph_p - pars['xi_p'])
-        dveff_e = pars['amp_e'] * np.sin(ph_e - pars['xi_e'])
+        dveff_p = pars['amp_p'] * np.sin(ph_p - pars['chi_p'])
+        dveff_e = pars['amp_e'] * np.sin(ph_e - pars['chi_e'])
         
         dveff = dveff_p + dveff_e + pars['dveff_c']
     
@@ -284,13 +284,13 @@ The amplitudes :math:`A_\mathrm{p}` and :math:`A_\mathrm{E}` and the offset
 - :math:`A_\mathrm{p}` is roughly the half-width of the band of data points
   that constitutes the visible sinusoid (around 1.5 km/s/pc\ :sup:`1/2`).
 
-The phase offsets :math:`\xi_\mathrm{p}` and :math:`\xi_\mathrm{E}` are a bit
+The phase offsets :math:`\chi_\mathrm{p}` and :math:`\chi_\mathrm{E}` are a bit
 harder to estimate by eye, but the 2D phase fold of the dataset can be used for
 this. For phase offsets
-:math:`(\xi_\mathrm{E}, \xi_\mathrm{p}) = (0^\circ, 0^\circ)`, the 2D sinusoid
+:math:`(\chi_\mathrm{E}, \chi_\mathrm{p}) = (0^\circ, 0^\circ)`, the 2D sinusoid
 should peak at phases :math:`(0.25, 0.25)`. Since the peak in the plot seems to
 be around :math:`(0.45, 0.45)`, we can estimate the phase offsets to be roughly
-:math:`(\xi_\mathrm{E}, \xi_\mathrm{p}) \approx (60^\circ, 60^\circ)`.
+:math:`(\chi_\mathrm{E}, \chi_\mathrm{p}) \approx (60^\circ, 60^\circ)`.
 
 To prepare the set of parameter values for use with our model functions, put
 them in a dictionary with the appropriate keys.
@@ -300,8 +300,8 @@ them in a dictionary with the appropriate keys.
     pars_try = {
         'amp_p':     1.5 * u.km/u.s/u.pc**0.5,
         'amp_e':     2.  * u.km/u.s/u.pc**0.5,
-        'xi_p':     60.  * u.deg,
-        'xi_e':     60.  * u.deg,
+        'chi_p':    60.  * u.deg,
+        'chi_e':    60.  * u.deg,
         'dveff_c':  15.  * u.km/u.s/u.pc**0.5
     }
 
@@ -607,7 +607,7 @@ it inconvenient for algorithmic fitting:
   to be non-negative (:math:`A_\mathrm{p} \geq 0`,
   :math:`A_\mathrm{E} \geq 0`), so the optimization algorithm would need to be
   configured to avoid the disallowed regions of parameter space.
-- The phase offsets :math:`\xi_\mathrm{p}` and :math:`\xi_\mathrm{E}` are
+- The phase offsets :math:`\chi_\mathrm{p}` and :math:`\chi_\mathrm{E}` are
   periodic, with a period of :math:`360^\circ`. This could cause issues for
   some fitting algorithms, for example, if the step size in one of these
   parameters is close to their period.
@@ -632,12 +632,12 @@ where the amplitudes are related to the amplitudes and phase offsets in eq.
 
     \DeclareMathOperator{\arctantwo}{arctan2}
 
-    A_\mathrm{ps} &= A_\mathrm{p} \cos( \xi_\mathrm{p} ),
+    A_\mathrm{ps} &= A_\mathrm{p} \cos( \chi_\mathrm{p} ),
     \qquad &
-    A_\mathrm{pc} &= A_\mathrm{p} \sin( \xi_\mathrm{p} ), \\
-    A_\mathrm{Es} &= A_\mathrm{E} \cos( \xi_\mathrm{E} ),
+    A_\mathrm{pc} &= A_\mathrm{p} \sin( \chi_\mathrm{p} ), \\
+    A_\mathrm{Es} &= A_\mathrm{E} \cos( \chi_\mathrm{E} ),
     \qquad &
-    A_\mathrm{Ec} &= A_\mathrm{E} \sin( \xi_\mathrm{E} ). \\
+    A_\mathrm{Ec} &= A_\mathrm{E} \sin( \chi_\mathrm{E} ). \\
 
 Results of the fitting can be converted back to the amplitudes and phase
 offsets in eq. :math:`\ref{eq_model}` using
@@ -648,10 +648,10 @@ offsets in eq. :math:`\ref{eq_model}` using
 
     A_\mathrm{p} &= \sqrt{ A_\mathrm{ps}^2 + A_\mathrm{pc}^2 },
     \qquad &
-    \xi_\mathrm{p} &= \arctantwo(A_\mathrm{pc}, A_\mathrm{ps} ), \\
+    \chi_\mathrm{p} &= \arctantwo(A_\mathrm{pc}, A_\mathrm{ps} ), \\
     A_\mathrm{E} &= \sqrt{ A_\mathrm{Es}^2 + A_\mathrm{Ec}^2 },
     \qquad &
-    \xi_\mathrm{E} &= \arctantwo(A_\mathrm{Ec}, A_\mathrm{Es} ), \\
+    \chi_\mathrm{E} &= \arctantwo(A_\mathrm{Ec}, A_\mathrm{Es} ), \\
 
 where :math:`\arctantwo(y, x)` refers to the `2-argument arctangent function
 <https://en.wikipedia.org/wiki/Atan2>`_. The constant scaled-effective-velocity
@@ -659,7 +659,7 @@ offset :math:`C` remains the same in both formulations.
 
 Let's start with building two functions that convert between the two sets of
 free parameters,
-:math:`(A_\mathrm{p}, \xi_\mathrm{p}, A_\mathrm{E}, \xi_\mathrm{E}, C)` and
+:math:`(A_\mathrm{p}, \chi_\mathrm{p}, A_\mathrm{E}, \chi_\mathrm{E}, C)` and
 :math:`(A_\mathrm{ps}, A_\mathrm{pc}, A_\mathrm{Es}, A_\mathrm{Ec}, C)`.
 Because :py:func:`~scipy.optimize.curve_fit` requires the free parameters as
 (unitless) floats, these conversion functions also need to convert between a
@@ -672,14 +672,14 @@ a NumPy :py:class:`~numpy.ndarray`.
 
         amp_p = pars_mdl['amp_p'].to_value(u.km/u.s/u.pc**0.5)
         amp_e = pars_mdl['amp_e'].to_value(u.km/u.s/u.pc**0.5)
-        xi_p = pars_mdl['xi_p'].to_value(u.rad)
-        xi_e = pars_mdl['xi_e'].to_value(u.rad)
+        chi_p = pars_mdl['chi_p'].to_value(u.rad)
+        chi_e = pars_mdl['chi_e'].to_value(u.rad)
         dveff_c = pars_mdl['dveff_c'].to_value(u.km/u.s/u.pc**0.5)
 
-        amp_ps = amp_p * np.cos(xi_p)
-        amp_pc = amp_p * np.sin(xi_p)
-        amp_es = amp_e * np.cos(xi_e)
-        amp_ec = amp_e * np.sin(xi_e)
+        amp_ps = amp_p * np.cos(chi_p)
+        amp_pc = amp_p * np.sin(chi_p)
+        amp_es = amp_e * np.cos(chi_e)
+        amp_ec = amp_e * np.sin(chi_e)
 
         pars_fit = np.array([amp_ps, amp_pc, amp_es, amp_ec, dveff_c])
         
@@ -691,14 +691,14 @@ a NumPy :py:class:`~numpy.ndarray`.
 
         amp_p = np.sqrt(amp_ps**2 + amp_pc**2)
         amp_e = np.sqrt(amp_es**2 + amp_ec**2)
-        xi_p = np.arctan2(amp_pc, amp_ps)
-        xi_e = np.arctan2(amp_ec, amp_es)
+        chi_p = np.arctan2(amp_pc, amp_ps)
+        chi_e = np.arctan2(amp_ec, amp_es)
 
         pars_mdl = {
             'amp_p': amp_p * u.km/u.s/u.pc**0.5,
             'amp_e': amp_e * u.km/u.s/u.pc**0.5,
-            'xi_p': (xi_p * u.rad).to(u.deg),
-            'xi_e': (xi_e * u.rad).to(u.deg),
+            'chi_p': (chi_p * u.rad).to(u.deg),
+            'chi_e': (chi_e * u.rad).to(u.deg),
             'dveff_c': dveff_c * u.km/u.s/u.pc**0.5,
         }
         
