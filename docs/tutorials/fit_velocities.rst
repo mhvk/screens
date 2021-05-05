@@ -99,7 +99,7 @@ Set the pulsar's orbital period :math:`P_\mathrm{b}` and time of ascending node
 .. jupyter-execute::
     
     p_b = 5.7410459 * u.day
-    t_asc_p = Time(54501.4671, format='mjd')
+    t_asc_p = Time(54501.4671, format='mjd', scale='tdb')
 
 Set the Earth's orbital period :math:`P_\mathrm{E}` and derive its time of
 ascending node :math:`T_\mathrm{asc,E}` from the pulsar's coordinates.

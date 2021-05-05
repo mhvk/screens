@@ -70,21 +70,21 @@ Set the parameters of the pulsar system:
       -  
       -
 
-    * - declination
-      - :math:`\delta`
-      -
-
     * - right ascension
       - :math:`\alpha`
       -
 
-    * - proper motion in declination
-      - :math:`\mu_\delta`
+    * - declination
+      - :math:`\delta`
       -
 
     * - proper motion in right ascension
       - :math:`\mu_{\alpha\ast}`
       - including the :math:`\cos(\delta)` term
+
+    * - proper motion in declination
+      - :math:`\mu_\delta`
+      -
 
     * - **Orbital elements of the pulsar binary**
       -  
