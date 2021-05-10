@@ -466,8 +466,7 @@ objects correctly when using the small-angle approximation
 
     s = [0., 1.]
 
-    v_p_sys_eff = ((d_eff * (mu_alpha_star * np.sin(xi)
-                                + mu_delta * np.cos(xi)))
+    v_p_sys_eff = ((d_eff * (mu_alpha_star * np.sin(xi) + mu_delta * np.cos(xi)))
                    .to(u.km/u.s, equivalencies=u.dimensionless_angles()))
 
     v_lens1 = s * (np.sqrt(d_eff) *  dveff_c + v_p_sys_eff)

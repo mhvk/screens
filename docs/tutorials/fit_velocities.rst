@@ -163,8 +163,7 @@ Let's have a look at all the data.
     
     plt.figure(figsize=(12., 5.))
 
-    plt.errorbar(t_obs.jyear, dveff_obs, yerr=dveff_err, **obs_style,
-                 alpha=0.3)
+    plt.errorbar(t_obs.jyear, dveff_obs, yerr=dveff_err, **obs_style, alpha=0.3)
     
     plt.xlim(t_obs[0].jyear, t_obs[-1].jyear)
 
@@ -352,16 +351,14 @@ at a higher time resolution.
 
         ax1 = plt.subplot(221)
         plt.plot(t_many, dveff_mdl_many, **mdl_style, alpha=0.3)
-        plt.errorbar(t_obs.mjd, dveff_obs, yerr=dveff_err, **obs_style,
-                     alpha=0.3)
+        plt.errorbar(t_obs.mjd, dveff_obs, yerr=dveff_err, **obs_style, alpha=0.3)
         plt.xlim(tlim_long)
         plt.title('full model', **title_kwargs)
         plt.xlabel('')
         plt.ylabel(dveff_lbl)
 
         ax2 = plt.subplot(223, sharex=ax1)
-        plt.errorbar(t_obs.mjd, dveff_res, yerr=dveff_err, **obs_style,
-                     alpha=0.3)
+        plt.errorbar(t_obs.mjd, dveff_res, yerr=dveff_err, **obs_style, alpha=0.3)
         plt.axhline(**mdl_style)
         plt.xlim(tlim_long)
         plt.title('residuals', **title_kwargs)
@@ -445,8 +442,7 @@ sets with low absolute effective velocities.
         
         ax1 = plt.subplot(121)
         idx_e = np.argsort(ph_e_obs.value % 1.)
-        plt.plot(ph_e_obs[idx_e].value % 1., dveff_mdl_earth[idx_e],
-                 **mdl_style)
+        plt.plot(ph_e_obs[idx_e].value % 1., dveff_mdl_earth[idx_e], **mdl_style)
         plt.errorbar(ph_e_obs.value % 1., dveff_res_earth, yerr=dveff_err,
                      **obs_style, alpha=0.2, zorder=-3)
         plt.xlim(0., 1.)
