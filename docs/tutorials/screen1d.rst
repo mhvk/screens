@@ -50,51 +50,31 @@ Define a handy function to create extents to use with imshow.
 Set the system's parameters
 ===========================
 
-Parameters of the system: the effective distance :math:`d_\mathrm{eff}`,
-the fractional screen--pulsar distance :math:`s`, and the effective proper
-motion :math:`\mu_\mathrm{eff} = v_\mathrm{eff} / d_\mathrm{eff}`, where
-:math:`v_\mathrm{eff}` is the effective velocity.
+Set the parameters of the system: the distances to the pulsar
+:math:`d_\mathrm{p}` and to the screen :math:`d_\mathrm{s}`, and the velocity
+of the pulsar :math:`v_\mathrm{p}` (we'll assume the scattering screen and
+Earth to be at rest).
 
 .. jupyter-execute::
 
-    d_eff = 0.5 * u.kpc
-    s = 0.5
-    mu_eff = 50. * u.mas / u.yr
-
-Compute the distances to the pulsar :math:`d_\mathrm{p}` and to the screen
-:math:`d_\mathrm{s}`.
-
-.. jupyter-execute::
-
-    d_p = s/(1 - s) * d_eff
-    d_s = s * d_eff
-
-Compute the effective velocity :math:`v_\mathrm{eff}` and the pulsar velocity
-:math:`v_\mathrm{p}` to achieve that effective velocity assuming the scattering
-screen and Earth are at rest.
-
-.. jupyter-execute::
-
-    v_eff = (mu_eff * d_eff).to(u.km/u.s,
-                                equivalencies=u.dimensionless_angles())
-    v_p = -v_eff * s / (1 - s)
+    d_p = 0.5 * u.kpc
+    d_s = 0.25 * u.kpc
+    v_p = -300. * u.km/u.s
 
 Set the positions of the lensed images in the lens plane, their complex
 magnifications, and the angle of the line of images in the reference frame.
 
 .. jupyter-execute::
 
-    scr1_theta_par = np.array([-4., -1., 0., 2.]) << u.mas
-    scr1_pos = ((scr1_theta_par * d_s)
-                .to(u.AU, equivalencies=u.dimensionless_angles()))
-
+    scr1_pos = np.array([-1., -0.25, 0., 0.5]) << u.au
+    
     scr1_magnification = np.array([-0.1 - 0.1j,
                                     0.7 - 0.3j,
                                     1.,
                                     0.3 + 0.3j])
     scr1_magnification /= np.sqrt((np.abs(scr1_magnification)**2).sum())
 
-    scr1_angle = 0. * u.deg
+    scr1_angle = 67. * u.deg
 
 
 Set up the system using :py:mod:`screens.screen`
@@ -305,7 +285,7 @@ Visualize the system
 
 .. jupyter-execute::
 
-    plt.figure(figsize=(8., 8.))
+    plt.figure(figsize=(8., 12.))
     ax = plt.subplot(111, projection='3d')
     ax.set_box_aspect((1, 1, 2))
     ax.set_axis_off()
