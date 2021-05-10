@@ -101,12 +101,10 @@ using the ``magnification`` attribute.
 .. jupyter-execute::
 
     pulsar = Source(pos=CartesianRepresentation([0., 0., 0.]*u.AU),
-                    vel=CartesianRepresentation(v_p.value, 0., 0.,
-                                                unit=u.km/u.s))
+                    vel=CartesianRepresentation(v_p.value, 0., 0., unit=u.km/u.s))
 
     telescope = Telescope(pos=CartesianRepresentation([0., 0., 0.]*u.AU),
-                          vel=CartesianRepresentation(0., 0., 0.,
-                                                      unit=u.km/u.s))
+                          vel=CartesianRepresentation(0., 0., 0., unit=u.km/u.s))
 
 Let's have a quick look at the objects we just created.
 
@@ -155,8 +153,7 @@ There are a few things to make note of:
 
 .. jupyter-execute::
 
-    obs1 = telescope.observe(scr1.observe(pulsar, distance=d_p-d_s),
-                             distance=d_s)
+    obs1 = telescope.observe(scr1.observe(pulsar, distance=d_p-d_s), distance=d_s)
 
 
 Making the dynamic spectrum
@@ -298,8 +295,7 @@ Visualize the system
     plot_screen(ax, scr1, d_s, color='red')
     plot_screen(ax, pulsar, d_p, color='green')
     # Connect origins
-    ax.plot(np.zeros(3), np.zeros(3),
-            [0., d_s.value, d_p.value], color='black')
+    ax.plot(np.zeros(3), np.zeros(3), [0., d_s.value, d_p.value], color='black')
 
     path_shape = obs1.tau.shape  # Also trigger calculation of pos, vel.
     tpos = obs1.pos
@@ -316,5 +312,4 @@ Visualize the system
         for d in (0., d_s.value, d_p.value)])
     for _x, _y, _z in zip(x.T, y.T, z.T):
         ax.plot(_x, _y, _z, color='black', linestyle=':')
-        ax.scatter(_x[1], _y[1], _z[1], marker='o',
-                color='red')
+        ax.scatter(_x[1], _y[1], _z[1], marker='o', color='red')
