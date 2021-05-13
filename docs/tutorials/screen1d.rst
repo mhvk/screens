@@ -1,12 +1,14 @@
 ************************
-Using the Screen1D Class
+Using the Screen1D class
 ************************
 
 This tutorial describes how to generate synthetic data corresponding to a
 single-dish observation of a pulsar whose radiation is scattered by a single
-one-dimensional screens. It explains how to use the :py:mod:`screens.screen`
-module to quickly set up one-dimensional scattering screens and generate
-synthetic observations of the pulsar through such screens.
+one-dimensional screen. It explains how to use the :py:mod:`screens.screen`
+module, in particular its :py:class:`~screens.screen.Screen1D` class and the
+:py:meth:`~screens.screen.Screen.observe` method, to quickly set up a
+one-dimensional scattering screen and generate synthetic observations of the
+pulsar through such a screen.
 
 The combined codeblocks in this tutorial can be downloaded as a Python script
 and as a Jupyter notebook:
@@ -50,116 +52,156 @@ Define a handy function to create extents to use with imshow.
 Set the system's parameters
 ===========================
 
-Set the parameters of the system: the distances to the pulsar
-:math:`d_\mathrm{p}` and to the screen :math:`d_\mathrm{s}`, and the velocity
-of the pulsar :math:`v_\mathrm{p}` (we'll assume the scattering screen and
-Earth to be at rest).
+Set the parameters of the system: the distances (from Earth) to the pulsar
+:math:`d_\mathrm{p}` and to the screen :math:`d_\mathrm{s}`, and the pulsar's
+velocity vector :math:`\mathbf{v}_\mathrm{p}`, defined here in a reference
+frame whose :math:`z`-axis is the direct line of sight from Earth to the
+pulsar. In this simple example, the scattering screen and Earth are assumed to
+be at rest in the reference frame. We use the Asropy
+:py:class:`~astropy.coordinates.CartesianRepresentation` class to define the
+velocity vector.
 
 .. jupyter-execute::
 
     d_p = 0.5 * u.kpc
     d_s = 0.25 * u.kpc
-    v_p = -300. * u.km/u.s
+    v_p = CartesianRepresentation(-300., 0., 0., unit=u.km/u.s)
 
-Set the positions of the lensed images in the lens plane, their complex
-magnifications, and the angle of the line of images in the reference frame.
+Set the properties of the screen: a unit normal vector that defines the
+orientation of the screen (pointing in the direction of the line of images
+formed by the screen, and perpendicular to the direct line of sight from Earth
+to the pulsar), the positions of the lensed images along the line of images,
+and the complex magnifications of the images. Here, we use the Astropy
+:py:class:`~astropy.coordinates.CylindricalRepresentation` class to create the
+unit vector in the :math:`xy`-plane of the reference frame, with the azimuth
+``phi`` measured counterclockwise from the :math:`x`-axis.
 
 .. jupyter-execute::
+
+    scr1_normal = CylindricalRepresentation(rho=1., phi=67.*u.deg, z=0.)
 
     scr1_pos = np.array([-1., -0.25, 0., 0.5]) << u.au
     
     scr1_magnification = np.array([-0.1 - 0.1j,
-                                    0.7 - 0.3j,
-                                    1.,
-                                    0.3 + 0.3j])
-    scr1_magnification /= np.sqrt((np.abs(scr1_magnification)**2).sum())
-
-    scr1_angle = 67. * u.deg
+                                    0.5 - 0.2j,
+                                    0.8,
+                                    0.2 + 0.1j])
 
 
-Set up the system using :py:mod:`screens.screen`
-================================================
+Construct the system's components
+=================================
 
-Create the scattering screen using the :py:class:`~screens.screen.Screen1D`
-class. This requires setting a normal vector ``normal`` that defines the
-direction of the line of images, setting the positions ``p`` of the images
-along the line defined by the normal, and the velocities ``v`` of the images
-along that line (in this case all images have the same velocity, zero).
-
-.. jupyter-execute::
-
-    scr1_normal = CylindricalRepresentation(1., scr1_angle, 0.).to_cartesian()
-
-    scr1 = Screen1D(normal=scr1_normal, p=scr1_pos, v=0.*u.km/u.s,
-                    magnification=scr1_magnification)
-
-Create the pulsar using the :py:class:`~screens.screen.Source` class
-and the telescope using the :py:class:`~screens.screen.Telescope` class.
-Set their positions and velocities. and the (scaled) brightness pf the pulsar
-using the ``magnification`` attribute.
+Create the pulsar using the :py:class:`~screens.screen.Source` class. Its
+three-dimensional position and velocity vectors, ``pos`` and ``vel``, need to
+be given as Asropy :py:class:`~astropy.coordinates.CartesianRepresentation`
+objects. By default, the position is zero. Note that this position does not
+include the distance; the :py:class:`~screens.screen.Source` object only
+defines the properties of the source and could in principle be observed from
+anywhere. The (scaled) brightness of the pulsar can be set using the
+``magnification`` attribute; by default, this attribute is set to unity.
 
 .. jupyter-execute::
 
-    pulsar = Source(pos=CartesianRepresentation([0., 0., 0.]*u.AU),
-                    vel=CartesianRepresentation(v_p.value, 0., 0., unit=u.km/u.s))
-
-    telescope = Telescope(pos=CartesianRepresentation([0., 0., 0.]*u.AU),
-                          vel=CartesianRepresentation(0., 0., 0., unit=u.km/u.s))
-
-Let's have a quick look at the objects we just created.
-
-.. jupyter-execute::
+    pulsar = Source(vel=v_p)
 
     print(pulsar)
-    print(telescope)
+
+Create the scattering screen using the :py:class:`~screens.screen.Screen1D`
+class. This requires setting the unit normal vector ``normal`` that points in
+the direction of the line of images (see above), the positions ``p`` of the
+images along the line defined by the normal, and the velocities ``v`` of the
+images along that line (in this case all images have the same velocity, zero).
+The ``normal`` attribute needs to be an Astropy
+:py:class:`~astropy.coordinates.CartesianRepresentation` object, so we use the
+:py:meth:`~astropy.coordinates.CylindricalRepresentation.to_cartesian` method
+to convert the :py:class:`~astropy.coordinates.CylindricalRepresentation`
+vector defined earlier. The ``p`` and ``v`` attributes need to be Astropy
+:py:class:`~astropy.units.quantity.Quantity` objects, and ``magnification`` can
+be an array of complex numbers.
+
+.. jupyter-execute::
+
+    scr1 = Screen1D(normal=scr1_normal.to_cartesian(), p=scr1_pos, v=0.*u.km/u.s,
+                    magnification=scr1_magnification)
+
     print(scr1)
 
-
-Using the :py:meth:`~screens.screen.Screen.observe` method
-==========================================================
-
-We can use the :py:meth:`~screens.screen.Screen.observe` method of
-``telescope``, for example to simulate a direct observation of the pulsar
-(i.e., ignoring the screen for now):
+Finally, create the telescope using the :py:class:`~screens.screen.Telescope`
+class. The default argument values set its position and velocty to zero. Note
+that this object also has a ``magnification`` attribute (with a default value
+of unity), which can be thought of as the efficiency of the telescope.
 
 .. jupyter-execute::
 
-    telescope.observe(pulsar, distance=d_p)
+    telescope = Telescope()
 
-This returns another :py:class:`~screens.screen.Telescope` object, but one that
-has ``source`` and ``distance`` attributes.
+    print(telescope)
 
-At this point, it's useful to be aware of the inheritance of the classes in the
-:py:mod:`screens.screen` module:
 
-.. inheritance-diagram:: screens.screen
-    :top-classes: screens.screen.Source
-    :parts: 1
+Generating observations using :py:meth:`~screens.screen.Screen.observe`
+=======================================================================
 
-There are a few things to make note of:
+The :py:meth:`~screens.screen.Screen.observe` method can be used to quickly
+generate scintillometric observations. It is available on the
+:py:class:`~screens.screen.Screen` class, of which
+:py:class:`~screens.screen.Telescope` and :py:class:`~screens.screen.Screen1D`
+are subclasses, and it requires two arguments:
 
-- All objects have the same parent class: :py:class:`~screens.screen.Source`.
-- The :py:meth:`~screens.screen.Screen.observe` method is carried by the
-  :py:class:`~screens.screen.Screen` class, of which
-  :py:class:`~screens.screen.Telescope` is a subclass.
-- :py:class:`~screens.screen.Screen1D` is also a subclass of
-  :py:class:`~screens.screen.Screen`, so it can also use the 
-  :py:meth:`~screens.screen.Screen.observe` method
-  (i.e., the lenses on a screen can observe a source).
-- :py:class:`~screens.screen.Screen` is a subclass of
-  :py:class:`~screens.screen.Source`, so a screen (or rather, the images on it)
-  can also act a source of radiation that can be observed.
+- The ``source`` argument is the source of radiation that is being observed.
+  This should be either a :py:class:`~screens.screen.Source` object (for
+  simulating a direct observation) or a :py:class:`~screens.screen.Screen`
+  object (for simulating an observation of a screen that is scattering
+  radiation from a source behind it).
+- The ``distance`` argument is the physical distance at which ``source`` is
+  being observed. It should be an Astropy
+  :py:class:`~astropy.units.quantity.Quantity` object.
 
+For example, here we simulate a direct observation of the pulsar from the
+telescope (i.e., ignoring the screen for now). As we can see, this returns
+another :py:class:`~screens.screen.Telescope` object, but one that has a
+``source`` and a ``distance`` attribute.
 
 .. jupyter-execute::
 
-    obs1 = telescope.observe(scr1.observe(pulsar, distance=d_p-d_s), distance=d_s)
+    telescope.observe(source=pulsar, distance=d_p)
+
+To simulate an observation of the pulsar scattered by the screen, we first
+use the :py:meth:`~screens.screen.Screen.observe` method from the screen to the
+pulsar, creating an object that encodes the images of the pulsar on the screen,
+and then generate an observation of the resulting object from the telescope.
+Note that the distance should be the relative distance from the object that is
+being observed to the object that does the observing.
+
+.. jupyter-execute::
+
+    obs_scr1_pulsar = scr1.observe(source=pulsar, distance=d_p-d_s)
+    obs1 = telescope.observe(source=obs_scr1_pulsar, distance=d_s)
+
+    print(obs1)
+
+Making an observation with :py:meth:`~screens.screen.Screen.observe` also gives
+access to a few key scintillometric quantities: the (complex) brightness of
+each path of radiation (the product of the magnifications of the source,
+screen, and telescope), the instantaneous geometric delay of the radiation
+following each path, and the time derivatives of those delays.
+
+.. jupyter-execute::
+
+    obs1.brightness
+
+.. jupyter-execute::
+
+    obs1.tau
+
+.. jupyter-execute::
+
+    obs1.taudot
 
 
 Making the dynamic spectrum
 ===========================
 
-Define the observing frequencies and times. Make sure they can be broadcast
+Define the observing frequencies and times. Make sure they will be broadcast
 against one another correctly.
 
 .. jupyter-execute::
@@ -167,20 +209,28 @@ against one another correctly.
     t = np.linspace(0, 90*u.min, 180)[:, np.newaxis]
     f = np.linspace(315*u.MHz, 317*u.MHz, 200)
 
-Compute the dynamic wavefield (using the :py:func:`screens.fields.phasor`
-function) and then the dynamic spectrum.
+Find the geometric delays as a function of time from the ``tau`` and ``taudot``
+attributes of ``obs1``. Add two extra dimensions to accommodate the time and
+frequency dimensions.
 
 .. jupyter-execute::
 
-    # Create dynamic spectrum using delay for each path.
-    tau_t = (obs1.tau[:, np.newaxis, np.newaxis]
-        + obs1.taudot[:, np.newaxis, np.newaxis] * t)
+    tau0 = obs1.tau[:, np.newaxis, np.newaxis]
+    taudot = obs1.taudot[:, np.newaxis, np.newaxis]
+    tau_t = tau0 + taudot * t
+
+Compute the dynamic wavefield and then the dynamic spectrum. Here, we use the
+:py:func:`~screens.fields.phasor` function from :py:mod:`screens.fields`,
+which essentially computes
+``np.exp(1j * (f * tau_t * u.cycle).to_value(u.rad))``.
+
+.. jupyter-execute::
 
     ph = phasor(f, tau_t)
-    dynwave = ph * obs1.brightness[:, np.newaxis, np.newaxis]
+    brightness = obs1.brightness[:, np.newaxis, np.newaxis]
+    dynwave = ph * brightness
 
-    # Calculate and show dynamic spectrum.
-    dynspec = np.abs(dynwave.sum(0))**2
+    dynspec = np.abs(dynwave.sum(axis=0))**2
 
 Plot the dynamic spectrum.
 
@@ -188,11 +238,11 @@ Plot the dynamic spectrum.
 
     plt.figure(figsize=(12., 8.))
 
-    plt.imshow(dynspec.T, cmap='Greys',
-               extent=axis_extent(t) + axis_extent(f), vmin=0.,
-               origin='lower', interpolation='none', aspect='auto')
-    plt.xlabel(t.unit.to_string('latex'))
-    plt.ylabel(f.unit.to_string('latex'))
+    plt.imshow(dynspec.T,
+               origin='lower', aspect='auto', interpolation='none',
+               cmap='Greys', extent=axis_extent(t) + axis_extent(f), vmin=0.)
+    plt.xlabel(rf"time $t$ ({t.unit.to_string('latex')})")
+    plt.ylabel(rf"frequency $f$ ({f.unit.to_string('latex')})")
 
     cbar = plt.colorbar()
     cbar.set_label('normalized intensity')
@@ -206,7 +256,6 @@ spectrum.
 
 .. jupyter-execute::
 
-    # And the conjugate spectrum, and secondary spectrum.
     conspec = np.fft.fft2(dynspec)
     conspec /= conspec[0, 0]
     conspec = np.fft.fftshift(conspec)
@@ -242,14 +291,14 @@ Plot the secondary spectrum.
 Visualize the system
 ====================
 
+Here is a bit of code that generates a 3D sketch of the system.
+
 .. jupyter-execute::
 
     def unit_vector(c):
         return c.represent_as(UnitSphericalRepresentation).to_cartesian()
 
-
     ZHAT = CartesianRepresentation(0., 0., 1., unit=u.one)
-
 
     def plot_screen(ax, s, d, color='black', **kwargs):
         d = d.to_value(u.kpc)
@@ -262,15 +311,14 @@ Visualize the system
         ax.plot_wireframe(x, y, np.broadcast_to(d, (x+y).shape),
                         alpha=0.2, color=color)
         spos = s.normal * s.p if isinstance(s, Screen1D) else s.pos
-        ax.scatter(spos.x.to_value(u.AU), spos.y.to_value(u.AU),
-                d, c=color, marker='+')
+        ax.scatter(spos.x.to_value(u.AU), spos.y.to_value(u.AU), d,
+                   c=color, marker='+')
         if spos.shape:
             for pos in spos:
                 zo = np.arange(2)
                 ax.plot(pos.x.to_value(u.AU)*zo, pos.y.to_value(u.AU)*zo,
                         np.ones(2) * d, c=color, linestyle=':')
-                upos = pos + (ZHAT.cross(unit_vector(pos))
-                            * ([-1.5, 1.5] * u.AU))
+                upos = pos + (ZHAT.cross(unit_vector(pos)) * ([-1.5, 1.5] * u.AU))
                 ax.plot(upos.x.to_value(u.AU), upos.y.to_value(u.AU),
                         np.ones(2) * d, c=color, linestyle='-')
         elif s.vel.norm() != 0:
@@ -285,19 +333,21 @@ Visualize the system
     plt.figure(figsize=(8., 12.))
     ax = plt.subplot(111, projection='3d')
     ax.set_box_aspect((1, 1, 2))
-    ax.set_axis_off()
+    # ax.set_axis_off()
+    ax.grid(False)
     ax.set_xlim3d(-4, 4)
     ax.set_ylim3d(-4, 4)
     ax.set_xticks([-2, -1, 0, 1., 2])
     ax.set_yticks([-2, -1, 0, 1., 2])
     ax.set_zticks([0, d_s.value, d_p.value])
+    ax.set_xlabel('x (AU)')
+    ax.set_ylabel('y (AU)')
+    ax.set_zlabel('z (kpc)', labelpad=12)
     plot_screen(ax, telescope, 0*u.kpc, color='blue')
     plot_screen(ax, scr1, d_s, color='red')
     plot_screen(ax, pulsar, d_p, color='green')
-    # Connect origins
-    ax.plot(np.zeros(3), np.zeros(3), [0., d_s.value, d_p.value], color='black')
 
-    path_shape = obs1.tau.shape  # Also trigger calculation of pos, vel.
+    path_shape = obs1.tau.shape
     tpos = obs1.pos
     scat1 = obs1.source.pos
     ppos = obs1.source.source.pos
