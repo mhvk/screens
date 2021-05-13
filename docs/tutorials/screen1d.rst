@@ -49,47 +49,27 @@ Define a handy function to create extents to use with imshow.
         return x[0]-0.5*dx, x[-1]+0.5*dx
 
 
-Set the system's parameters
-===========================
+Construct the system's components
+=================================
 
-Set the parameters of the system: the distances (from Earth) to the pulsar
-:math:`d_\mathrm{p}` and to the screen :math:`d_\mathrm{s}`, and the pulsar's
-velocity vector :math:`\mathbf{v}_\mathrm{p}`, defined here in a reference
-frame whose :math:`z`-axis is the direct line of sight from Earth to the
-pulsar. In this simple example, the scattering screen and Earth are assumed to
-be at rest in the reference frame. We use the Asropy
-:py:class:`~astropy.coordinates.CartesianRepresentation` class to define the
-velocity vector.
+The :py:mod:`screens.screen` module lets us first define the components of the
+scintillometry system (pulsar, scattering screen, and telescope) and consider
+their interaction afterwards.
+
+For this simple example, we will use a reference frame whose :math:`z`-axis
+points along the direct line of sight from Earth to the pulsar, and we will
+assume that the scattering screen and Earth are at rest in this reference
+frame. Although not yet necessary for defining the individual components, let's
+already set the distances (from Earth) to the pulsar :math:`d_\mathrm{p}` and
+to the screen :math:`d_\mathrm{s}`.
 
 .. jupyter-execute::
 
     d_p = 0.5 * u.kpc
     d_s = 0.25 * u.kpc
-    v_p = CartesianRepresentation(-300., 0., 0., unit=u.km/u.s)
 
-Set the properties of the screen: a unit normal vector that defines the
-orientation of the screen (pointing in the direction of the line of images
-formed by the screen, and perpendicular to the direct line of sight from Earth
-to the pulsar), the positions of the lensed images along the line of images,
-and the complex magnifications of the images. Here, we use the Astropy
-:py:class:`~astropy.coordinates.CylindricalRepresentation` class to create the
-unit vector in the :math:`xy`-plane of the reference frame, with the azimuth
-``phi`` measured counterclockwise from the :math:`x`-axis.
-
-.. jupyter-execute::
-
-    scr1_normal = CylindricalRepresentation(rho=1., phi=67.*u.deg, z=0.)
-
-    scr1_pos = np.array([-1., -0.25, 0., 0.5]) << u.au
-    
-    scr1_magnification = np.array([-0.1 - 0.1j,
-                                    0.5 - 0.2j,
-                                    0.8,
-                                    0.2 + 0.1j])
-
-
-Construct the system's components
-=================================
+The pulsar
+----------
 
 Create the pulsar using the :py:class:`~screens.screen.Source` class. Its
 three-dimensional position and velocity vectors, ``pos`` and ``vel``, need to
@@ -102,32 +82,59 @@ anywhere. The (scaled) brightness of the pulsar can be set using the
 
 .. jupyter-execute::
 
-    pulsar = Source(vel=v_p)
+    pulsar_vel = CartesianRepresentation(-300., 0., 0., unit=u.km/u.s)
+
+    pulsar = Source(vel=pulsar_vel)
 
     print(pulsar)
 
+
+The scattering screen
+---------------------
+
 Create the scattering screen using the :py:class:`~screens.screen.Screen1D`
-class. This requires setting the unit normal vector ``normal`` that points in
-the direction of the line of images (see above), the positions ``p`` of the
-images along the line defined by the normal, and the velocities ``v`` of the
-images along that line (in this case all images have the same velocity, zero).
-The ``normal`` attribute needs to be an Astropy
-:py:class:`~astropy.coordinates.CartesianRepresentation` object, so we use the
-:py:meth:`~astropy.coordinates.CylindricalRepresentation.to_cartesian` method
-to convert the :py:class:`~astropy.coordinates.CylindricalRepresentation`
-vector defined earlier. The ``p`` and ``v`` attributes need to be Astropy
-:py:class:`~astropy.units.quantity.Quantity` objects, and ``magnification`` can
-be an array of complex numbers.
+class with the following arguments:
+
+- The unit normal vector ``normal`` that defines the orientation of the screen.
+  It points in the direction of the line of images formed by the screen and it
+  is perpendicular to the direct line of sight from Earth to the pulsar. This
+  should be an Astropy :py:class:`~astropy.coordinates.CartesianRepresentation`
+  object. Here, we use Astropy's
+  :py:class:`~astropy.coordinates.CylindricalRepresentation` class to create
+  the unit vector in the :math:`xy`-plane of the reference frame (with the
+  azimuth measured counterclockwise from the :math:`x`-axis), and convert it to
+  a :py:class:`~astropy.coordinates.CartesianRepresentation` object using the
+  :py:meth:`~astropy.coordinates.CylindricalRepresentation.to_cartesian`
+  method.
+- The positions ``p`` of the lensed images along the line defined by
+  ``normal``, given as an Astropy :py:class:`~astropy.units.quantity.Quantity`
+  object.
+- The velocities ``v`` of the images along that line (in this case all images
+  have the same velocity, zero).
+- The array ``magnification`` containing the complex magnifications of the
+  images.
 
 .. jupyter-execute::
 
-    scr1 = Screen1D(normal=scr1_normal.to_cartesian(), p=scr1_pos, v=0.*u.km/u.s,
+    scr1_normal = CylindricalRepresentation(1., 67.*u.deg, 0.).to_cartesian()
+    scr1_pos = np.array([-1., -0.25, 0., 0.5]) << u.au
+    scr1_vel = 0. * u.km/u.s
+    scr1_magnification = np.array([-0.1 - 0.1j,
+                                    0.5 - 0.2j,
+                                    0.8,
+                                    0.2 + 0.1j])
+
+    scr1 = Screen1D(normal=scr1_normal, p=scr1_pos, v=scr1_vel,
                     magnification=scr1_magnification)
 
     print(scr1)
 
+
+The telescope
+-------------
+
 Finally, create the telescope using the :py:class:`~screens.screen.Telescope`
-class. The default argument values set its position and velocty to zero. Note
+class. The default argument values set its position and velocity to zero. Note
 that this object also has a ``magnification`` attribute (with a default value
 of unity), which can be thought of as the efficiency of the telescope.
 
@@ -143,9 +150,9 @@ Generating observations using :py:meth:`~screens.screen.Screen.observe`
 
 The :py:meth:`~screens.screen.Screen.observe` method can be used to quickly
 generate scintillometric observations. It is available on the
-:py:class:`~screens.screen.Screen` class, of which
+:py:class:`~screens.screen.Screen` class (of which
 :py:class:`~screens.screen.Telescope` and :py:class:`~screens.screen.Screen1D`
-are subclasses, and it requires two arguments:
+are subclasses) and it requires two arguments:
 
 - The ``source`` argument is the source of radiation that is being observed.
   This should be either a :py:class:`~screens.screen.Source` object (for
