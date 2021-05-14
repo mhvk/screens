@@ -39,7 +39,7 @@ Imports.
     from astropy import units as u
     from astropy import constants as const
 
-    from astropy.coordinates import Angle, SkyCoord, BarycentricMeanEcliptic
+    from astropy.coordinates import SkyCoord
 
     from astropy.visualization import quantity_support
 
@@ -62,13 +62,15 @@ and proper motion components :math:`(\mu_{\alpha\ast}, \mu_\delta)`,
 as well as some of the system's parameters that are known from timing studies:
 its orbital period :math:`P_\mathrm{b}`, projected semi-major axis
 :math:`a_\mathrm{p} \sin( i_\mathrm{p} )`, and radial-velocity amplitude
-:math:`K_\mathrm{p} = 2 \pi a_\mathrm{p} \sin( i_\mathrm{p} ) / P_\mathrm{b}`.
+:math:`K_\mathrm{p} = 2 \pi a_\mathrm{p} \sin( i_\mathrm{p} ) / P_\mathrm{b}`
+[which relates to the pulsar's mean orbital speed as
+:math:`v_\mathrm{orb,p} = K_\mathrm{p} / \sin( i_\mathrm{p} )`].
 
 .. jupyter-execute::
 
-    psr_coord = SkyCoord('04h37m15.99744s -47d15m09.7170s')
-    mu_alpha_star = 121.4385 * u.mas / u.yr
-    mu_delta = -71.4754 * u.mas / u.yr
+    psr_coord = SkyCoord('04h37m15.99744s -47d15m09.7170s',
+                         pm_ra_cosdec=121.4385 * u.mas / u.yr,
+                         pm_dec=-71.4754 * u.mas / u.yr)
     
     p_b = 5.7410459 * u.day
     asini_p = 3.3667144 * const.c * u.s
@@ -91,7 +93,8 @@ and longitude of ascending node :math:`\Omega_\mathrm{E}`).
     
     psr_coord_eclip = psr_coord.barycentricmeanecliptic
     ascnod_eclip_lon = psr_coord_eclip.lon + 90.*u.deg
-    ascnod_eclip = BarycentricMeanEcliptic(lon=ascnod_eclip_lon, lat=0.*u.deg)
+    ascnod_eclip = SkyCoord(lon=ascnod_eclip_lon, lat=0.*u.deg,
+                            frame='barycentricmeanecliptic')
     ascnod_equat = SkyCoord(ascnod_eclip).icrs
     
     i_e = psr_coord_eclip.lat + 90.*u.deg
@@ -121,7 +124,7 @@ consists of two sinusoids (with known periods) and an offset:
         \right|.
 
 Here, :math:`\phi_\mathrm{p}` and :math:`\phi_\mathrm{E}` are the orbital
-phases of the pulsar and the Earth , measured from their ascending node.
+phases of the pulsar and the Earth, measured from their ascending nodes.
 The free parameters in this equation are the amplitudes of the pulsar's and the
 Earth's orbital scaled-effective-velocity modulation :math:`A_\mathrm{p}` and
 :math:`A_\mathrm{E}` (assumed to be non-negative: :math:`A_\mathrm{p} \geq 0`,
@@ -143,7 +146,10 @@ In terms of these physical parameters, the model parameters can be expressed as
 
 .. math::
 
-    A_\mathrm{p} &= \frac{ \sqrt{ d_\mathrm{eff} } }{ d_\mathrm{p} }
+    A_\mathrm{p} &= \frac{ 1 - s }{ s }
+                    \frac{ v_\mathrm{orb,p} }{ \sqrt{ d_\mathrm{eff} } }
+                    b_\mathrm{p}
+                  = \frac{ \sqrt{ d_\mathrm{eff} } }{ d_\mathrm{p} }
                     \frac{ K_\mathrm{p} }{ \sin( i_\mathrm{p} ) }
                     b_\mathrm{p},
 
@@ -156,8 +162,10 @@ In terms of these physical parameters, the model parameters can be expressed as
     \tan( \chi_\mathrm{E} ) &= \tan( \Delta\Omega_\mathrm{E} )
                                \cos( i_\mathrm{E} ),
 
-    C &= \pm \frac{ v_\mathrm{lens} }{ s \sqrt{ d_\mathrm{eff} } }
-         \mp \frac{ v_\mathrm{p,sys,eff} }{ \sqrt{ d_\mathrm{eff} } }.
+    C &= \pm \frac{ 1 }{ s }
+             \frac{ v_\mathrm{lens} }{ \sqrt{ d_\mathrm{eff} } }
+         \mp \frac{ 1 - s }{ s }
+             \frac{ v_\mathrm{p,sys} }{ \sqrt{ d_\mathrm{eff} } }.
 
 These equations contain several auxiliary parameters that need to be defined.
 As usual, :math:`d_\mathrm{eff}` refers to the effective distance and :math:`s`
@@ -190,15 +198,17 @@ ascending node of the orbit of the pulsar and the Earth, respectively, i.e.,
     \qquad
     \Delta\Omega_\mathrm{E} = \xi - \Omega_\mathrm{E}.
 
-Finally, :math:`v_\mathrm{p,sys,eff}` is the pulsar's systemic effective
-velocity, given by
+Finally, :math:`v_\mathrm{p,sys}` is the pulsar's systemic velocity projected
+onto the line of images formed by the lens. It is given by
 
 .. math::
 
-    v_\mathrm{p,sys,eff} \simeq d_\mathrm{eff}
-                                \left[ \mu_{\alpha\ast} \sin( \xi )
-                                           + \mu_\delta \cos( \xi )
-                                \right].
+    v_\mathrm{p,sys} \simeq d_\mathrm{p} \mu_\mathrm{p,sys},
+    \qquad \mathrm{with} \qquad
+    \mu_\mathrm{p,sys} = \mu_{\alpha\ast} \sin( \xi ) + \mu_\delta \cos( \xi ),
+
+where :math:`\mu_\mathrm{p,sys}` denotes the pulsar system's proper motion
+projected onto the line of images.
 
 For the example in this tutorial, we use the values for the model parameters
 found in the :doc:`preceding tutorial <fit_velocities>`.
@@ -246,16 +256,12 @@ restricted to the range :math:`0^\circ \leq \xi < 180^\circ` (because we use
 the convention that :math:`\xi` refers to the position angle of the *eastern*
 half of the line of lensed images). So, for the purpose of inferring
 :math:`\xi`, it is only necessary to consider one of the two
-:math:`\Delta\Omega_\mathrm{E}` solutions. We use Astropy's
-:py:class:`~astropy.coordinates.Angle` class and its
-:py:meth:`~astropy.coordinates.Angle.wrap_at` method to restrict the value of
-:math:`\xi` to its allowed range.
+:math:`\Delta\Omega_\mathrm{E}` solutions.
 
 .. jupyter-execute::
 
     delta_omega_e = np.arctan(np.tan(chi_e) / np.cos(i_e))
-    xi = delta_omega_e + omega_e
-    xi = Angle(xi).wrap_at(180.*u.deg).deg * u.deg
+    xi = (delta_omega_e + omega_e) % (180.*u.deg)
 
     print(f'xi: {xi.to(u.deg):8.2f}')
 
@@ -276,26 +282,18 @@ Knowing :math:`\xi`, it is possible to retrieve a relation between
 Again, for a given value of :math:`\chi_\mathrm{p}`, there are two possible
 solutions for :math:`\Delta\Omega_\mathrm{p}`, offset by :math:`180^\circ`.
 Hence, there are two possible :math:`i_\mathrm{p}`--:math:`\Omega_\mathrm{p}`
-relations, offset by :math:`180^\circ` in :math:`\Omega_\mathrm{p}`. We use
-Astropy's :py:class:`~astropy.coordinates.Angle` and
-:py:meth:`~astropy.coordinates.Angle.wrap_at` to restrict the values of
-:math:`\Omega_\mathrm{p}` to its allowed range of
+relations, offset by :math:`180^\circ` in :math:`\Omega_\mathrm{p}`. We
+restrict the values of :math:`\Omega_\mathrm{p}` to its allowed range of
 :math:`0^\circ \leq \Omega_\mathrm{p} < 360^\circ`.
 
 .. jupyter-execute::
 
-    i_p = np.linspace(0., 180., 181) << u.deg
+    i_p = np.linspace(0.*u.deg, 180.*u.deg, 181)
 
-    delta_omega_p1 = np.arctan(np.tan(chi_p) / np.cos(i_p))
-    delta_omega_p2 = delta_omega_p1 + 180.*u.deg
+    delta_omega_p = np.arctan(np.tan(chi_p) / np.cos(i_p)) + [[0.], [180.]] * u.deg
+    omega_p = (xi - delta_omega_p) % (360.*u.deg)
 
-    omega_p1 = xi - delta_omega_p1
-    omega_p2 = xi - delta_omega_p2
-
-    omega_p1 = Angle(omega_p1).wrap_at(360.*u.deg).deg * u.deg
-    omega_p2 = Angle(omega_p2).wrap_at(360.*u.deg).deg * u.deg
-
-The two :math:`i_\mathrm{p}`--:math:`\Omega_\mathrm{p}` relations are
+The two :math:`i_\mathrm{p}`--:math:`\Omega_\mathrm{p}` relations we found are
 disjointed at :math:`i_\mathrm{p} = 90^\circ`, where
 :math:`\cos( i_\mathrm{p} )` changes sign. For plotting, we stitch the four
 halves of the two solutions together appropriately to create two continuous
@@ -306,15 +304,14 @@ curves in :math:`i_\mathrm{p}`--:math:`\Omega_\mathrm{p}` space.
     ii_ccw = (i_p <= 90.*u.deg)
     ii_cw =  (i_p >  90.*u.deg)
 
-    omega_p_stitch1 = np.concatenate((omega_p1[ii_ccw], omega_p2[ii_cw]))
-    omega_p_stitch2 = np.concatenate((omega_p2[ii_ccw], omega_p1[ii_cw]))
+    omega_p = np.concatenate((omega_p[:,ii_ccw], omega_p[::-1,ii_cw]), axis=1)
 
 .. jupyter-execute::
 
     plt.figure(figsize=(7., 6.))
 
-    plt.plot(i_p, omega_p_stitch1, c='C0')
-    plt.plot(i_p, omega_p_stitch2, c='C0')
+    plt.plot(i_p, omega_p[0,:].to(u.deg), c='C0')
+    plt.plot(i_p, omega_p[1,:].to(u.deg), c='C0')
 
     plt.xlim(0., 180.)
     plt.ylim(0., 360.)
@@ -329,10 +326,10 @@ ranges of values (while :math:`i_\mathrm{p}` is still unrestricted).
 
 .. jupyter-execute::
 
-    print(f'{omega_p_stitch1[-1].to(u.deg):.2f} < omega_p < '
-          f'{omega_p_stitch1[0].to(u.deg):.2f}    or    '
-          f'{omega_p_stitch2[-1].to(u.deg):.2f} < omega_p < '
-          f'{omega_p_stitch2[0].to(u.deg):.2f}')
+    print(f'{omega_p[0,-1].to(u.deg):.2f} < omega_p < '
+          f'{omega_p[0, 0].to(u.deg):.2f}    or    '
+          f'{omega_p[1,-1].to(u.deg):.2f} < omega_p < '
+          f'{omega_p[1, 0].to(u.deg):.2f}')
 
 
 The effective distance
@@ -356,21 +353,21 @@ Next, the effective distance :math:`d_\mathrm{eff}` can be calculated using
 
 Given the effective distance, it is possible to derive a relation between
 the distance to the pulsar :math:`d_\mathrm{p}` and the distance to the screen
-:math:`d_\mathrm{s}`. In terms of the fractional screen--pulsar distance
-:math:`s`, the two true distances are given by
+:math:`d_\mathrm{s}` in terms of the fractional screen--pulsar distance
+:math:`s`:
 
 .. math::
 
-    d_\mathrm{p} &= \frac{ s }{ 1 - s } d_\mathrm{eff}, \\
-    d_\mathrm{s} &= s d_\mathrm{eff}.
+    d_\mathrm{s} &= s d_\mathrm{eff}, \\
+    d_\mathrm{p} &= \frac{ d_\mathrm{s} }{ 1 - s }.
 
 .. jupyter-execute::
 
     ns = 250
-    s = np.arange(0.5/ns, 1., 1./ns)
+    s = np.linspace(0.5/ns, 1. - 0.5/ns, ns)
 
-    d_p = s / (1. - s) * d_eff
     d_s = s * d_eff
+    d_p = d_s / (1. - s)
 
 .. jupyter-execute::
 
@@ -415,7 +412,7 @@ can be used to derive a relation between the distance to the pulsar system
 .. jupyter-execute::
 
     nsini_p = 400
-    sini_p = np.arange(0.5/nsini_p, 1., 1./nsini_p)
+    sini_p = np.linspace(0.5/nsini_p, 1. - 0.5/nsini_p, nsini_p)
 
     b2_p = (1 - sini_p**2) / (1 - sini_p**2 * np.cos(chi_p)**2)
     d_p = v_orb_e * k_p / (amp_e * amp_p) * np.sqrt(b2_e * b2_p) / sini_p
@@ -447,13 +444,19 @@ function the fractional screen--pulsar distance :math:`s`:
 
 .. math::
 
-    v_\mathrm{lens} = s \left( v_\mathrm{p,sys,eff}
+    v_\mathrm{lens} = s \left( v_\mathrm{eff,p,sys}
                                \pm \sqrt{ d_\mathrm{eff} } C \right),
-    \qquad \mathrm{with} \qquad
-    v_\mathrm{p,sys,eff} \simeq d_\mathrm{eff}
-                                \left[ \mu_{\alpha\ast} \sin( \xi )
-                                           + \mu_\delta \cos( \xi )
-                                \right].
+
+where :math:`v_\mathrm{eff,p,sys}` denotes the (unsigned) contribution of the
+pulsar's systemic motion to the effective velocity :math:`v_\mathrm{eff}`:
+
+.. math::
+
+    v_\mathrm{eff,p,sys} = \frac{ 1 - s }{ s } v_\mathrm{p,sys}
+                         \simeq d_\mathrm{eff} \mu_\mathrm{p,sys}
+                         = d_\mathrm{eff} \left[ \mu_{\alpha\ast} \sin( \xi )
+                                                     + \mu_\delta \cos( \xi )
+                                          \right].
 
 To compute a velocity from a proper motion and a distance, we use the
 :py:func:`~astropy.units.equivalencies.dimensionless_angles` equivalency. This
@@ -466,29 +469,31 @@ objects correctly when using the small-angle approximation
 
     s = [0., 1.]
 
-    v_p_sys_eff = ((d_eff * (mu_alpha_star * np.sin(xi) + mu_delta * np.cos(xi)))
-                   .to(u.km/u.s, equivalencies=u.dimensionless_angles()))
+    mu_p_sys = psr_coord.pm_ra_cosdec * np.sin(xi) + psr_coord.pm_dec * np.cos(xi)
 
-    v_lens1 = s * (np.sqrt(d_eff) *  dveff_c + v_p_sys_eff)
-    v_lens2 = s * (np.sqrt(d_eff) * -dveff_c + v_p_sys_eff)
+    v_eff_p_sys = ((d_eff * mu_p_sys)
+                   .to(u.km/u.s, equivalencies=u.dimensionless_angles()))
+    
+    v_lens = s * (v_eff_p_sys + [[+1.], [-1.]] * np.sqrt(d_eff) * dveff_c)
 
 Because only the *norm* of the scintillation velocity can be measured, there
 are two possible solutions for :math:`v_\mathrm{lens}`: one in which the lens
 motion and the pulsar's systemic motion add up to a large offset in
 scintillation velocity, and one in which they counteract one another's
 contribution to the scintillation-velocity offset. For known values of the
-scaled-scintillation-velocity offset :math:`C` and the pulsar's systemic
-effective velocity :math:`v_\mathrm{p,sys,eff}`, this translates to solutions
-for :math:`v_\mathrm{lens}` with low and high absolute values, respectively.
+scaled-scintillation-velocity offset :math:`C` and the pulsar's systemic-motion
+contribution to the effective velocity :math:`v_\mathrm{eff,p,sys}`, this
+translates to solutions for :math:`v_\mathrm{lens}` with low and high absolute
+values, respectively.
 
 .. jupyter-execute::
 
     plt.figure(figsize=(7., 6.))
 
-    plt.plot(s, v_lens1.to(u.km/u.s),
+    plt.plot(s, v_lens[0,:].to(u.km/u.s),
              label=r'$\mathrm{{sgn}}(v_\mathrm{{lens}}) \neq '
                    r'\mathrm{{sgn}}(v_\mathrm{{p,sys}})$')
-    plt.plot(s, v_lens2.to(u.km/u.s),
+    plt.plot(s, v_lens[1,:].to(u.km/u.s),
              label=r'$\mathrm{{sgn}}(v_\mathrm{{lens}}) = '
                    r'\mathrm{{sgn}}(v_\mathrm{{p,sys}})$')
 
