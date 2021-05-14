@@ -95,7 +95,7 @@ and longitude of ascending node :math:`\Omega_\mathrm{E}`).
     ascnod_eclip_lon = psr_coord_eclip.lon + 90.*u.deg
     ascnod_eclip = SkyCoord(lon=ascnod_eclip_lon, lat=0.*u.deg,
                             frame='barycentricmeanecliptic')
-    ascnod_equat = SkyCoord(ascnod_eclip).icrs
+    ascnod_equat = ascnod_eclip.icrs
     
     i_e = psr_coord_eclip.lat + 90.*u.deg
     omega_e = psr_coord.position_angle(ascnod_equat)
@@ -310,8 +310,7 @@ curves in :math:`i_\mathrm{p}`--:math:`\Omega_\mathrm{p}` space.
 
     plt.figure(figsize=(7., 6.))
 
-    plt.plot(i_p, omega_p[0,:].to(u.deg), c='C0')
-    plt.plot(i_p, omega_p[1,:].to(u.deg), c='C0')
+    plt.plot(i_p, omega_p.to(u.deg).T, c='C0')
 
     plt.xlim(0., 180.)
     plt.ylim(0., 360.)
@@ -490,16 +489,14 @@ values, respectively.
 
     plt.figure(figsize=(7., 6.))
 
-    plt.plot(s, v_lens[0,:].to(u.km/u.s),
-             label=r'$\mathrm{{sgn}}(v_\mathrm{{lens}}) \neq '
-                   r'\mathrm{{sgn}}(v_\mathrm{{p,sys}})$')
-    plt.plot(s, v_lens[1,:].to(u.km/u.s),
-             label=r'$\mathrm{{sgn}}(v_\mathrm{{lens}}) = '
-                   r'\mathrm{{sgn}}(v_\mathrm{{p,sys}})$')
+    plt.plot(s, v_lens.to(u.km/u.s).T)
 
     plt.xlim(0., 1.)
 
-    plt.legend(loc='upper left')
+    plt.legend([r'$\mathrm{{sgn}}(v_\mathrm{{lens}}) \neq '
+                 r'\mathrm{{sgn}}(v_\mathrm{{p,sys}})$',
+                r'$\mathrm{{sgn}}(v_\mathrm{{lens}}) = '
+                 r'\mathrm{{sgn}}(v_\mathrm{{p,sys}})$'], loc='upper left')
 
     plt.xlabel(r'fractional screen-pulsar distance $s$')
     plt.ylabel(r'lens velocity $v_\mathrm{lens}$ (km/s)')
