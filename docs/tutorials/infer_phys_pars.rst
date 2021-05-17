@@ -186,7 +186,7 @@ subscripts)
 .. math::
 
     b^2 &= \cos^2( \Delta\Omega ) + \sin^2( \Delta\Omega ) \cos^2( i ) \\
-        &= \frac{ 1 - \sin^2( i ) } { 1 - \sin^2( i ) \cos^2( \xi ) }.
+        &= \frac{ 1 - \sin^2( i ) } { 1 - \sin^2( i ) \cos^2( \chi ) }.
 
 The symbols :math:`\Delta\Omega_\mathrm{p}` and :math:`\Delta\Omega_\mathrm{E}`
 denote the angles from the position angle of the screen to the longitude of
@@ -221,11 +221,13 @@ found in the :doc:`preceding tutorial <fit_velocities>`.
     chi_e =    65.13 * u.deg
     dveff_c =  14.68 * u.km/u.s/u.pc**0.5
 
-Constraints on physical parameters
-==================================
+Constraints without additional information
+==========================================
 
 Let's first consider the general case in which none of the six physical
-parameters of interest are known. Since the fit only provides five
+parameters of interest (:math:`\Omega_\mathrm{p}`, :math:`i_\mathrm{p}`,
+:math:`d_\mathrm{p}`, :math:`d_\mathrm{s}`, :math:`\xi`,
+:math:`v_\mathrm{lens}`) are known. Since the fit only provides five
 constraints, not all six physical parameters will have a unique solution.
 The absolute-value operation in the model equation causes further
 non-uniqueness of the solution. Nevertheless, it is possible to constrain
@@ -344,7 +346,7 @@ Next, the effective distance :math:`d_\mathrm{eff}` can be calculated using
 
 .. jupyter-execute::
 
-    b2_e = (1 - np.sin(i_e)**2) / (1 - np.sin(i_e)**2 * np.cos(chi_e)**2)
+    b2_e = (1. - np.sin(i_e)**2) / (1. - np.sin(i_e)**2 * np.cos(chi_e)**2)
     d_eff = v_orb_e**2 / amp_e**2 * b2_e
 
     print(f'd_eff:   {d_eff.to(u.pc):8.2f}')
@@ -378,7 +380,7 @@ the distance to the pulsar :math:`d_\mathrm{p}` and the distance to the screen
     plt.yscale('log')
 
     plt.xlim(0., 1.)
-    plt.ylim(1., 1.e5)
+    plt.ylim(10., 1.e4)
 
     plt.legend(loc='upper left')
 
@@ -410,10 +412,10 @@ can be used to derive a relation between the distance to the pulsar system
 
 .. jupyter-execute::
 
-    nsini_p = 400
+    nsini_p = 250
     sini_p = np.linspace(0.5/nsini_p, 1. - 0.5/nsini_p, nsini_p)
 
-    b2_p = (1 - sini_p**2) / (1 - sini_p**2 * np.cos(chi_p)**2)
+    b2_p = (1. - sini_p**2) / (1. - sini_p**2 * np.cos(chi_p)**2)
     d_p = v_orb_e * k_p / (amp_e * amp_p) * np.sqrt(b2_e * b2_p) / sini_p
 
 .. jupyter-execute::
@@ -425,7 +427,7 @@ can be used to derive a relation between the distance to the pulsar system
     plt.yscale('log')
 
     plt.xlim(0., 1.)
-    plt.ylim(10., 1.e5)
+    plt.ylim(10., 1.e4)
 
     plt.xlabel(r"sine of pulsar's orbital inclination $\sin( i_\mathrm{p} )$")
     plt.ylabel(r"pulsar's distance from Earth $d_\mathrm{p}$ (pc)")
@@ -493,13 +495,278 @@ values, respectively.
 
     plt.xlim(0., 1.)
 
-    plt.legend([r'$\mathrm{{sgn}}(v_\mathrm{{lens}}) \neq '
-                 r'\mathrm{{sgn}}(v_\mathrm{{p,sys}})$',
-                r'$\mathrm{{sgn}}(v_\mathrm{{lens}}) = '
-                 r'\mathrm{{sgn}}(v_\mathrm{{p,sys}})$'], loc='upper left')
+    plt.legend([f'$\mathrm{{sgn}}(v_\mathrm{{lens}}) {rel}'
+                r' \mathrm{{sgn}}(v_\mathrm{{p,sys}})$' for rel in ['\\neq', '=']],
+               loc='upper left')
 
     plt.xlabel(r'fractional screen-pulsar distance $s$')
     plt.ylabel(r'lens velocity $v_\mathrm{lens}$ (km/s)')
 
     plt.show()
 
+
+Constraints with a known pulsar distance
+========================================
+
+We now consider situations in which there is additional information that
+provides constraints on one of the six physical parameters of interest.
+Together with the five constraints from scintillometry, this will allow better
+constraints on the remaining physical parameters of interest, although some
+ambiguity will remain.
+
+In many cases, some external constraints exist on the distance to the pulsar.
+An example of such an constraint would be a parallax measurement. While in
+reality there will always be some uncertainty associated with the constraint,
+here we will assume perfect knowledge to examine how this constrains the
+remaining parameters.
+
+Set the known pulsar distance :math:`d_\mathrm{p}`.
+
+.. jupyter-execute::
+
+    d_p = 156.79 * u.pc
+
+
+The screen distance
+-------------------
+
+First of all, together with the scintillometric constraint on the effective
+distance :math:`d_\mathrm{eff}`, this immediately sets the distance to the
+screen :math:`d_\mathrm{s}` and the fractional screen--pulsar distance
+:math:`s`.
+
+.. math::
+
+    d_\mathrm{s} &= \frac{ d_\mathrm{p} d_\mathrm{eff} }
+                         { d_\mathrm{p} + d_\mathrm{eff} }, \\
+    s &= 1 - \frac{ d_\mathrm{s} }{ d_\mathrm{p} }.
+
+.. jupyter-execute::
+
+    d_s = d_p * d_eff / (d_p + d_eff)
+    s = 1. - d_s / d_p
+
+    print(f'd_s:  {d_s.to(u.pc):8.2f}')
+    print(f's:    {s:8.2f}')
+
+.. jupyter-execute::
+
+    ns = 250
+    s_all = np.linspace(0.5/ns, 1. - 0.5/ns, ns)
+
+    d_s_all = s_all * d_eff
+    d_p_all = d_s_all / (1. - s_all)
+
+.. jupyter-execute::
+
+    plt.figure(figsize=(7., 6.))
+
+    plt.plot(s_all, d_p_all.to(u.pc), label=r'pulsar distance $d_\mathrm{p}$')
+    plt.plot(s_all, d_s_all.to(u.pc), label=r'screen distance $d_\mathrm{s}$')
+
+    plt.plot(s, d_p.to(u.pc), 'k.')
+    plt.plot([0., 1., 1.] * s, [1., 1., 1.e-30] * d_p.to(u.pc), ':k')
+    plt.plot(s, d_s.to(u.pc), 'k.')
+    plt.plot([0., 1.] * s, [1., 1.] * d_s.to(u.pc), ':k')
+
+    plt.yscale('log')
+
+    plt.xlim(0., 1.)
+    plt.ylim(10., 1.e4)
+
+    plt.legend(loc='upper left')
+
+    plt.xlabel(r'fractional screen-pulsar distance $s$')
+    plt.ylabel(r'distance from Earth (pc)')
+
+    plt.show()
+
+
+Pulsar orbital inclination
+--------------------------
+
+Next, the relation between pulsar distance and orbital inclination can be
+solved for :math:`\sin( i_\mathrm{p} )`. This relation first needs to be
+rewritten as a (somewhat ugly) quadratic equation in
+:math:`\sin^2( i_\mathrm{p} )`:
+
+.. math::
+
+    \cos^2( \chi_\mathrm{p} ) \sin^4( i_\mathrm{p} )
+    - ( 1 + Z^2 ) \sin^2( i_\mathrm{p} ) + Z^2 = 0,
+    \qquad \mathrm{with} \qquad
+    Z = \frac{ v_\mathrm{orb,E} K_\mathrm{p} b_\mathrm{E} }
+             { A_\mathrm{E} A_\mathrm{p} d_\mathrm{p} }.
+
+The standard quadratic formula then gives the solutions
+
+.. math::
+
+    \sin^2( i_\mathrm{p} ) = \frac{ 1 + Z^2 \pm \sqrt{ ( 1 + Z^2 )^2
+        - 4 \cos^2( \chi_\mathrm{p} ) Z^2 } }{ 2 \cos^2( \chi_\mathrm{p} ) }.
+
+One of the two solutions should be in the range
+:math:`0 \le \sin^2( i_\mathrm{p} ) \le 1`, giving a single real solution for
+:math:`\sin( i_\mathrm{p} )` that corresponds to two possible values of
+:math:`i_\mathrm{p}`.
+
+.. jupyter-execute::
+
+    z2 = b2_e * (v_orb_e * k_p / ( amp_e * amp_p * d_p ) )**2
+    cos2chi_p = np.cos(chi_p)**2
+    discrim = (1. + z2)**2 - 4. * cos2chi_p * z2
+    sin2i_p = ((1. + z2 + [+1., -1.] * np.sqrt(discrim) ) / ( 2. * cos2chi_p ))
+
+    index_real = np.logical_and(sin2i_p >= 0., sin2i_p <= 1.)
+    sin2i_p = sin2i_p[index_real][0]
+    sini_p = np.sqrt(sin2i_p)
+
+    i_p = [1., -1.] * np.arcsin(sini_p) + [0., 180.] * u.deg
+
+    print(f'sin^2(i_p):   {sin2i_p:8.2f}')
+    print(f'sin(i_p):     {sini_p:8.2f}')
+    print(f'\ni_p: {i_p[0].to(u.deg):8.2f}   or {i_p[1].to(u.deg):8.2f}')
+
+.. jupyter-execute::
+
+    nsini_p = 250
+    sini_p_all = np.linspace(0.5/nsini_p, 1. - 0.5/nsini_p, nsini_p)
+
+    b2_p = (1. - sini_p_all**2) / (1. - sini_p_all**2 * np.cos(chi_p)**2)
+    d_p_all = v_orb_e * k_p / (amp_e * amp_p) * np.sqrt(b2_e * b2_p) / sini_p_all
+
+.. jupyter-execute::
+
+    plt.figure(figsize=(7., 6.))
+
+    plt.plot(sini_p_all, d_p_all.to(u.pc))
+
+    plt.plot(sini_p, d_p.to(u.pc), 'k.')
+    plt.plot([0., 1., 1.] * sini_p, [1., 1., 1.e-30] * d_p.to(u.pc), ':k')
+
+    plt.yscale('log')
+
+    plt.xlim(0., 1.)
+    plt.ylim(10., 1.e4)
+
+    plt.xlabel(r"sine of pulsar's orbital inclination $\sin( i_\mathrm{p} )$")
+    plt.ylabel(r"pulsar's distance from Earth $d_\mathrm{p}$ (pc)")
+
+    plt.show()
+
+
+Pulsar's longitude of ascending node
+------------------------------------
+
+Knowing :math:`\sin( i_\mathrm{p} )`, it is possible to constrain the pulsar's
+longitude of ascending node to four possible values.
+
+.. math::
+
+    \Omega_\mathrm{p} = \xi - \Delta\Omega_\mathrm{p},
+    \qquad \mathrm{with} \qquad
+    \tan( \Delta\Omega_\mathrm{p} ) = \frac{ \tan( \chi_\mathrm{p} ) }
+                                           { \cos( i_\mathrm{p} ) },
+    \qquad \mathrm{and} \qquad
+    \cos( i_\mathrm{p} ) = \pm \sqrt{ 1 - \sin^2( i_\mathrm{p} ) }.
+
+.. jupyter-execute::
+
+    cosi_p = [1., -1.] * np.sqrt(1. - sin2i_p)
+    delta_omega_p = np.arctan(np.tan(chi_p) / cosi_p) + [[0.], [180.]] * u.deg
+    omega_p = (xi - delta_omega_p) % (360.*u.deg)
+
+    print(f'omega_p:')
+    for omg_p in omega_p.flatten():
+        print(f'{omg_p.to(u.deg):8.2f}')
+
+.. jupyter-execute::
+
+    i_p_all = np.linspace(0.*u.deg, 180.*u.deg, 181)
+
+    delta_omega_p = (np.arctan(np.tan(chi_p) / np.cos(i_p_all))
+                     + [[0.], [180.]] * u.deg)
+    omega_p_all = (xi - delta_omega_p) % (360.*u.deg)
+
+    ii_ccw = (i_p_all <= 90.*u.deg)
+    ii_cw =  (i_p_all >  90.*u.deg)
+
+    omega_p_all = np.concatenate((omega_p_all[:,ii_ccw],
+                                  omega_p_all[::-1,ii_cw]), axis=1)
+
+.. jupyter-execute::
+
+    plt.figure(figsize=(7., 6.))
+
+    plt.plot(i_p_all, omega_p_all.to(u.deg).T, c='C0')
+
+    plt.plot([i_p.to(u.deg), i_p.to(u.deg)], omega_p.to(u.deg), 'k.')
+    plt.plot([1., 1., 0.] * i_p[1].to(u.deg),
+             [0., 1., 1.] * omega_p[0,1].to(u.deg), ':k')
+    plt.plot([1., 1., 0.] * i_p[0].to(u.deg),
+             [0., 1., 1.] * omega_p[1,0].to(u.deg), ':k')
+    plt.plot([0., 1.] * i_p[0].to(u.deg),
+             [1., 1.] * omega_p[0,0].to(u.deg), ':k')
+    plt.plot([0., 1.] * i_p[1].to(u.deg),
+             [1., 1.] * omega_p[1,1].to(u.deg), ':k')
+
+    plt.xlim(0., 180.)
+    plt.ylim(0., 360.)
+
+    plt.xlabel(r"pulsar's orbital inclination $i_\mathrm{p}$")
+    plt.ylabel(r"pulsar's longitude of ascending node $\Omega_\mathrm{p}$")
+
+    plt.show()
+
+
+The lens velocity
+-----------------
+
+Finally, with :math:`s` known, only two possible values remain for the
+lens velocity.
+
+.. math::
+
+    v_\mathrm{lens} = s \left( v_\mathrm{eff,p,sys}
+                               \pm \sqrt{ d_\mathrm{eff} } C \right),
+    \qquad \mathrm{with} \qquad
+    v_\mathrm{eff,p,sys} = d_\mathrm{eff} \left[ \mu_{\alpha\ast} \sin( \xi )
+                                                     + \mu_\delta \cos( \xi )
+                                          \right].
+
+.. jupyter-execute::
+
+    v_lens = s * (v_eff_p_sys + [[+1.], [-1.]] * np.sqrt(d_eff) * dveff_c)
+
+    print(f'v_lens: {v_lens[0][0].to(u.km/u.s):8.2f}'
+            f'   or {v_lens[1][0].to(u.km/u.s):8.2f}')
+
+.. jupyter-execute::
+
+    s_all = [0., 1.]
+
+    v_lens_all = s_all * (v_eff_p_sys + [[+1.], [-1.]] * np.sqrt(d_eff) * dveff_c)
+
+.. jupyter-execute::
+
+    plt.figure(figsize=(7., 6.))
+
+    plt.plot(s_all, v_lens_all.to(u.km/u.s).T)
+
+    ylims = plt.gca().get_ylim()
+
+    plt.plot([1., 1.] * s, v_lens.to(u.km/u.s), 'k.')
+    plt.plot([0., 1., 1.] * s, [1., 1., -10.] * v_lens[0].to(u.km/u.s), ':k')
+    plt.plot([0., 1.] * s, [1., 1.] * v_lens[1].to(u.km/u.s), ':k')
+
+    plt.xlim(0., 1.)
+    plt.ylim(ylims)
+
+    plt.legend([f'$\mathrm{{sgn}}(v_\mathrm{{lens}}) {rel}'
+                r' \mathrm{{sgn}}(v_\mathrm{{p,sys}})$' for rel in ['\\neq', '=']],
+               loc='upper left')
+
+    plt.xlabel(r'fractional screen-pulsar distance $s$')
+    plt.ylabel(r'lens velocity $v_\mathrm{lens}$ (km/s)')
+
+    plt.show()
