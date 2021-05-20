@@ -115,10 +115,10 @@ class NeutronStar(object):
         return results
 
 
-def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, rotation=0.*u.deg,
+def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, mu_eff=50.*u.mas/u.yr,
                 tels=slice(0, 1), scatters=slice(0, None),
-                screens=True, direct=None, velocity=True, scales=False,
-                ax=None):
+                screens=True, direct=None, velocity=None, scales=False,
+                rotation=0.*u.deg, ax=None):
     """Draw a schematic of the thin-screen model of for scintillation.
 
     Parameters
@@ -130,8 +130,9 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, rotation=0.*u.deg,
         to Earch, ``1 - d_lens / d_psr``. Default: 0.5
     screen_y_scale : float, optional
         Vertical magnification factor of scattering screen. Default: 1.e7
-    rotation : `~astropy.units.Quantity`, optional
-        Angle to rotate entire sketch. Default: 0. deg
+    mu_eff : `~astropy.units.Quantity`, optional
+        Proper motion used for direction and scaling of arrow that
+        indicates the pulsar's motion. Default: 50. mas/yr
     tels : slice, optional
         Slice object to select which telescopes to draw and use.
     scatters : slice, optinal
@@ -143,11 +144,20 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, rotation=0.*u.deg,
         infer from whether theta includes 0.
     velocity : bool, optional
         Whether or not to include an arrow to indicate the pulsar's motion.
+        Default: infer from ``mu_eff``
     scales : bool, optional
         Whether or not to include scale bars indicating physical sizes.
+    rotation : `~astropy.units.Quantity`, optional
+        Angle to rotate entire sketch. Default: 0. deg
     ax : `~matplotlib.axes.Axes`, optional
         The Axes object in which to draw the sketch.
     """
+
+    # Infer options
+    if direct is None:
+        direct = 0. in theta
+    if velocity is None:
+        velocity = mu_eff != 0.
 
     # Earth and telescopes
     earth_pos = circle()
@@ -166,16 +176,16 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, rotation=0.*u.deg,
     ns_x = -44.
     ns_size = 0.3
     ns_offset = rotate((ns_x, 0.), rotation)
-    ns_pos = offset(rotate(scale(ns(), ns_size), rotation + 60.*u.degree),
+    ns_pos = offset(rotate(scale(ns(), ns_size),
+                           rotation - (np.sign(mu_eff)
+                                       + (mu_eff == 0.))*60.*u.deg),
                     ns_offset)
-    arrow_size = 1.5
+    arrow_size = 1.5 * np.abs(mu_eff.to_value(u.mas/u.yr) / 50.)
     ns_vel = offset(rotate(offset(arrow(arrow_size), (0., 1.4)),
-                           rotation + 225.*u.degree), ns_offset)
+                           rotation + 270.*u.deg + np.sign(mu_eff)*45.*u.deg),
+                    ns_offset)
 
     # Scattering points
-    if direct is None:
-        direct = 0. in theta
-
     if direct:
         # Remove direct line of sight from input angles.
         # TODO: not strictly the same if the telescope is not at y=0!
@@ -338,8 +348,9 @@ if __name__ == '__main__':
             scatters = slice(1, None)
             scales = True
 
-        make_sketch(theta, beta, 1., 0.*u.deg, tels, scatters,
-                    screens, direct, velocity, scales)
+        make_sketch(theta=theta, beta=beta, screen_y_scale=1., tels=tels,
+                    scatters=scatters, screens=screens, direct=direct,
+                    velocity=velocity, scales=scales)
 
         if filename:
             plt.savefig(filename.format(figure))
