@@ -160,7 +160,7 @@ def simple_figure(th_par, magnification,
 
     # Add sketch
     ax5 = plt.subplot(132)
-    make_sketch(th_par, rotation=-90.*u.deg, ax=ax5, **kwargs)
+    make_sketch(th_par, mu_eff=mu_eff, rotation=-90.*u.deg, ax=ax5, **kwargs)
     ax5.set_position([0.34, 0.05, 0.3, 0.9])
 
     plt.show()
