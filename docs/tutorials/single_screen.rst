@@ -37,8 +37,11 @@ Start with some standard imports.
 .. jupyter-execute::
 
     import numpy as np
+
     import matplotlib.pyplot as plt
     import matplotlib.cm as cm
+    from matplotlib.colors import LogNorm
+
     from astropy import units as u
     from astropy import constants as const
 
@@ -151,9 +154,10 @@ and the number of time bins :math:`n_t`.
     nf = 200
     nt = 180
 
-Set up grids of observing frequencies and times. Then make the frequency grid
-a row vector with shape (1, :math:`n_f`) and the time grid a column vector with
-shape (:math:`n_t`, 1), so they will be broadcast against each other correctly.
+Set up grids of observing frequencies :math:`f` and times :math:`t`. Then make
+the frequency grid a row vector with shape (1, :math:`n_f`) and the time grid a
+column vector with shape (:math:`n_t`, 1), so they will be broadcast against
+each other correctly.
 
 .. jupyter-execute::
 
@@ -168,10 +172,10 @@ spectrum.
 
 .. jupyter-execute::
 
-    ds_extent = (t[0][0].value  - 0.5*(t[1][0].value - t[0][0].value),
-                 t[-1][0].value + 0.5*(t[1][0].value - t[0][0].value),
-                 f[0][0].value  - 0.5*(f[0][1].value - f[0][0].value),
-                 f[0][-1].value + 0.5*(f[0][1].value - f[0][0].value))
+    ds_extent = (t[0,0].value  - 0.5*(t[1,0].value - t[0,0].value),
+                 t[-1,0].value + 0.5*(t[1,0].value - t[0,0].value),
+                 f[0,0].value  - 0.5*(f[0,1].value - f[0,0].value),
+                 f[0,-1].value + 0.5*(f[0,1].value - f[0,0].value))
 
 
 Generate the dynamic wavefield
@@ -194,7 +198,7 @@ The dynamic wavefield :math:`W_j` of screen image :math:`j` is given by
                                   (\theta_j + \mu_\mathrm{eff} t)^2 \right].
 
 .. jupyter-execute::
-    
+
     theta_t = theta[:, np.newaxis, np.newaxis] + mu_eff * t
     tau_t = (((d_eff / (2*const.c)) * theta_t**2)
              .to(u.s, equivalencies=u.dimensionless_angles()))
@@ -215,7 +219,7 @@ amplitude and phase of the dynamic wavefield.
     :py:func:`~screens.fields.dynamic_field` to quickly generate a cube of
     dynamic wavefields from a set of scattering points defined by their angles
     and magnifications.
-    
+
     Because this function handles two-dimensional lenses, it is necessary to
     pass it the angles both parallel to and perpendicular to the effective
     velocity vector. For this example, we want to mimic a one-dimensional
@@ -260,6 +264,10 @@ scattering points are stronger than those of others.
 The dynamic wavefields corresponding to the individual scattering points still
 have to be summed to create the total dynamic wavefield at the telescope.
 
+.. math::
+
+    W(f, t) = \sum_j W_j(f, t)
+
 .. jupyter-execute::
 
     dynwave = dynwaves.sum(axis=0)
@@ -289,6 +297,10 @@ Create the dynamic spectrum
 
 The dynamic spectrum is the square modulus of the summed dynamic wavefield.
 
+.. math::
+
+    I(f, t) = \left| W(f, t) \right|^2
+
 .. jupyter-execute::
 
     dynspec = np.abs(dynwave)**2
@@ -311,3 +323,71 @@ Now, show the dynamic spectrum.
 
     plt.show()
 
+Create the conjugate spectrum and the secondary spectrum
+========================================================
+
+The conjugate spectrum refers to the Fourier transform of the dynamic spectrum.
+
+.. math::
+
+    \tilde{I}(\tau, f_\mathrm{D}) = \mathcal{F}[ I(f, t) ]
+
+Here, the conjugate spectrum is created and normalized to its zero-frequency
+component, which is equivalent to normalizing to the mean of the dynamic
+spectrum. Afterwards, the zero-frequency component is shifted to the centre of
+the spectrum.
+
+.. jupyter-execute::
+
+    conspec = np.fft.fft2(dynspec)
+    conspec /= conspec[0, 0]
+    conspec = np.fft.fftshift(conspec)
+
+The conjugate variables, the relative geometric delay :math:`\tau` and the
+differential Doppler shift :math:`f_\mathrm{D}`, also need to be created and
+shifted.
+
+.. jupyter-execute::
+
+    tau = np.fft.fftfreq(dynspec.shape[1], f[0,1] - f[0,0]).to(u.us)
+    fd = np.fft.fftfreq(dynspec.shape[0], t[1,0] - t[0,0]).to(u.mHz)
+
+    tau = np.fft.fftshift(tau)
+    fd = np.fft.fftshift(fd)
+
+The secondary spectrum is the square modulus of the conjugate spectrum.
+
+.. math::
+
+    S(\tau, f_\mathrm{D}) = \left| \tilde{I}(\tau, f_\mathrm{D}) \right|^2
+
+.. jupyter-execute::
+
+    secspec = np.abs(conspec)**2
+
+Let's plot the secondary spectrum.
+
+.. jupyter-execute::
+
+    ss_extent = (fd[0].value  - 0.5*(fd[1].value - fd[0].value),
+                 fd[-1].value + 0.5*(fd[1].value - fd[0].value),
+                 tau[0].value  - 0.5*(tau[1].value - tau[0].value),
+                 tau[-1].value + 0.5*(tau[1].value - tau[0].value))
+
+    plt.figure(figsize=(12., 8.))
+    plt.imshow(secspec.T,
+               origin='lower', aspect='auto', interpolation='none',
+               cmap='Greys', extent=ss_extent,
+               norm=LogNorm(vmin=1.e-4, vmax=1.))
+    plt.title('secondary spectrum')
+    plt.xlabel(r"differential Doppler shift $f_\mathrm{{D}}$ "
+               rf"({fd.unit.to_string('latex')})")
+    plt.ylabel(r"relative geometric delay $\tau$ "
+               rf"({tau.unit.to_string('latex')})")
+    plt.xlim(-5., 5.)
+    plt.ylim(-15., 15.)
+
+    cbar = plt.colorbar()
+    cbar.set_label('normalized power')
+
+    plt.show()
