@@ -99,7 +99,7 @@ Set the pulsar's orbital period :math:`P_\mathrm{b}` and time of ascending node
 .. jupyter-execute::
     
     p_b = 5.7410459 * u.day
-    t_asc_p = Time(54501.4671, format='mjd')
+    t_asc_p = Time(54501.4671, format='mjd', scale='tdb')
 
 Set the Earth's orbital period :math:`P_\mathrm{E}` and derive its time of
 ascending node :math:`T_\mathrm{asc,E}` from the pulsar's coordinates.
@@ -163,8 +163,7 @@ Let's have a look at all the data.
     
     plt.figure(figsize=(12., 5.))
 
-    plt.errorbar(t_obs.jyear, dveff_obs, yerr=dveff_err, **obs_style,
-                 alpha=0.3)
+    plt.errorbar(t_obs.jyear, dveff_obs, yerr=dveff_err, **obs_style, alpha=0.3)
     
     plt.xlim(t_obs[0].jyear, t_obs[-1].jyear)
 
@@ -231,7 +230,7 @@ that it is clear how its free parameters affect the model in data space (hence,
 when fitting the model to data, it is clear how the fit can be improved by
 changing the the values of the free parameters). However, it obscures how the
 model depends on the physical parameters of interest. A
-:doc:`follow-up tutorial <extract_phys_pars>` describes how the free parameters
+:doc:`follow-up tutorial <infer_phys_pars>` describes how the free parameters
 in this equation are related to the physical parameters of the system.
 
 When putting the model equation into a Python function, it is useful to keep
@@ -352,16 +351,14 @@ at a higher time resolution.
 
         ax1 = plt.subplot(221)
         plt.plot(t_many, dveff_mdl_many, **mdl_style, alpha=0.3)
-        plt.errorbar(t_obs.mjd, dveff_obs, yerr=dveff_err, **obs_style,
-                     alpha=0.3)
+        plt.errorbar(t_obs.mjd, dveff_obs, yerr=dveff_err, **obs_style, alpha=0.3)
         plt.xlim(tlim_long)
         plt.title('full model', **title_kwargs)
         plt.xlabel('')
         plt.ylabel(dveff_lbl)
 
         ax2 = plt.subplot(223, sharex=ax1)
-        plt.errorbar(t_obs.mjd, dveff_res, yerr=dveff_err, **obs_style,
-                     alpha=0.3)
+        plt.errorbar(t_obs.mjd, dveff_res, yerr=dveff_err, **obs_style, alpha=0.3)
         plt.axhline(**mdl_style)
         plt.xlim(tlim_long)
         plt.title('residuals', **title_kwargs)
@@ -445,8 +442,7 @@ sets with low absolute effective velocities.
         
         ax1 = plt.subplot(121)
         idx_e = np.argsort(ph_e_obs.value % 1.)
-        plt.plot(ph_e_obs[idx_e].value % 1., dveff_mdl_earth[idx_e],
-                 **mdl_style)
+        plt.plot(ph_e_obs[idx_e].value % 1., dveff_mdl_earth[idx_e], **mdl_style)
         plt.errorbar(ph_e_obs.value % 1., dveff_res_earth, yerr=dveff_err,
                      **obs_style, alpha=0.2, zorder=-3)
         plt.xlim(0., 1.)
@@ -803,7 +799,7 @@ functions, we'll convert this array into the appropriate dictionary of Astropy
         print(f'{par_name:8s} {pars_opt[par_name]:8.2f}')
 
 How these parameters can be converted to the physical parameters of interest is
-covered in a :doc:`follow-up tutorial <extract_phys_pars>`.
+covered in a :doc:`follow-up tutorial <infer_phys_pars>`.
 
 Let's quantify the goodness of fit.
 
