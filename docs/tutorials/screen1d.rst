@@ -33,9 +33,8 @@ Imports.
     from astropy import units as u
     from astropy.coordinates import (
         CartesianRepresentation, CylindricalRepresentation,
-        UnitSphericalRepresentation
-    )
-    
+        UnitSphericalRepresentation)
+
     from screens.screen import Source, Screen1D, Telescope
     from screens.fields import phasor
 
