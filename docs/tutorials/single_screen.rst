@@ -198,7 +198,7 @@ The dynamic wavefield :math:`W_j` of screen image :math:`j` is given by
                                   (\theta_j + \mu_\mathrm{eff} t)^2 \right].
 
 .. jupyter-execute::
-    
+
     theta_t = theta[:, np.newaxis, np.newaxis] + mu_eff * t
     tau_t = (((d_eff / (2*const.c)) * theta_t**2)
              .to(u.s, equivalencies=u.dimensionless_angles()))
@@ -219,7 +219,7 @@ amplitude and phase of the dynamic wavefield.
     :py:func:`~screens.fields.dynamic_field` to quickly generate a cube of
     dynamic wavefields from a set of scattering points defined by their angles
     and magnifications.
-    
+
     Because this function handles two-dimensional lenses, it is necessary to
     pass it the angles both parallel to and perpendicular to the effective
     velocity vector. For this example, we want to mimic a one-dimensional
@@ -354,23 +354,6 @@ shifted.
 
     tau = np.fft.fftshift(tau)
     fd = np.fft.fftshift(fd)
-
-.. note::
-
-    The :py:class:`screens.secspec.SecondarySpectrum` class contains the
-    method :py:meth:`~screens.secspec.SecondarySpectrum.from_dynamic_spectrum`
-    to quickly generate a conjugate spectrum from a dynamic spectrum. The
-    nomenclature here is a bit confusing.
-
-    .. code-block:: python
-
-        from screens.secspec import SecondarySpectrum
-
-        cs = SecondarySpectrum.from_dynamic_spectrum(dynspec,
-                                                     f=f[0,:], t=t[:,0])
-        tau = cs.tau
-        fd = cs.fd
-        conspec = cs.secspec
 
 The secondary spectrum is the square modulus of the conjugate spectrum.
 
