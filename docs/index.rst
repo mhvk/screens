@@ -19,6 +19,7 @@ Generating and processing scintillometry data
    :maxdepth: 1
 
    tutorials/single_screen
+   tutorials/screen1d
 
 Modelling scintillation velocities
 ----------------------------------
