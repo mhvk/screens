@@ -59,7 +59,18 @@ Here, :math:`s` is the fractional pulsar--screen distance
 
     s = 1 - \frac{ d_\mathrm{s} }{ d_\mathrm{p} }.
 
-[figure: sketch with distances]
+.. plot::
+    :context: reset
+
+    from astropy import units as u
+    import matplotlib.pyplot as plt
+    from screens.visualization import make_sketch
+
+    theta = [-4. ,0., 2.5] << u.mas
+
+    plt.figure(figsize=(14., 4.))
+    make_sketch(theta, beta=0.4, mu_eff=0.*u.mas/u.yr, distances=True)
+    plt.show()
 
 
 The effective velocity
