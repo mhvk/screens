@@ -5,17 +5,15 @@ adapted from Daniel Baker
 
 import numpy as np
 from astropy import units as u
-import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 
-def blank_diagram(fig_width=8.,
-                  fig_height=8.,
-                  bg_color="transparent",
-                  color="black",
-                  box=True):
-    fig = plt.figure(figsize=(fig_width, fig_height))
-    ax = fig.add_axes((0., 0., 1., 1.))
+def blank_axes(fig,
+               position=(0., 0., 1., 1.),
+               bg_color="transparent",
+               color="black",
+               box=True):
+    ax = fig.add_axes(position)
     ax.set_xlim(0., 2.)
     ax.set_ylim(0., 2.)
     if not bg_color == "transparent":
@@ -33,7 +31,7 @@ def blank_diagram(fig_width=8.,
     else:
         ax.spines[:].set_color('none')
 
-    return fig, ax
+    return ax
 
 
 def coord_cross(ax,
@@ -131,10 +129,10 @@ def label_angle(ax,
             verticalalignment=va,
             color=color)
     if th1_arrow:
-        startX = center[0]+rad*np.cos(th1)
-        startY = center[1]+rad*np.sin(th1)
-        startDX = -.000001*rad*np.sin(th1)
-        startDY = .000001*rad*np.cos(th1)
+        startX = center[0]+rad*np.cos(th1).value
+        startY = center[1]+rad*np.sin(th1).value
+        startDX = -.000001*rad*np.sin(th1).value
+        startDY = .000001*rad*np.cos(th1).value
         if th1_mod < th0_mod:
             startDX *= -1.
             startDY *= -1.
@@ -145,10 +143,10 @@ def label_angle(ax,
                  color=color, width=0., head_width=.045, head_length=.045,
                  length_includes_head=True)
     if th0_arrow:
-        startX = center[0]+rad*np.cos(th0)
-        startY = center[1]+rad*np.sin(th0)
-        startDX = -.000001*rad*np.sin(th0)
-        startDY = .000001*rad*np.cos(th0)
+        startX = center[0]+rad*np.cos(th0).value
+        startY = center[1]+rad*np.sin(th0).value
+        startDX = -.000001*rad*np.sin(th0).value
+        startDY = .000001*rad*np.cos(th0).value
         if th1_mod < th0_mod:
             startDX *= -1.
             startDY *= -1.

@@ -206,7 +206,60 @@ north through east, with :math:`0^\circ \leq \xi < 180^\circ`. Because the
 angle :math:`\xi` is restricted to this range, it technically refers to the
 position angle of the *eastern* half of the line of lensed images.
 
-[figure: sky plane with screen and proper motion vector]
+.. plot::
+    :context: reset
+    :nofigs:
+
+    import numpy as np
+    from astropy import units as u
+    import matplotlib.pyplot as plt
+
+    from angle_plot_lib import (
+        blank_axes, coord_cross,
+        label_angle, rot_lin, rot_vec, elpse, circl)
+
+    # screen angle
+    OMs1 = 160. * u.deg
+
+    # pulsar longitude of ascending node
+    OMo = 40. * u.deg
+
+    # pulsar orbital inclination
+    incl = 125. * u.deg
+
+    # pulsar system coordinates
+    pm_ra = 120. * u.mas / u.year
+    pm_dec = -70.  * u.mas / u.year
+
+    # global plotting colors
+    col_mu = 'black'
+    col_screen = 'red'
+    col_orbit = 'black'
+    col_nodes = 'blue'
+    col_angmom = 'green'
+    col_domg = 'purple'
+
+    # global figure dimensions
+    fig_size = 3.
+
+.. plot::
+    :context: close-figs
+
+    # sky plane with screen and proper motion vector
+
+    fig = plt.figure(figsize=(fig_size, fig_size))
+    ax = blank_axes(fig, box=False)
+
+    coord_cross(ax, x=r'$\alpha$', y=r'$\delta$', flipx=True)
+    label_angle(ax, th0=90.*u.deg, th1=OMs1 + 90.*u.deg,
+                th_name=r"$\xi$", rad=.25, color=col_screen, th1_arrow=True)
+    rot_lin(ax, th=OMs1+90.*u.deg, name='screen', arrow="-", vh='center',
+            color=col_screen)
+    rot_vec(ax, th=np.arctan2(pm_dec, -pm_ra).to(u.deg),
+            name=r'$\vec{\mu}$', va='center', vh='right', arrow='-|>',
+            color=col_mu)
+
+    plt.show()
 
 
 The pulsar's orbital motion -- circular orbit
@@ -241,12 +294,51 @@ sky and inclinations of :math:`i_\mathrm{p} > 90^\circ` correspond to clockwise
 rotation on the sky, with :math:`i_\mathrm{p} = 90^\circ` for an edge-on orbit
 (:math:`\vec{h}_\mathrm{p}` anti-parallel to :math:`\hat{y}`).
 
-[figure: xy plane with orbit]
+.. plot::
+    :context: close-figs
 
-[figure: yz plane with orbit and inclination]
+    fig = plt.figure(figsize=(fig_size * 2.2, fig_size))
 
-**Left:** observer's view, looking in the direction of :math:`\hat{z}`.
-**Right:** side view, looking in the direction of :math:`\hat{x}`.
+    # xy plane with orbit
+
+    ax = blank_axes(fig, position=(0., 0., 1./2.2, 1.), box=False)
+
+    coord_cross(ax, x=r'$x$', y=r'$y$', flipx=True)
+    circl(ax, a0=0.6, incl=incl, color=col_orbit)
+    rot_lin(ax, th=180.*u.deg, s=0.75, name='', arrow="-|>", color=col_nodes)
+    ax.text(0.99,
+            0.98,
+            'line of nodes',
+            horizontalalignment='center',
+            verticalalignment='top',
+            color=col_nodes)
+    ax.text(1.5,
+            0.7,
+            'pulsar\norbit',
+            horizontalalignment='center',
+            verticalalignment='top',
+            color=col_orbit)
+    ax.set_aspect('equal')
+
+    # yz plane with orbit and inclination
+
+    ax = blank_axes(fig, position=(1.-1./2.2, 0., 1./2.2, 1.), box=False)
+
+    coord_cross(ax, x=r'$z$', y=r'$y$')
+    rot_vec(ax, th=180.*u.deg + incl, s=0.4, name=r'$\vec{h}_\mathrm{p}$',
+            va='center', vh='left', arrow='-|>', color=col_angmom)
+    rot_lin(ax, th=incl + 90.*u.deg, s=0.6, name='pulsar\norbit', vh='center',
+            arrow="-", color=col_orbit)
+    label_angle(ax, th0=180.*u.deg, th1=180.*u.deg + incl, 
+                th_name=r"$i_\mathrm{p}$", rad=.2, color=col_angmom)
+    ax.set_aspect('equal')
+
+    plt.show()
+
+.. container:: align-center
+
+    **Left:** observer's view, looking in the direction of :math:`\hat{z}`.
+    **Right:** side view, looking in the direction of :math:`\hat{x}`.
 
 
 The pulsar's position and velocity in :math:`xyz` coordinates
@@ -296,7 +388,28 @@ The orientation of the pulsar's orbit on the sky is parameterised by its
 longitude of ascending node :math:`\Omega_\mathrm{p}`, measured from the
 celestial north through east.
 
-[figure: sky plane with orbit]
+.. plot::
+    :context: close-figs
+
+    # sky plane with orbit
+
+    fig = plt.figure(figsize=(fig_size, fig_size))
+    ax = blank_axes(fig, box=False)
+
+    coord_cross(ax, x=r'$\alpha$', y=r'$\delta$', flipx=True)
+    circl(ax, a0=0.6, omg=OMo+90.*u.deg, incl=incl, color=col_orbit)
+    ax.text(1.45,
+            1.4,
+            'pulsar\norbit',
+            horizontalalignment='center',
+            verticalalignment='top',
+            color=col_orbit)
+    label_angle(ax, th0=90.*u.deg, th1=OMo+90.*u.deg, rad=.33, th1_arrow=True,
+                th_name=r"$\Omega_\mathrm{p}$", color=col_nodes)
+    rot_lin(ax, th=OMo+90.*u.deg, name='line of nodes', vh='center',
+            arrow="-|>", color=col_nodes)
+    
+    plt.show()
 
 In the equatorial coordinate system, the pulsar's orbital sky-plane velocity is
 :math:`\vec{v}_\mathrm{p,orb,sky} = (v_\mathrm{p,\alpha\ast},
@@ -343,7 +456,28 @@ formed by the lens is then given by
 where :math:`\Delta\Omega_\mathrm{p} = \xi - \Omega_\mathrm{p}` is the angle
 of the screen measured from the ascending node of the pulsar orbit.
 
-[figure: sky plane with delta_omega_p]
+.. plot::
+    :context: close-figs
+
+    # sky plane with delta_omega_p
+
+    fig = plt.figure(figsize=(fig_size, fig_size))
+    ax = blank_axes(fig, box=False)
+
+    coord_cross(ax, x=r'$\alpha$', y=r'$\delta$', flipx=True)
+    label_angle(ax, th0=90.*u.deg, th1=OMs1+90.*u.deg, rad=.15, th1_arrow=True,
+                th_name=r"$\xi$", color=col_screen)
+    label_angle(ax, th0=90.*u.deg, th1=OMo+90.*u.deg, rad=.33, th1_arrow=True,
+                th_name=r"$\Omega_\mathrm{p}$", color=col_nodes)
+    label_angle(ax, th0=OMo+90.*u.deg, th1=OMs1+90.*u.deg, rad=.5,
+                th1_arrow=True,
+                th_name=r"$\Delta\Omega_\mathrm{p}$", color=col_domg)
+    rot_lin(ax, th=OMs1+90.*u.deg, name='screen', vh='center',
+            arrow="-", color=col_screen)
+    rot_lin(ax, th=OMo+90.*u.deg, name='line of nodes', vh='center',
+            arrow="-|>", color=col_nodes)
+    
+    plt.show()
 
 
 The velocity modulation's amplitude and phase offset
@@ -436,13 +570,82 @@ parameterised by :math:`i_\oplus` and :math:`\Omega_\oplus`,
 can be derived from the pulsar system's ecliptic coordinates
 :math:`(\lambda_\mathrm{p}, \beta_\mathrm{p})`.
 
-[figure: ecliptic plane with orbit]
+.. plot::
+    :context: close-figs
+    
+    from astropy.coordinates import SkyCoord
 
-[figure: inside ecliptic plane with orbit and inclination]
+    psr_coord = SkyCoord('02h00m00.0s 60d00m00.0s')
+    psr_coord_eclip = psr_coord.barycentricmeanecliptic
 
-**Left:** top-down view, looking in the direction of
-:math:`-\vec{h}_\oplus`.
-**Right:** side view, looking in the direction of :math:`\hat{x}`.
+    beta_p = psr_coord_eclip.lat
+    lambda_p = psr_coord_eclip.lon
+
+    ascnod_eclip_lon = psr_coord_eclip.lon - 90.*u.deg
+    ascnod_eclip = SkyCoord(lon=ascnod_eclip_lon, lat=0.*u.deg,
+                            frame='barycentricmeanecliptic')
+    ascnod_equat = SkyCoord(ascnod_eclip).icrs
+
+    i_e = psr_coord_eclip.lat + 90.*u.deg
+    omega_e = psr_coord.position_angle(ascnod_equat)
+
+.. plot::
+    :context: close-figs
+
+    fig = plt.figure(figsize=(fig_size * 2.7, fig_size))
+
+    # ecliptic plane with orbit
+
+    ax = blank_axes(fig, position=(0., 0., 1.5/2.7, 1.), box=False)
+    circl(ax, a0=0.6, incl=0., color=col_orbit)
+    ax.text(0.96,
+            1.59,
+            " Earth's\norbit",
+            horizontalalignment='center',
+            verticalalignment='center',
+            color=col_orbit)
+    rot_lin(ax, th=lambda_p, s=0.9, name='$z$ projected onto\necliptic plane',
+            va='bottom', vh='left', arrow="-|>", ls=':', color='black')
+    rot_lin(ax, th=270.*u.deg+lambda_p, s=0.9, name='$x$',
+            va='center', vh='left', arrow="-|>", color='black')
+    rot_vec(ax, th=0.*u.deg, s=1., name='March\nequinox',
+            va='center', vh='left', arrow="-|>", color='black')
+    label_angle(ax, th0=0.*u.deg, th1=lambda_p, rad=.4, th1_arrow=True,
+                th_name=r" $\lambda_\mathrm{p}$", color='black', va='baseline')
+    rot_vec(ax, th=270.*u.deg+lambda_p, s=0.63, name=' ascending node',
+            va='bottom', vh='left', arrow='-|>', color=col_nodes)
+    label_angle(ax, th0=0.*u.deg, th1=270.*u.deg+lambda_p, rad=.15,
+                th1_arrow=True,
+                th_name=r"$\lambda_\mathrm{asc,\!\!\!\oplus}$ ",
+                color=col_nodes, va='top')
+    ax.set_aspect('equal')
+
+    # inside ecliptic plane with orbit and inclinations
+
+    ax = blank_axes(fig, position=(1.-1./2.7, 0., 1./2.7, 1.), box=False)
+    rot_lin(ax, th=180.*u.deg-beta_p, s=0.9, name='$z$ ',
+            va='bottom', vh='center', arrow="-|>", color='black')
+    rot_lin(ax, th=270.*u.deg-beta_p, s=0.9, name='$y$',
+            va='center', vh='right', arrow="-|>", color='black')
+    rot_lin(ax, th=180.*u.deg-0.*u.deg, s=1., name='ecliptic\nplane',
+            va='center', vh='left', arrow="-", color=col_orbit)
+    label_angle(ax, th0=180.*u.deg-beta_p, rad=.4, th1=180.*u.deg,
+                th0_arrow=True, other_direction=True, 
+                th_name=r"$\beta_\mathrm{p}$", color='black')
+    rot_vec(ax, th=90.*u.deg, s=0.8, name=r'  $\vec{h}_{\!\!\oplus}$',
+            vh='center', arrow='-|>', color=col_angmom)
+    label_angle(ax, th1=90.*u.deg, th0=-beta_p, rad=.5, 
+                th_name=r" $i_{\!\!\oplus}$",
+                va='center', vh='left', color=col_angmom)
+    ax.set_aspect('equal')
+    
+    plt.show()
+
+.. container:: align-center
+    
+    **Left:** top-down view, looking in the direction of
+    :math:`-\vec{h}_\oplus`.
+    **Right:** side view, looking in the direction of :math:`\hat{x}`.
 
 The inclination of Earth's orbital plane with respect to the line of sight
 :math:`i_\oplus` is defined in the same way as the pulsar's orbital
