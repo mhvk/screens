@@ -658,7 +658,7 @@ It is given by
     
     i_\oplus = \beta_\mathrm{p} + 90^\circ.
 
-The restriction on the pulsar's ecliptic longitude :math:`-90^\circ \le
+The restriction on the pulsar's ecliptic latitude :math:`-90^\circ \le
 \beta_\mathrm{p} \le 90^\circ` leads to the expected range of allowed
 inclinations :math:`0^\circ \le i_\oplus \le 180^\circ`. The convention for the
 sense of rotation is also the same: :math:`i_\oplus < 90^\circ` for
