@@ -219,17 +219,17 @@ position angle of the *eastern* half of the line of lensed images.
         label_angle, rot_lin, rot_vec, elpse, circl)
 
     # screen angle
-    OMs1 = 160. * u.deg
+    xi = 134.6 * u.deg
 
     # pulsar longitude of ascending node
-    OMo = 40. * u.deg
+    omega_p = 207. * u.deg
 
     # pulsar orbital inclination
-    incl = 125. * u.deg
+    i_p = 137.56 * u.deg
 
     # pulsar system coordinates
-    pm_ra = 120. * u.mas / u.year
-    pm_dec = -70.  * u.mas / u.year
+    pm_ra_cosdec = 121.4385 * u.mas / u.year
+    pm_dec = -71.4754 * u.mas / u.year
 
     # global plotting colors
     col_mu = 'black'
@@ -251,11 +251,11 @@ position angle of the *eastern* half of the line of lensed images.
     ax = blank_axes(fig, box=False)
 
     coord_cross(ax, x=r'$\alpha$', y=r'$\delta$', flipx=True)
-    label_angle(ax, th0=90.*u.deg, th1=OMs1 + 90.*u.deg,
+    label_angle(ax, th0=90.*u.deg, th1=xi + 90.*u.deg,
                 th_name=r"$\xi$", rad=.25, color=col_screen, th1_arrow=True)
-    rot_lin(ax, th=OMs1+90.*u.deg, name='screen', arrow="-", vh='center',
+    rot_lin(ax, th=xi+90.*u.deg, name='screen', arrow="-", vh='center',
             color=col_screen)
-    rot_vec(ax, th=np.arctan2(pm_dec, -pm_ra).to(u.deg),
+    rot_vec(ax, th=np.arctan2(pm_dec, -pm_ra_cosdec).to(u.deg),
             name=r'$\vec{\mu}$', va='center', vh='right', arrow='-|>',
             color=col_mu)
 
@@ -304,7 +304,7 @@ rotation on the sky, with :math:`i_\mathrm{p} = 90^\circ` for an edge-on orbit
     ax = blank_axes(fig, position=(0., 0., 1./2.2, 1.), box=False)
 
     coord_cross(ax, x=r'$x$', y=r'$y$', flipx=True)
-    circl(ax, a0=0.6, incl=incl, color=col_orbit)
+    circl(ax, a0=0.6, incl=i_p, color=col_orbit)
     rot_lin(ax, th=180.*u.deg, s=0.75, name='', arrow="-|>", color=col_nodes)
     ax.text(0.99,
             0.98,
@@ -313,7 +313,7 @@ rotation on the sky, with :math:`i_\mathrm{p} = 90^\circ` for an edge-on orbit
             verticalalignment='top',
             color=col_nodes)
     ax.text(1.5,
-            0.7,
+            0.6,
             'pulsar\norbit',
             horizontalalignment='center',
             verticalalignment='top',
@@ -325,11 +325,11 @@ rotation on the sky, with :math:`i_\mathrm{p} = 90^\circ` for an edge-on orbit
     ax = blank_axes(fig, position=(1.-1./2.2, 0., 1./2.2, 1.), box=False)
 
     coord_cross(ax, x=r'$z$', y=r'$y$')
-    rot_vec(ax, th=180.*u.deg + incl, s=0.4, name=r'$\vec{h}_\mathrm{p}$',
+    rot_vec(ax, th=180.*u.deg + i_p, s=0.4, name=r'$\vec{h}_\mathrm{p}$',
             va='center', vh='left', arrow='-|>', color=col_angmom)
-    rot_lin(ax, th=incl + 90.*u.deg, s=0.6, name='pulsar\norbit', vh='center',
+    rot_lin(ax, th=i_p + 90.*u.deg, s=0.6, name='pulsar\norbit', vh='center',
             arrow="-", color=col_orbit)
-    label_angle(ax, th0=180.*u.deg, th1=180.*u.deg + incl, 
+    label_angle(ax, th0=180.*u.deg, th1=180.*u.deg + i_p, 
                 th_name=r"$i_\mathrm{p}$", rad=.2, color=col_angmom)
     ax.set_aspect('equal')
 
@@ -397,16 +397,17 @@ celestial north through east.
     ax = blank_axes(fig, box=False)
 
     coord_cross(ax, x=r'$\alpha$', y=r'$\delta$', flipx=True)
-    circl(ax, a0=0.6, omg=OMo+90.*u.deg, incl=incl, color=col_orbit)
-    ax.text(1.45,
-            1.4,
+    circl(ax, a0=0.6, omg=omega_p+90.*u.deg, incl=i_p, color=col_orbit)
+    ax.text(1.5,
+            1.5,
             'pulsar\norbit',
             horizontalalignment='center',
             verticalalignment='top',
             color=col_orbit)
-    label_angle(ax, th0=90.*u.deg, th1=OMo+90.*u.deg, rad=.33, th1_arrow=True,
+    label_angle(ax, th0=90.*u.deg, th1=omega_p+90.*u.deg, rad=.12,
+                th1_arrow=True,
                 th_name=r"$\Omega_\mathrm{p}$", color=col_nodes)
-    rot_lin(ax, th=OMo+90.*u.deg, name='line of nodes', vh='center',
+    rot_lin(ax, th=omega_p+90.*u.deg, name='line of nodes', vh='center',
             arrow="-|>", color=col_nodes)
     
     plt.show()
@@ -465,16 +466,17 @@ of the screen measured from the ascending node of the pulsar orbit.
     ax = blank_axes(fig, box=False)
 
     coord_cross(ax, x=r'$\alpha$', y=r'$\delta$', flipx=True)
-    label_angle(ax, th0=90.*u.deg, th1=OMs1+90.*u.deg, rad=.15, th1_arrow=True,
+    label_angle(ax, th0=90.*u.deg, th1=xi+90.*u.deg, rad=.15, th1_arrow=True,
                 th_name=r"$\xi$", color=col_screen)
-    label_angle(ax, th0=90.*u.deg, th1=OMo+90.*u.deg, rad=.33, th1_arrow=True,
+    label_angle(ax, th0=90.*u.deg, th1=omega_p+90.*u.deg, rad=.33,
+                th1_arrow=True,
                 th_name=r"$\Omega_\mathrm{p}$", color=col_nodes)
-    label_angle(ax, th0=OMo+90.*u.deg, th1=OMs1+90.*u.deg, rad=.5,
+    label_angle(ax, th0=xi+90.*u.deg, th1=omega_p+90.*u.deg, rad=.51,
                 th1_arrow=True,
                 th_name=r"$\Delta\Omega_\mathrm{p}$", color=col_domg)
-    rot_lin(ax, th=OMs1+90.*u.deg, name='screen', vh='center',
+    rot_lin(ax, th=xi+90.*u.deg, name='screen', vh='center',
             arrow="-", color=col_screen)
-    rot_lin(ax, th=OMo+90.*u.deg, name='line of nodes', vh='center',
+    rot_lin(ax, th=omega_p+90.*u.deg, name='line of nodes', vh='center',
             arrow="-|>", color=col_nodes)
     
     plt.show()
@@ -575,7 +577,7 @@ can be derived from the pulsar system's ecliptic coordinates
     
     from astropy.coordinates import SkyCoord
 
-    psr_coord = SkyCoord('02h00m00.0s 60d00m00.0s')
+    psr_coord = SkyCoord('04h37m15.99744s -47d15m09.7170s')
     psr_coord_eclip = psr_coord.barycentricmeanecliptic
 
     beta_p = psr_coord_eclip.lat
@@ -613,7 +615,7 @@ can be derived from the pulsar system's ecliptic coordinates
     label_angle(ax, th0=0.*u.deg, th1=lambda_p, rad=.4, th1_arrow=True,
                 th_name=r" $\lambda_\mathrm{p}$", color='black', va='baseline')
     rot_vec(ax, th=270.*u.deg+lambda_p, s=0.63, name=' ascending node',
-            va='bottom', vh='left', arrow='-|>', color=col_nodes)
+            va='baseline', vh='left', arrow='-|>', color=col_nodes)
     label_angle(ax, th0=0.*u.deg, th1=270.*u.deg+lambda_p, rad=.15,
                 th1_arrow=True,
                 th_name=r"$\lambda_\mathrm{asc,\!\!\!\oplus}$ ",
@@ -624,19 +626,18 @@ can be derived from the pulsar system's ecliptic coordinates
 
     ax = blank_axes(fig, position=(1.-1./2.7, 0., 1./2.7, 1.), box=False)
     rot_lin(ax, th=180.*u.deg-beta_p, s=0.9, name='$z$ ',
-            va='bottom', vh='center', arrow="-|>", color='black')
+            vh='center', arrow="-|>", color='black')
     rot_lin(ax, th=270.*u.deg-beta_p, s=0.9, name='$y$',
-            va='center', vh='right', arrow="-|>", color='black')
+            va='center', vh='left', arrow="-|>", color='black')
     rot_lin(ax, th=180.*u.deg-0.*u.deg, s=1., name='ecliptic\nplane',
-            va='center', vh='left', arrow="-", color=col_orbit)
-    label_angle(ax, th0=180.*u.deg-beta_p, rad=.4, th1=180.*u.deg,
-                th0_arrow=True, other_direction=True, 
+            va='center', arrow="-", color=col_orbit)
+    label_angle(ax, th0=180.*u.deg, th1=180.*u.deg-beta_p, rad=.4,
+                th1_arrow=True,
                 th_name=r"$\beta_\mathrm{p}$", color='black')
     rot_vec(ax, th=90.*u.deg, s=0.8, name=r'  $\vec{h}_{\!\!\oplus}$',
             vh='center', arrow='-|>', color=col_angmom)
-    label_angle(ax, th1=90.*u.deg, th0=-beta_p, rad=.5, 
-                th_name=r" $i_{\!\!\oplus}$",
-                va='center', vh='left', color=col_angmom)
+    label_angle(ax, th1=90.*u.deg, th0=-beta_p, rad=.5,
+                th_name=r" $i_{\!\!\oplus}$", vh='center', color=col_angmom)
     ax.set_aspect('equal')
     
     plt.show()
