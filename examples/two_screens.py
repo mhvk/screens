@@ -102,7 +102,8 @@ if __name__ == '__main__':
     plot_screen(ax, pulsar, dp, color='green')
     # Connect origins
     # ax.plot(np.zeros(4), np.zeros(4),
-    #         [0., d1.value, d2.value, dp.value], color='black')
+    #         [0., d1.to_value(u.kpc), d2.to_value(u.kpc), dp.to_value(u.kpc)],
+    #         color='black')
 
     obs1 = telescope.observe(
         s1.observe(pulsar, distance=dp-d1),
@@ -119,7 +120,7 @@ if __name__ == '__main__':
          for pos in (tpos, scat1, ppos)])
     z = np.vstack(
         [np.broadcast_to(d, path_shape).ravel()
-         for d in (0., d1.value, dp.value)])
+         for d in (0., d1.to_value(u.kpc), dp.to_value(u.kpc))])
     for _x, _y, _z in zip(x.T, y.T, z.T):
         ax.plot(_x, _y, _z, color='black', linestyle=':')
         ax.scatter(_x[1], _y[1], _z[1], marker='o',
@@ -141,8 +142,8 @@ if __name__ == '__main__':
         [np.broadcast_to(getattr(pos, 'y').to_value(u.AU), path_shape).ravel()
          for pos in (tpos, scat1, scat2, ppos)])
     z = np.vstack(
-        [np.broadcast_to(d, path_shape).ravel()
-         for d in (0., d1.value, d2.value, dp.value)])
+        [np.broadcast_to(d, path_shape).ravel() for d in
+         (0., d1.to_value(u.kpc), d2.to_value(u.kpc), dp.to_value(u.kpc))])
     for _x, _y, _z in zip(x.T, y.T, z.T):
         ax.plot(_x, _y, _z, color='black', linestyle=':')
         ax.scatter(_x[1:3], _y[1:3], _z[1:3], marker='o',
