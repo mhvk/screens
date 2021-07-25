@@ -238,6 +238,7 @@ position angle of the *eastern* half of the line of lensed images.
     col_nodes = 'blue'
     col_angmom = 'green'
     col_domg = 'purple'
+    col_earth = 'brown'
 
     # global figure dimensions
     fig_size = 3.
@@ -620,6 +621,14 @@ can be derived from the pulsar system's ecliptic coordinates
                 th1_arrow=True,
                 th_name=r"$\lambda_\mathrm{asc,\!\!\!\oplus}$ ",
                 color=col_nodes, va='top')
+    plt.plot(1.-0.6, 1., 'o', color=col_earth, markerfacecolor='w')
+    plt.plot(1.-0.6, 1., '+', color=col_earth)
+    ax.text(0.2,
+            1.,
+            "Earth\nat $t_\mathrm{eqx}$",
+            horizontalalignment='center',
+            verticalalignment='center',
+            color=col_earth)
     ax.set_aspect('equal')
 
     # inside ecliptic plane with orbit and inclinations
@@ -695,7 +704,7 @@ the time of Earth's passage through the ascending node is given by
 .. math::
     
     t_\mathrm{asc,\oplus} = t_\mathrm{eqx} + P_\mathrm{orb,\oplus}
-        \frac{ \lambda_\mathrm{asc,\oplus} }{ 360^\circ },
+        \frac{ \lambda_\mathrm{asc,\oplus} + 180^\circ }{ 360^\circ },
 
 where :math:`t_\mathrm{eqx}` is the time of the March equinox and
 :math:`\lambda_\mathrm{asc,\oplus} = \lambda_\mathrm{p} - 90^\circ` is the
