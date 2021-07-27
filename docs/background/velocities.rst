@@ -114,12 +114,11 @@ effective velocity, considering only the relevant velocity components, becomes
 .. math::
 
     v_\mathrm{eff,\parallel} = \frac{ 1 }{ s } v_\mathrm{lens,\parallel}
-        - \frac{ 1 - s }{ s } v_\mathrm{p,\parallel} - v_{\oplus,\parallel}.
+        - \frac{ 1 - s }{ s } v_\mathrm{p,\parallel} - v_{\oplus,\parallel},
+    \qquad \mathrm{with} \qquad
+    v_\mathrm{p,\parallel} = v_\mathrm{p,sys,\parallel}
+                           + v_\mathrm{p,orb,\parallel}.
     \label{eq_v_eff} \tag{1}
-
-Again, the pulsar's term can be split into a systemic and an orbital component:
-:math:`v_\mathrm{p,\parallel} = v_\mathrm{p,sys,\parallel} +
-v_\mathrm{p,orb,\parallel}`.
 
 In the following, we examine how the different velocities in equation
 :math:`\ref{eq_v_eff}` that contribute to :math:`v_\mathrm{eff,\parallel}`
@@ -194,7 +193,7 @@ the lens is then given by
 
     v_\mathrm{p,sys,\parallel} = d_\mathrm{p}
         \left[ \mu_\mathrm{p,sys,\alpha\ast} \sin( \xi )
-                + \mu_\mathrm{p,sys,\delta} \cos( \xi )
+             + \mu_\mathrm{p,sys,\delta}     \cos( \xi )
         \right].
 
 Here, :math:`\mu_\mathrm{p,sys,\alpha\ast}` is proper motion's right-ascension
@@ -422,13 +421,13 @@ v_\mathrm{p,\delta}, 0)` with
     v_\mathrm{p,\alpha\ast} &= \vec{v}_\mathrm{p} \cdot \hat{\alpha}
         = - v_\mathrm{0,p}
             \left[ \sin( \Omega_\mathrm{p} ) \sin( \phi_\mathrm{p} )
-                - \cos( \Omega_\mathrm{p} ) \cos( i_\mathrm{p} )
+                 - \cos( \Omega_\mathrm{p} ) \cos( i_\mathrm{p} )
                     \cos( \phi_\mathrm{p} )
             \right], \\
     v_\mathrm{p,\delta} &= \vec{v}_\mathrm{p} \cdot \hat{\delta}
         = - v_\mathrm{0,p}
             \left[ \cos( \Omega_\mathrm{p} ) \sin( \phi_\mathrm{p} )
-                + \sin( \Omega_\mathrm{p} ) \cos( i_\mathrm{p} )
+                 + \sin( \Omega_\mathrm{p} ) \cos( i_\mathrm{p} )
                     \cos( \phi_\mathrm{p} )
             \right].
 
@@ -444,9 +443,8 @@ formed by the lens is then given by
 
     \begin{align}
     v_\mathrm{p,orb,\parallel}
-        &= \left[ v_\mathrm{p,\alpha\ast} \sin( \xi )
-                + v_\mathrm{p,\delta} \cos( \xi )
-           \right] \\
+        &= v_\mathrm{p,\alpha\ast} \sin( \xi )
+         + v_\mathrm{p,\delta}     \cos( \xi ) \\
         &= - v_\mathrm{0,p}
             \left[ \cos( \Delta\Omega_\mathrm{p} ) \sin( \phi_\mathrm{p} )
                  - \sin( \Delta\Omega_\mathrm{p} ) \cos( i_\mathrm{p} )
@@ -455,8 +453,8 @@ formed by the lens is then given by
         \label{eq_v_p_orb_parallel} \tag{2}
     \end{align}
 
-where :math:`\Delta\Omega_\mathrm{p} = \xi - \Omega_\mathrm{p}` is the angle
-of the screen measured from the ascending node of the pulsar orbit.
+where :math:`\Delta\Omega_\mathrm{p} = \xi - \Omega_\mathrm{p}` is the angle of
+the line of lensed images measured from the ascending node of the pulsar orbit.
 
 .. plot::
     :context: close-figs
@@ -473,7 +471,7 @@ of the screen measured from the ascending node of the pulsar orbit.
                 th1_arrow=True,
                 th_name=r"$\Omega_\mathrm{p}$", color=col_nodes)
     label_angle(ax, th0=xi+90.*u.deg, th1=omega_p+90.*u.deg, rad=.51,
-                th1_arrow=True,
+                th0_arrow=True, other_direction=True,
                 th_name=r"$\Delta\Omega_\mathrm{p}$", color=col_domg)
     rot_lin(ax, th=xi+90.*u.deg, name='screen', vh='center',
             arrow="-", color=col_screen)
@@ -517,7 +515,7 @@ The parameter :math:`b_\mathrm{p}` modifying the sinusoid's amplitude
         = \cos^2( \Delta\Omega_\mathrm{p} )
         + \sin^2( \Delta\Omega_\mathrm{p} ) \cos^2( i_\mathrm{p} )
         = \frac{ 1 - \sin^2( i_\mathrm{p} ) }
-                { 1 - \sin^2( i_\mathrm{p} ) \cos^2( \chi_\mathrm{p} ) }.
+               { 1 - \sin^2( i_\mathrm{p} ) \cos^2( \chi_\mathrm{p} ) }.
 
 
 Earth's motion around the Sun
@@ -709,7 +707,7 @@ the time of Earth's passage through the ascending node is given by
 where :math:`t_\mathrm{eqx}` is the time of the March equinox.
 
 
-Combining the pulsar, lens, and Earth terms
+Combining the lens, pulsar, and Earth terms
 ===========================================
 
 Combining the different terms in equation :math:`\ref{eq_v_eff}` contributing
@@ -724,7 +722,7 @@ to :math:`v_\mathrm{eff,\parallel}` gives
       - \underbrace{
             \frac{ 1 - s }{ s } d_\mathrm{p}
                 \left[ \mu_\mathrm{p,sys,\alpha\ast} \sin( \xi )
-                     + \mu_\mathrm{p,sys,\delta} \cos( \xi )
+                     + \mu_\mathrm{p,sys,\delta}     \cos( \xi )
                 \right]
         }_\textrm{pulsar's systemic motion}
       + \underbrace{
@@ -743,18 +741,18 @@ Filling in the terms for effective proper motion gives
         \underbrace{ \vphantom{ \frac{ v_\mathrm{0,p} }{ d_\mathrm{p} } }
             \frac{ v_\mathrm{lens,\parallel} }{ d_\mathrm{s} }
         }_\textrm{lens motion}
-        - \underbrace{ \vphantom{ \frac{ v_\mathrm{0,p} }{ d_\mathrm{p} } }
+      - \underbrace{ \vphantom{ \frac{ v_\mathrm{0,p} }{ d_\mathrm{p} } }
             \left[ \mu_\mathrm{p,sys,\alpha\ast} \sin( \xi )
-                + \mu_\mathrm{p,sys,\delta} \cos( \xi )
+                 + \mu_\mathrm{p,sys,\delta}     \cos( \xi )
             \right]
         }_\textrm{pulsar's systemic motion}
-        + \underbrace{
+      + \underbrace{
             \frac{ v_\mathrm{0,p} }{ d_\mathrm{p} } b_\mathrm{p}
                 \sin( \phi_\mathrm{p} - \chi_\mathrm{p} )
         }_\textrm{pulsar's orbital motion}
-        + \underbrace{ \vphantom{ \frac{ v_\mathrm{0,p} }{ d_\mathrm{p} } }
-        \frac{ v_{0,\oplus} }{ d_\mathrm{eff} } b_\oplus
-            \sin( \phi_\oplus - \chi_\oplus )
+      + \underbrace{ \vphantom{ \frac{ v_\mathrm{0,p} }{ d_\mathrm{p} } }
+            \frac{ v_{0,\oplus} }{ d_\mathrm{eff} } b_\oplus
+                \sin( \phi_\oplus - \chi_\oplus )
         }_\textrm{Earth's orbital motion}.  
 
 This shows that the scaled effective velocity can be written as the normed sum
@@ -764,23 +762,25 @@ of two sinusoids and a constant offset:
 
     \frac{ \left| v_\mathrm{eff,\parallel} \right| }{ \sqrt{ d_\mathrm{eff} } }
       = \left| \mu_\mathrm{eff,\parallel} \right| \sqrt{ d_\mathrm{eff} }
-      = \left| A_\mathrm{p} \sin( \phi_\mathrm{p} - \chi_\mathrm{p} )
-             + A_\oplus \sin( \phi_\oplus - \chi_\oplus ) + C
+      = \left| A_\oplus     \sin( \phi_\oplus     - \chi_\oplus     )
+             + A_\mathrm{p} \sin( \phi_\mathrm{p} - \chi_\mathrm{p} ) + C
         \right|,
 
 with
 
 .. math::
 
+    A_\oplus &= \frac{ v_{0,\oplus} }{ \sqrt{ d_\mathrm{eff} } } b_\oplus
+              = \frac{ 1 }{ \sqrt{ d_\mathrm{eff} } }
+                \frac{ 2 \pi a_\oplus }{ P_\mathrm{orb,\oplus} } b_\oplus,
+    \\[1em]
     A_\mathrm{p} &= \frac{ 1 - s }{ s }
                     \frac{ v_\mathrm{0,p} }{ \sqrt{ d_\mathrm{eff} } }
                     b_\mathrm{p}
                   = \frac{ \sqrt{ d_\mathrm{eff} } }{ d_\mathrm{p} }
                     \frac{ K_\mathrm{p} }{ \sin( i_\mathrm{p} ) }
                     b_\mathrm{p},
-
-    A_\oplus &= \frac{ v_{0,\oplus} }{ \sqrt{ d_\mathrm{eff} } } b_\oplus,
-
+    \\[1em]
     C &= \frac{ 1 }{ s }
             \frac{ v_\mathrm{lens,\parallel} }{ \sqrt{ d_\mathrm{eff} } }
        - \frac{ 1 - s }{ s }
@@ -791,5 +791,3 @@ with
             \left[ \mu_\mathrm{p,sys,\alpha\ast} \sin( \xi )
                  + \mu_\mathrm{p,sys,\delta} \cos( \xi )
             \right].
-
-.. TODO: [cf. C in infer_phys_pars, has plusminus]
