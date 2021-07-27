@@ -704,11 +704,9 @@ the time of Earth's passage through the ascending node is given by
 .. math::
     
     t_\mathrm{asc,\oplus} = t_\mathrm{eqx} + P_\mathrm{orb,\oplus}
-        \frac{ \lambda_\mathrm{asc,\oplus} + 180^\circ }{ 360^\circ },
+        \frac{ \lambda_\mathrm{p} + 90^\circ }{ 360^\circ },
 
-where :math:`t_\mathrm{eqx}` is the time of the March equinox and
-:math:`\lambda_\mathrm{asc,\oplus} = \lambda_\mathrm{p} - 90^\circ` is the
-ecliptic longitude of Earth's ascending node.
+where :math:`t_\mathrm{eqx}` is the time of the March equinox.
 
 
 Combining the pulsar, lens, and Earth terms
