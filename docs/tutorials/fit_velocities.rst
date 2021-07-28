@@ -80,8 +80,9 @@ define a little dictionary of arguments to move plot titles inside their axes.
     }
 
     dveff_lbl = (r'scaled effective velocity '
-                 r'$\frac{ | v_\mathrm{eff} | }{ \sqrt{ d_\mathrm{eff} } }$ '
-                 r'$\left( \frac{\mathrm{km/s}}{\sqrt{\mathrm{pc}}} \right)$')
+                 r'$\dfrac{ | v_\mathrm{eff,\!\!\parallel} | }'
+                 r'{ \sqrt{ d_\mathrm{eff} } }$ '
+                 r'$\left( \dfrac{\mathrm{km/s}}{\sqrt{\mathrm{pc}}} \right)$')
         
     title_kwargs = {
         'loc': 'left', 
@@ -93,28 +94,28 @@ define a little dictionary of arguments to move plot titles inside their axes.
 Set known parameters
 ====================
 
-Set the pulsar's orbital period :math:`P_\mathrm{b}` and time of ascending node
-:math:`T_\mathrm{asc,p}`, which are known from pulsar timing.
+Set the pulsar's orbital period :math:`P_\mathrm{orb,p}` and time of ascending
+node :math:`t_\mathrm{asc,p}`, which are known from pulsar timing.
 
 .. jupyter-execute::
     
-    p_b = 5.7410459 * u.day
+    p_orb_p = 5.7410459 * u.day
     t_asc_p = Time(54501.4671, format='mjd', scale='tdb')
 
-Set the Earth's orbital period :math:`P_\mathrm{E}` and derive its time of
-ascending node :math:`T_\mathrm{asc,E}` from the pulsar's coordinates.
+Set the Earth's orbital period :math:`P_\mathrm{orb,\oplus}` and derive its
+time of ascending node :math:`t_\mathrm{asc,\oplus}` from the pulsar's
+coordinates.
 
 .. jupyter-execute::
 
-    p_e = 1. * u.yr
-    t_equinox = Time('2005-03-21 12:33', format='iso', scale='utc')
+    p_orb_e = 1. * u.yr
+    t_eqx = Time('2005-03-21 12:33', format='iso', scale='utc')
 
     psr_coord = SkyCoord('04h37m15.99744s -47d15m09.7170s')
 
     psr_coord_eclip = psr_coord.barycentricmeanecliptic
-    ascnod_eclip_lon = psr_coord_eclip.lon + 90.*u.deg
     
-    t_asc_e = t_equinox + ascnod_eclip_lon.cycle * p_e
+    t_asc_e = t_eqx + (psr_coord_eclip.lon + 90.*u.deg).to_value(u.cycle) * p_orb_e
 
 .. warning::
 
@@ -143,25 +144,26 @@ objects.
     dveff_err = data['dveff_err'] * u.km/u.s/u.pc**0.5
 
 We can now precompute the orbital phases (measured from the ascending node) of
-the pulsar, :math:`\phi_\mathrm{p}(t)`, and the Earth,
-:math:`\phi_\mathrm{E}(t)`, for the observation times.
+Earth, :math:`\phi_\oplus(t)`, and the pulsar, :math:`\phi_\mathrm{p}(t)`,
+for the observation times:
 
 .. math::
 
-    \phi_\mathrm{p}(t) = \frac{ t - T_\mathrm{asc,p} }{ P_\mathrm{b} }
+    \phi_\oplus(t) = \frac{ t - t_\mathrm{asc,\oplus} }
+                          { P_\mathrm{orb,\oplus} }
     \qquad \mathrm{and} \qquad
-    \phi_\mathrm{E}(t) = \frac{ t - T_\mathrm{asc,E} }{ P_\mathrm{E} }
+    \phi_\mathrm{p}(t) = \frac{ t - t_\mathrm{asc,p} }{ P_\mathrm{orb,p} }.
 
 .. jupyter-execute::
 
-    ph_p_obs = ((t_obs - t_asc_p) / p_b).to(u.dimensionless_unscaled) * u.cycle
-    ph_e_obs = ((t_obs - t_asc_e) / p_e).to(u.dimensionless_unscaled) * u.cycle
+    ph_e_obs = ((t_obs - t_asc_e) / p_orb_e).to(u.dimensionless_unscaled) * u.cycle
+    ph_p_obs = ((t_obs - t_asc_p) / p_orb_p).to(u.dimensionless_unscaled) * u.cycle
 
 Let's have a look at all the data.
 
 .. jupyter-execute::
     
-    plt.figure(figsize=(12., 5.))
+    plt.figure(figsize=(11., 6.))
 
     plt.errorbar(t_obs.jyear, dveff_obs, yerr=dveff_err, **obs_style, alpha=0.3)
     
@@ -179,7 +181,7 @@ that of the Earth in one plot, one should make a 2D phase fold of the dataset.
 
 .. jupyter-execute::
 
-    plt.figure(figsize=(10., 6.))
+    plt.figure(figsize=(11., 7.))
 
     plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1., C=dveff_obs.value,
                reduce_C_function=np.median, gridsize=19)
@@ -213,17 +215,17 @@ Thus, the model is given by
 
 .. math::
 
-    \frac{ \left| v_\mathrm{eff} \right| }{ \sqrt{d_\mathrm{eff}} }
-      = \left| A_\mathrm{p} \sin( \phi_\mathrm{p} - \chi_\mathrm{p} )
-             + A_\mathrm{E} \sin( \phi_\mathrm{E} - \chi_\mathrm{E} ) + C
+    \frac{ \left| v_\mathrm{eff,\parallel} \right| }{ \sqrt{ d_\mathrm{eff} } }
+      = \left| A_\oplus     \sin( \phi_\oplus     - \chi_\oplus     )
+             + A_\mathrm{p} \sin( \phi_\mathrm{p} - \chi_\mathrm{p} ) + C
         \right|. \label{eq_model} \tag{1}
 
-There are five free parameters: the amplitudes of the pulsar's and the Earth's
-orbital scaled-effective-velocity modulation, :math:`A_\mathrm{p}` and
-:math:`A_\mathrm{E}`, their phase offsets, :math:`\chi_\mathrm{p}` and
-:math:`\chi_\mathrm{E}`, and a constant scaled-effective-velocity offset,
-:math:`C`. The amplitudes should be non-negative (:math:`A_\mathrm{p} \geq 0`,
-:math:`A_\mathrm{E} \geq 0`).
+There are five free parameters: the amplitudes of Earth's and the pulsar's
+orbital scaled-effective-velocity modulation, :math:`A_\oplus` and
+:math:`A_\mathrm{p}` , their phase offsets, :math:`\chi_\oplus` and
+:math:`\chi_\mathrm{p}`, and a constant scaled-effective-velocity offset,
+:math:`C`. The amplitudes should be non-negative (:math:`A_\oplus \geq 0`,
+:math:`A_\mathrm{p} \geq 0`).
 
 This formulation of the scaled-effective-velocity equation has the advantage
 that it is clear how its free parameters affect the model in data space (hence,
@@ -241,13 +243,13 @@ to model the individual components of the scaled effective velocity separately.
 
     def model_dveff_signed(pars, t):
     
-        ph_p = ((t - t_asc_p) / p_b).to(u.dimensionless_unscaled) * u.cycle
-        ph_e = ((t - t_asc_e) / p_e).to(u.dimensionless_unscaled) * u.cycle
+        ph_e = ((t - t_asc_e) / p_orb_e).to(u.dimensionless_unscaled) * u.cycle
+        ph_p = ((t - t_asc_p) / p_orb_p).to(u.dimensionless_unscaled) * u.cycle
         
-        dveff_p = pars['amp_p'] * np.sin(ph_p - pars['chi_p'])
         dveff_e = pars['amp_e'] * np.sin(ph_e - pars['chi_e'])
+        dveff_p = pars['amp_p'] * np.sin(ph_p - pars['chi_p'])
         
-        dveff = dveff_p + dveff_e + pars['dveff_c']
+        dveff = dveff_e + dveff_p + pars['dveff_c']
     
         return (dveff).to(u.km/u.s/u.pc**0.5)
     
@@ -273,23 +275,23 @@ equation. Moreover, the (synthetic) data are of sufficient quality that we can
 make rough estimates of the free-parameters values simply by looking at the
 data.
 
-The amplitudes :math:`A_\mathrm{p}` and :math:`A_\mathrm{E}` and the offset
+The amplitudes :math:`A_\oplus` and :math:`A_\mathrm{p}` and the offset
 :math:`C` can be estimated by eye from the time-series plot above:
 
 - :math:`C` corresponds to the mean of the time series
   (around 15 km/s/pc\ :sup:`1/2`);
-- :math:`A_\mathrm{E}` is the amplitude of the visible sinusoid
+- :math:`A_\oplus` is the amplitude of the visible sinusoid
   (around 2 km/s/pc\ :sup:`1/2`);
 - :math:`A_\mathrm{p}` is roughly the half-width of the band of data points
   that constitutes the visible sinusoid (around 1.5 km/s/pc\ :sup:`1/2`).
 
-The phase offsets :math:`\chi_\mathrm{p}` and :math:`\chi_\mathrm{E}` are a bit
+The phase offsets :math:`\chi_\oplus` and :math:`\chi_\mathrm{p}` are a bit
 harder to estimate by eye, but the 2D phase fold of the dataset can be used for
 this. For phase offsets
-:math:`(\chi_\mathrm{E}, \chi_\mathrm{p}) = (0^\circ, 0^\circ)`, the 2D sinusoid
+:math:`(\chi_\oplus, \chi_\mathrm{p}) = (0^\circ, 0^\circ)`, the 2D sinusoid
 should peak at phases :math:`(0.25, 0.25)`. Since the peak in the plot seems to
-be around :math:`(0.45, 0.45)`, we can estimate the phase offsets to be roughly
-:math:`(\chi_\mathrm{E}, \chi_\mathrm{p}) \approx (60^\circ, 60^\circ)`.
+be around :math:`(0.4, 0.9)`, we can estimate the phase offsets to be roughly
+:math:`(\chi_\oplus, \chi_\mathrm{p}) \approx (54^\circ, 234^\circ)`.
 
 To prepare the set of parameter values for use with our model functions, put
 them in a dictionary with the appropriate keys.
@@ -297,10 +299,10 @@ them in a dictionary with the appropriate keys.
 .. jupyter-execute::
 
     pars_try = {
-        'amp_p':     1.5 * u.km/u.s/u.pc**0.5,
         'amp_e':     2.  * u.km/u.s/u.pc**0.5,
-        'chi_p':    60.  * u.deg,
-        'chi_e':    60.  * u.deg,
+        'amp_p':     1.5 * u.km/u.s/u.pc**0.5,
+        'chi_e':    54.  * u.deg,
+        'chi_p':   234.  * u.deg,
         'dveff_c':  15.  * u.km/u.s/u.pc**0.5
     }
 
@@ -337,15 +339,15 @@ at a higher time resolution.
         dveff_mdl = model_dveff_abs(pars, t_obs)
         dveff_res = dveff_obs - dveff_mdl
 
-        tlim_long = [t_obs[0].mjd, t_obs[0].mjd + 3. * p_e.to_value(u.day)]
-        tlim_zoom = [t_obs[0].mjd, t_obs[0].mjd + 5. * p_b.to_value(u.day)]
+        tlim_long = [t_obs[0].mjd, t_obs[0].mjd + 3. * p_orb_e.to_value(u.day)]
+        tlim_zoom = [t_obs[0].mjd, t_obs[0].mjd + 5. * p_orb_p.to_value(u.day)]
 
         t_mjd_many = np.arange(tlim_long[0], tlim_long[-1], 0.2)
         t_many = Time(t_mjd_many, format='mjd')
 
         dveff_mdl_many = model_dveff_abs(pars, t_many)
 
-        plt.figure(figsize=(12., 9.))
+        plt.figure(figsize=(10., 7.5))
         
         plt.subplots_adjust(wspace=0.1)
 
@@ -436,7 +438,7 @@ sets with low absolute effective velocities.
         dveff_res_earth = dveff_obs - dveff_mdl_psr - dveff_mdl_const
         dveff_res_psr = dveff_obs - dveff_mdl_earth - dveff_mdl_const
 
-        plt.figure(figsize=(12., 5.))
+        plt.figure(figsize=(10., 4.))
 
         plt.subplots_adjust(wspace=0.1)
         
@@ -488,7 +490,7 @@ fold of the full model.
         dveff_mdl = model_dveff_abs(pars, t_obs)
         dveff_res = dveff_obs - dveff_mdl
 
-        plt.figure(figsize=(12., 4.))
+        plt.figure(figsize=(11.3, 4.))
 
         gridsize = 19
         labelpad = 16
@@ -599,11 +601,11 @@ An algorithm-friendly model function
 The model equation (eq. :math:`\ref{eq_model}`) has some properties that make
 it inconvenient for algorithmic fitting:
 
-- The amplitudes :math:`A_\mathrm{p}` and :math:`A_\mathrm{E}` are constrained
-  to be non-negative (:math:`A_\mathrm{p} \geq 0`,
-  :math:`A_\mathrm{E} \geq 0`), so the optimization algorithm would need to be
-  configured to avoid the disallowed regions of parameter space.
-- The phase offsets :math:`\chi_\mathrm{p}` and :math:`\chi_\mathrm{E}` are
+- The amplitudes :math:`A_\oplus` and :math:`A_\mathrm{p}` constrained to be
+  non-negative (:math:`A_\oplus \geq 0`, :math:`A_\mathrm{p} \geq 0`), so the
+  optimization algorithm would need to be configured to avoid the disallowed
+  regions of parameter space.
+- The phase offsets :math:`\chi_\oplus` and :math:`\chi_\mathrm{p}` are
   periodic, with a period of :math:`360^\circ`. This could cause issues for
   some fitting algorithms, for example, if the step size in one of these
   parameters is close to their period.
@@ -614,11 +616,11 @@ To avoid these complications, the model equation can be recast as
 
 .. math::
 
-    \frac{ \left| v_\mathrm{eff} \right| }{ \sqrt{d_\mathrm{eff}} }
-      = \left| A_\mathrm{ps} \sin( \phi_\mathrm{p} )
-             - A_\mathrm{pc} \cos( \phi_\mathrm{p} )
-             + A_\mathrm{Es} \sin( \phi_\mathrm{E} )
-             - A_\mathrm{Ec} \cos( \phi_\mathrm{E} ) + C
+    \frac{ \left| v_\mathrm{eff,\parallel} \right| }{ \sqrt{ d_\mathrm{eff} } }
+      = \left| A_\mathrm{\oplus,s} \sin( \phi_\oplus )
+             - A_\mathrm{\oplus,c} \cos( \phi_\oplus )
+             + A_\mathrm{p,s} \sin( \phi_\mathrm{p} )
+             - A_\mathrm{p,c} \cos( \phi_\mathrm{p} ) + C
         \right|,
 
 where the amplitudes are related to the amplitudes and phase offsets in eq.
@@ -628,12 +630,12 @@ where the amplitudes are related to the amplitudes and phase offsets in eq.
 
     \DeclareMathOperator{\arctantwo}{arctan2}
 
-    A_\mathrm{ps} &= A_\mathrm{p} \cos( \chi_\mathrm{p} ),
+    A_\mathrm{\oplus,s} &= A_\oplus \cos( \chi_\oplus ),
     \qquad &
-    A_\mathrm{pc} &= A_\mathrm{p} \sin( \chi_\mathrm{p} ), \\
-    A_\mathrm{Es} &= A_\mathrm{E} \cos( \chi_\mathrm{E} ),
+    A_\mathrm{\oplus,c} &= A_\oplus \sin( \chi_\oplus ), \\
+    A_\mathrm{p,s} &= A_\mathrm{p} \cos( \chi_\mathrm{p} ),
     \qquad &
-    A_\mathrm{Ec} &= A_\mathrm{E} \sin( \chi_\mathrm{E} ). \\
+    A_\mathrm{p,c} &= A_\mathrm{p} \sin( \chi_\mathrm{p} ).
 
 Results of the fitting can be converted back to the amplitudes and phase
 offsets in eq. :math:`\ref{eq_model}` using
@@ -642,21 +644,21 @@ offsets in eq. :math:`\ref{eq_model}` using
 
     \DeclareMathOperator{\arctantwo}{arctan2}
 
-    A_\mathrm{p} &= \sqrt{ A_\mathrm{ps}^2 + A_\mathrm{pc}^2 },
+    A_\oplus &= \sqrt{ A_\mathrm{\oplus,s}^2 + A_\mathrm{\oplus,c}^2 },
     \qquad &
-    \chi_\mathrm{p} &= \arctantwo(A_\mathrm{pc}, A_\mathrm{ps} ), \\
-    A_\mathrm{E} &= \sqrt{ A_\mathrm{Es}^2 + A_\mathrm{Ec}^2 },
+    \chi_\oplus &= \arctantwo(A_\mathrm{\oplus,c}, A_\mathrm{\oplus,s} ), \\
+    A_\mathrm{p} &= \sqrt{ A_\mathrm{p,s}^2 + A_\mathrm{p,c}^2 },
     \qquad &
-    \chi_\mathrm{E} &= \arctantwo(A_\mathrm{Ec}, A_\mathrm{Es} ), \\
+    \chi_\mathrm{p} &= \arctantwo(A_\mathrm{p,c}, A_\mathrm{p,s} ),
 
 where :math:`\arctantwo(y, x)` refers to the `2-argument arctangent function
 <https://en.wikipedia.org/wiki/Atan2>`_. The constant scaled-effective-velocity
 offset :math:`C` remains the same in both formulations.
 
 Let's start with building two functions that convert between the two sets of
-free parameters,
-:math:`(A_\mathrm{p}, \chi_\mathrm{p}, A_\mathrm{E}, \chi_\mathrm{E}, C)` and
-:math:`(A_\mathrm{ps}, A_\mathrm{pc}, A_\mathrm{Es}, A_\mathrm{Ec}, C)`.
+free parameters, :math:`(A_\oplus, \chi_\oplus, A_\mathrm{p}, \chi_\mathrm{p},
+C)` and :math:`(A_\mathrm{\oplus,s}, A_\mathrm{\oplus,c}, A_\mathrm{p,s},
+A_\mathrm{p,c}, C)`.
 Because :py:func:`~scipy.optimize.curve_fit` requires the free parameters as
 (unitless) floats, these conversion functions also need to convert between a
 dictionary of Astropy :py:class:`~astropy.units.quantity.Quantity` objects and
@@ -666,43 +668,43 @@ a NumPy :py:class:`~numpy.ndarray`.
 
     def pars_mdl2fit(pars_mdl):
 
-        amp_p = pars_mdl['amp_p'].to_value(u.km/u.s/u.pc**0.5)
         amp_e = pars_mdl['amp_e'].to_value(u.km/u.s/u.pc**0.5)
-        chi_p = pars_mdl['chi_p'].to_value(u.rad)
+        amp_p = pars_mdl['amp_p'].to_value(u.km/u.s/u.pc**0.5)
         chi_e = pars_mdl['chi_e'].to_value(u.rad)
+        chi_p = pars_mdl['chi_p'].to_value(u.rad)
         dveff_c = pars_mdl['dveff_c'].to_value(u.km/u.s/u.pc**0.5)
 
-        amp_ps = amp_p * np.cos(chi_p)
-        amp_pc = amp_p * np.sin(chi_p)
         amp_es = amp_e * np.cos(chi_e)
         amp_ec = amp_e * np.sin(chi_e)
+        amp_ps = amp_p * np.cos(chi_p)
+        amp_pc = amp_p * np.sin(chi_p)
 
-        pars_fit = np.array([amp_ps, amp_pc, amp_es, amp_ec, dveff_c])
+        pars_fit = np.array([amp_es, amp_ec, amp_ps, amp_pc, dveff_c])
         
         return pars_fit
 
     def pars_fit2mdl(pars_fit):
 
-        amp_ps, amp_pc, amp_es, amp_ec, dveff_c = pars_fit
+        amp_es, amp_ec, amp_ps, amp_pc, dveff_c = pars_fit
 
-        amp_p = np.sqrt(amp_ps**2 + amp_pc**2)
         amp_e = np.sqrt(amp_es**2 + amp_ec**2)
-        chi_p = np.arctan2(amp_pc, amp_ps)
+        amp_p = np.sqrt(amp_ps**2 + amp_pc**2)
         chi_e = np.arctan2(amp_ec, amp_es)
+        chi_p = np.arctan2(amp_pc, amp_ps)
 
         pars_mdl = {
-            'amp_p': amp_p * u.km/u.s/u.pc**0.5,
             'amp_e': amp_e * u.km/u.s/u.pc**0.5,
-            'chi_p': (chi_p * u.rad).to(u.deg),
-            'chi_e': (chi_e * u.rad).to(u.deg),
+            'amp_p': amp_p * u.km/u.s/u.pc**0.5,
+            'chi_e': (chi_e * u.rad).to(u.deg) % (360.*u.deg),
+            'chi_p': (chi_p * u.rad).to(u.deg) % (360.*u.deg),
             'dveff_c': dveff_c * u.km/u.s/u.pc**0.5,
         }
         
         return pars_mdl
 
 Next, to speed up the fitting, we can precompute the independent variables
-:math:`\sin(\phi_\mathrm{p})`, :math:`\cos(\phi_\mathrm{p})`
-:math:`\sin(\phi_\mathrm{E})`, and :math:`\cos(\phi_\mathrm{E})` for the
+:math:`\sin(\phi_\oplus)`, :math:`\cos(\phi_\oplus)`
+:math:`\sin(\phi_\mathrm{p})`, and :math:`\cos(\phi_\mathrm{p})` for the
 observation times. Again, to comply with the requirements of
 :py:func:`~scipy.optimize.curve_fit`, we convert these to floats and store them
 in a single NumPy :py:class:`~numpy.ndarray`.
@@ -710,10 +712,10 @@ in a single NumPy :py:class:`~numpy.ndarray`.
 .. jupyter-execute::
 
     sin_cos_ph_obs = np.array([
-        np.sin(ph_p_obs).value,
-        np.cos(ph_p_obs).value,
         np.sin(ph_e_obs).value,
         np.cos(ph_e_obs).value,
+        np.sin(ph_p_obs).value,
+        np.cos(ph_p_obs).value,
     ])
 
 Now define the fitting function. To comply with the call signature of
@@ -725,17 +727,17 @@ parameters (see below).
 
     def model_dveff_fit(sin_cos_ph, *pars):
 
-        amp_ps, amp_pc, amp_es, amp_ec, dveff_c = pars
+        amp_es, amp_ec, amp_ps, amp_pc, dveff_c = pars
 
-        sin_ph_p = sin_cos_ph[0,:]
-        cos_ph_p = sin_cos_ph[1,:]
-        sin_ph_e = sin_cos_ph[2,:]
-        cos_ph_e = sin_cos_ph[3,:]
+        sin_ph_e = sin_cos_ph[0,:]
+        cos_ph_e = sin_cos_ph[1,:]
+        sin_ph_p = sin_cos_ph[2,:]
+        cos_ph_p = sin_cos_ph[3,:]
 
-        dveff_p = amp_ps * sin_ph_p - amp_pc * cos_ph_p
         dveff_e = amp_es * sin_ph_e - amp_ec * cos_ph_e
+        dveff_p = amp_ps * sin_ph_p - amp_pc * cos_ph_p
 
-        dveff = np.abs(dveff_p + dveff_e + dveff_c)
+        dveff = np.abs(dveff_e + dveff_p + dveff_c)
 
         return dveff
 
@@ -752,7 +754,7 @@ fitting parameters, and cast in the unitless array format expected by
 
     init_guess = pars_mdl2fit(pars_try)
 
-    par_names = ['amp_ps', 'amp_pc', 'amp_es', 'amp_ec', 'dveff_c']
+    par_names = ['amp_es', 'amp_ec', 'amp_ps', 'amp_pc', 'dveff_c']
     for (par_name, par_value) in zip(par_names, init_guess):
         print(f'{par_name:8s} {par_value:8.2f}')
 
@@ -783,7 +785,7 @@ Let's see what solution the algorithm found.
 
 .. jupyter-execute::
 
-    par_names = ['amp_ps', 'amp_pc', 'amp_es', 'amp_ec', 'dveff_c']
+    par_names = ['amp_es', 'amp_ec', 'amp_ps', 'amp_pc', 'dveff_c']
     for (par_name, par_value) in zip(par_names, popt):
         print(f'{par_name:8s} {par_value:8.2f}')
 
