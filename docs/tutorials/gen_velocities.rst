@@ -443,3 +443,53 @@ the data.
 
     plt.show()
 
+Generate noisy synthetic observations
+=====================================
+
+We now want to generate a set of *noisy* scaled effective velocities, to use in
+the :doc:`next tutorial <fit_velocities>`, in which we will fit a model to
+these fake observations.
+
+To start, we create a set of irregularly spaced observation times.
+
+.. jupyter-execute::
+
+    np.random.seed(654321)
+    nt = 2645
+    dt_mean = 16.425 * u.yr / nt
+    dt = np.random.random(nt) * 2. * dt_mean
+    t = Time(52618., format='mjd') + dt.cumsum()
+
+Next, the time-dependent parts of the above calculations need to be repeated
+for the new times.
+
+.. jupyter-execute::
+
+    v_earth = earth_loc.get_gcrs(t).transform_to(lens_frame).velocity.d_z
+
+    ph_p = ((t - t_asc_p) / p_orb_p).to(u.dimensionless_unscaled) * u.cycle
+
+    v_p_orb = (-k_p / np.sin(i_p)
+                * (np.cos(delta_omega_p) * np.sin(ph_p)
+                - np.sin(delta_omega_p) * np.cos(i_p) * np.cos(ph_p)))
+
+    v_eff = 1. / s * v_lens - (1. - s) / s * (v_p_orb + v_p_sys) - v_earth
+
+    dveff = np.abs(v_eff) / np.sqrt(d_eff)
+
+Now we add some noise to the scaled effective velocities.
+
+.. jupyter-execute::
+
+    dveff_err = (np.random.random(nt) * 0.05 + 0.05) * np.mean(dveff)
+    dveff_obs = dveff + dveff_err * np.random.normal(size=nt)
+
+Finally, we use NumPy's :py:func:`~numpy.savez` to save the data as a set of
+(unitless) NumPy arrays.
+
+.. jupyter-execute::
+
+    np.savez('data/fake-data-J0437.npz',
+             t_mjd=t.mjd,
+             dveff_obs=dveff_obs.value,
+             dveff_err=dveff_err.value)
