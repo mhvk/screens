@@ -2,7 +2,6 @@
 Scintillation velocities
 ************************
 
-
 Consider a pulsar in a binary, observed through a single thin scattering screen
 that acts as a one-dimensional lens. The goal of these derivations is to
 examine how scintillometric measurements from Earth can constrain the physical
@@ -496,15 +495,27 @@ trigonometry, this equation can be rewritten as
       = - \frac{ K_\mathrm{p} }{ \sin( i_\mathrm{p} ) } b_\mathrm{p}
             \sin( \phi_\mathrm{p} - \chi_\mathrm{p} ).
 
-The sinusoid's phase offset :math:`\chi_\mathrm{p}` is given by
+The sinusoid's phase offset :math:`\chi_\mathrm{p}` conforms to the relations
 
 .. math::
 
-    \tan( \chi_\mathrm{p} ) = \frac{ \sin( \Delta\Omega_\mathrm{p} ) }
-                                   { \cos( \Delta\Omega_\mathrm{p} ) }
-                              \cos( i_\mathrm{p} )
-                            = \tan( \Delta\Omega_\mathrm{p} )
-                              \cos( i_\mathrm{p} ).
+    \cos( \chi_\mathrm{p} )
+        = \frac { \cos( \Delta\Omega_\mathrm{p} ) }{ b_\mathrm{p} }
+    \qquad \mathrm{and} \qquad
+    \sin( \chi_\mathrm{p} )
+        = \frac{ \sin( \Delta\Omega_\mathrm{p} ) \cos( i_\mathrm{p} ) }
+               { b_\mathrm{p} }.
+
+Using the `2-argument arctangent function
+<https://en.wikipedia.org/wiki/Atan2>`_
+:math:`\DeclareMathOperator{\arctantwo}{arctan2} \arctantwo(y, x)`,
+these can be combined into
+
+.. math::
+
+    \chi_\mathrm{p} = \arctantwo \left[
+                            \sin( \Delta\Omega_\mathrm{p} ) \cos( i_\oplus ),
+                            \cos( \Delta\Omega_\mathrm{p} ) \right].
 
 The parameter :math:`b_\mathrm{p}` modifying the sinusoid's amplitude
 (with :math:`0 \leq b_\mathrm{p} \leq 1`) is given by
@@ -549,13 +560,15 @@ with
     \qquad
     b_\oplus^2 = \frac{ 1 - \sin^2( i_\oplus ) }
                       { 1 - \sin^2( i_\oplus ) \cos^2( \chi_\oplus ) },
+    \qquad
+    \phi_\oplus = 2 \pi \frac{ t - t_\mathrm{asc,\oplus} }
+                             { P_\mathrm{orb,\oplus} },
     
 .. math::
 
-    \phi_\oplus = 2 \pi \frac{ t - t_\mathrm{asc,\oplus} }
-                             { P_\mathrm{orb,\oplus} },
-    \qquad
-    \tan( \chi_\oplus ) = \tan( \Delta\Omega_\oplus ) \cos( i_\oplus ),
+    \chi_\oplus = \arctantwo \left[
+                        \sin( \Delta\Omega_\oplus ) \cos( i_\oplus ),
+                        \cos( \Delta\Omega_\oplus ) \right],
     \qquad
     \Delta\Omega_\oplus = \xi - \Omega_\oplus.
 
