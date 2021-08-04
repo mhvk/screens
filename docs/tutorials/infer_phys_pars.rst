@@ -256,7 +256,7 @@ Constraints without additional information
 
 Let's first consider the general case in which none of the six physical
 parameters of interest :math:`(i_\mathrm{p}, \Omega_\mathrm{p}, d_\mathrm{p},
-d_\mathrm{s}, \xi, v_\mathrm{lens,\parallel}`) are known. Since the fit only
+d_\mathrm{s}, \xi, v_\mathrm{lens,\parallel})` are known. Since the fit only
 provides five constraints, not all six physical parameters will have a unique
 solution. Nevertheless, it is possible to constrain some of the parameters,
 and derive relations between the remaining ones.
@@ -308,6 +308,9 @@ this solution.
     print(f'chi_p:   {chi_p[j_sol].to(u.deg):8.2f}')
     print(f'dveff_c: {dveff_c[j_sol].to(u.km/u.s/u.pc**0.5):8.2f}')
 
+You can verify that the two solution are equivalent by setting `j_sol` to the
+index of the other solution. Executing the codeblocks below should then give
+the same answers for the physical parameters.
 
 The orientation of the pulsar's orbit
 -------------------------------------

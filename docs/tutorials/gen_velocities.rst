@@ -188,8 +188,7 @@ Calculate some derived quantities:
         
             d_\mathrm{eff} = \frac{ 1 - s }{ s } d_\mathrm{p}
 
-    * - angle from the pulsar orbit's line of nodes to the line of lensed
-        images
+    * - angle from the pulsar's ascending node to the line of lensed images
       - 
         .. math::
         

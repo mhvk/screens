@@ -230,7 +230,7 @@ Thus, the model is given by
 
 There are five free parameters: the amplitudes of Earth's and the pulsar's
 orbital scaled-effective-velocity modulation, :math:`A_\oplus` and
-:math:`A_\mathrm{p}` , their phase offsets, :math:`\chi_\oplus` and
+:math:`A_\mathrm{p}`, their phase offsets, :math:`\chi_\oplus` and
 :math:`\chi_\mathrm{p}`, and a constant scaled-effective-velocity offset,
 :math:`C`. The amplitudes should be non-negative (:math:`A_\oplus \geq 0`,
 :math:`A_\mathrm{p} \geq 0`).
@@ -622,10 +622,10 @@ An algorithm-friendly model function
 The model equation (eq. :math:`\ref{eq_model}`) has some properties that make
 it inconvenient for algorithmic fitting:
 
-- The amplitudes :math:`A_\oplus` and :math:`A_\mathrm{p}` constrained to be
-  non-negative (:math:`A_\oplus \geq 0`, :math:`A_\mathrm{p} \geq 0`), so the
-  optimization algorithm would need to be configured to avoid the disallowed
-  regions of parameter space.
+- The amplitudes :math:`A_\oplus` and :math:`A_\mathrm{p}` are constrained
+  to be non-negative (:math:`A_\oplus \geq 0`, :math:`A_\mathrm{p} \geq 0`),
+  so the optimization algorithm would need to be configured to avoid the
+  disallowed regions of parameter space.
 - The phase offsets :math:`\chi_\oplus` and :math:`\chi_\mathrm{p}` are
   periodic, with a period of :math:`360^\circ`. This could cause issues for
   some fitting algorithms, for example, if the step size in one of these
