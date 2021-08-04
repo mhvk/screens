@@ -60,9 +60,10 @@ objects, and make sure that the output of plotting commands is displayed inline
     %matplotlib inline
 
 Define some line and marker properties to easily give the model and the data a
-consistent appearance throughout the notebook. Also assign a rather long label
-string to a variable, so it doesn't need to be rewritten for each plot, and
-define a little dictionary of arguments to move plot titles inside their axes.
+consistent appearance throughout the notebook. Also assign two rather long
+label strings to variables, so they don't need to be rewritten for each plot,
+and define a little dictionary of arguments to move plot titles inside their
+axes.
 
 .. jupyter-execute::
     
@@ -82,7 +83,14 @@ define a little dictionary of arguments to move plot titles inside their axes.
     dveff_lbl = (r'scaled effective velocity '
                  r'$\dfrac{ | v_\mathrm{eff,\!\!\parallel} | }'
                  r'{ \sqrt{ d_\mathrm{eff} } }$ '
-                 r'$\left( \dfrac{\mathrm{km/s}}{\sqrt{\mathrm{pc}}} \right)$')
+                 r'$\left( \dfrac{ \mathrm{km/s} }'
+                 r'{ \sqrt{ \mathrm{pc} } } \right)$')
+
+    dveff_signed_lbl = (r'scaled effective velocity '
+                        r'$\dfrac{ v_\mathrm{eff,\!\!\parallel} }'
+                        r'{ \sqrt{ d_\mathrm{eff} } }$ '
+                        r'$\left( \dfrac{ \mathrm{km/s} }'
+                        r'{ \sqrt{ \mathrm{pc} } } \right)$')
         
     title_kwargs = {
         'loc': 'left', 
@@ -227,6 +235,17 @@ orbital scaled-effective-velocity modulation, :math:`A_\oplus` and
 :math:`C`. The amplitudes should be non-negative (:math:`A_\oplus \geq 0`,
 :math:`A_\mathrm{p} \geq 0`).
 
+Because of the modulus operation in the model equation,
+there are two possible solutions for the model parameters
+:math:`(A_\oplus, A_\mathrm{p}, \chi_\oplus, \chi_\mathrm{p}, C)`.
+These differ from each other in the sign of :math:`C` and a :math:`180^\circ`
+rotation of the phase offsets :math:`\chi_\oplus` and :math:`\chi_\mathrm{p}`.
+The amplitudes :math:`A_\oplus` and :math:`A_\mathrm{p}` remain the same in
+both solutions. As we will see, the two solution are equivalent except for a
+:math:`180^\circ` difference in the orientation of the scattering screen on the
+sky. We can use either set of values to find the same constraints on physical
+parameters.
+
 This formulation of the scaled-effective-velocity equation has the advantage
 that it is clear how its free parameters affect the model in data space (hence,
 when fitting the model to data, it is clear how the fit can be improved by
@@ -278,23 +297,28 @@ data.
 The amplitudes :math:`A_\oplus` and :math:`A_\mathrm{p}` and the offset
 :math:`C` can be estimated by eye from the time-series plot above:
 
-- :math:`C` corresponds to the mean of the time series
-  (around 15 km/s/pc\ :sup:`1/2`);
-- :math:`A_\oplus` is the amplitude of the visible sinusoid
+- :math:`A_\oplus` is the amplitude of the sinusoid visible in the time-series
   (around 2 km/s/pc\ :sup:`1/2`);
 - :math:`A_\mathrm{p}` is roughly the half-width of the band of data points
-  that constitutes the visible sinusoid (around 1.5 km/s/pc\ :sup:`1/2`).
+  that constitutes the visible sinusoid (around 1.5 km/s/pc\ :sup:`1/2`);
+- :math:`C` corresponds to the mean of the time series or its negative
+  (around ±15 km/s/pc\ :sup:`1/2`).
 
 The phase offsets :math:`\chi_\oplus` and :math:`\chi_\mathrm{p}` are a bit
-harder to estimate by eye, but the 2D phase fold of the dataset can be used for
-this. For phase offsets
-:math:`(\chi_\oplus, \chi_\mathrm{p}) = (0^\circ, 0^\circ)`, the 2D sinusoid
-should peak at phases :math:`(0.25, 0.25)`. Since the peak in the plot seems to
-be around :math:`(0.4, 0.9)`, we can estimate the phase offsets to be roughly
-:math:`(\chi_\oplus, \chi_\mathrm{p}) \approx (54^\circ, 234^\circ)`.
+harder to estimate by eye, but they can be inferred from the 2D phase fold of
+the dataset. For the positive-:math:`C` solution, hypothetical phase-offsets of
+:math:`(\chi_\oplus, \chi_\mathrm{p}) = (0^\circ, 0^\circ)` would give a peak
+in the 2D sinusoid at phases :math:`(0.25, 0.25)`. Since the peak in the plot
+seems to be around :math:`(0.4, 0.9)`, we can estimate the phase offsets for
+the positive-:math:`C` solution to be roughly :math:`(\chi_\oplus,
+\chi_\mathrm{p}) \approx (0.15, 0.65) = (54^\circ, 234^\circ)`. For the other
+solution, the phase offsets should be :math:`180^\circ` away from these values,
+i.e., :math:`(\chi_\oplus, \chi_\mathrm{p}) \approx (234^\circ, 54^\circ)` for
+:math:`C \approx -15\;\mathrm{km/s/pc^{1/2}}`.
 
-To prepare the set of parameter values for use with our model functions, put
-them in a dictionary with the appropriate keys.
+To prepare a set of parameter values for use with our model functions, put them
+in a dictionary with the appropriate keys. Here we enter the positive-:math:`C`
+solution:
 
 .. jupyter-execute::
 
@@ -306,6 +330,13 @@ them in a dictionary with the appropriate keys.
         'dveff_c':  15.  * u.km/u.s/u.pc**0.5
     }
 
+.. note::
+
+    In this example (based on the real parameters of pulsar PSR J0437--4715),
+    the difference between the phase offsets :math:`\chi_\oplus` and
+    :math:`\chi_\mathrm{p}` happens to be close to :math:`180^\circ`.
+    This is merely a coincidence and has no physical relevance.
+
 Visual model-data comparison
 ============================
 
@@ -314,7 +345,7 @@ produce a few key model-data comparison figures. Since we will likely want to
 repeat these tests for different instances of the model, we will put them in
 Python functions that evaluate the model for a given set of parameter values
 and generate the desired plots. The resulting functions are somewhat lengthy;
-to avoid them interrupting the flow of the tutorial, they they are by default
+to avoid them interrupting the flow of the tutorial, they are by default
 hidden from view. The codeblocks with these functions can be expanded using the
 **"Show function definition"** buttons.
 
@@ -364,7 +395,7 @@ at a higher time resolution.
         plt.axhline(**mdl_style)
         plt.xlim(tlim_long)
         plt.title('residuals', **title_kwargs)
-        plt.ylabel(dveff_lbl)
+        plt.ylabel(dveff_signed_lbl)
 
         ax3 = plt.subplot(222, sharey=ax1)
         plt.plot(t_many, dveff_mdl_many, **mdl_style)
@@ -381,7 +412,7 @@ at a higher time resolution.
         plt.axhline(**mdl_style)
         plt.xlim(tlim_zoom)
         plt.title('residuals, zoom', **title_kwargs)
-        plt.ylabel(dveff_lbl)
+        plt.ylabel(dveff_signed_lbl)
         ax4.yaxis.set_label_position('right')
         ax4.yaxis.tick_right()
 
@@ -403,13 +434,9 @@ separately. This can be achieved using the ``model_dveff_signed()`` function
 other components set to zero. (When copying a dictionary of parameters, pay
 attention not to modify the original dictionary.) A model of only the Earth's
 component can then be compared with the data minus the remaining model
-components, and likewise for the pulsar.
-
-For these plots to show a good agreement between data and model, all model
-components need to be accurate, not just the ones being displayed. Also, this
-model-data comparison will only work properly if the modulus operation in eq.
-:math:`\ref{eq_model}` can effectively be ignored, so it will fail for data
-sets with low absolute effective velocities.
+components, and likewise for the pulsar. For these plots to show a good
+agreement between data and model, all model components need to be accurate,
+not just the ones being displayed.
 
 .. raw:: html
 
@@ -419,29 +446,26 @@ sets with low absolute effective velocities.
 .. jupyter-execute::
 
     def visualize_model_folded(pars):
-        
+
+        dveff_mdl_full = model_dveff_abs(pars, t_obs)
+
         pars_earth = pars.copy()
         pars_earth['amp_p'] = 0. * u.km/u.s/u.pc**0.5
         pars_earth['dveff_c'] = 0. * u.km/u.s/u.pc**0.5
         dveff_mdl_earth = model_dveff_signed(pars_earth, t_obs)
-        
+
         pars_psr = pars.copy()
         pars_psr['amp_e'] = 0. * u.km/u.s/u.pc**0.5
         pars_psr['dveff_c'] = 0. * u.km/u.s/u.pc**0.5
         dveff_mdl_psr = model_dveff_signed(pars_psr, t_obs)
-        
-        pars_const = pars.copy()
-        pars_const['amp_e'] = 0. * u.km/u.s/u.pc**0.5
-        pars_const['amp_p'] = 0. * u.km/u.s/u.pc**0.5
-        dveff_mdl_const = model_dveff_signed(pars_const, t_obs)
 
-        dveff_res_earth = dveff_obs - dveff_mdl_psr - dveff_mdl_const
-        dveff_res_psr = dveff_obs - dveff_mdl_earth - dveff_mdl_const
+        dveff_res_earth = dveff_obs - dveff_mdl_full + dveff_mdl_earth
+        dveff_res_psr = dveff_obs - dveff_mdl_full + dveff_mdl_psr
 
         plt.figure(figsize=(10., 4.))
 
         plt.subplots_adjust(wspace=0.1)
-        
+
         ax1 = plt.subplot(121)
         idx_e = np.argsort(ph_e_obs.value % 1.)
         plt.plot(ph_e_obs[idx_e].value % 1., dveff_mdl_earth[idx_e], **mdl_style)
@@ -450,8 +474,8 @@ sets with low absolute effective velocities.
         plt.xlim(0., 1.)
         plt.title('Earth motion', **title_kwargs)
         plt.xlabel('Earth orbital phase')
-        plt.ylabel(dveff_lbl)
-        
+        plt.ylabel(dveff_signed_lbl)
+
         ax2 = plt.subplot(122, sharey=ax1)
         idx_p = np.argsort(ph_p_obs.value % 1.)
         plt.plot(ph_p_obs[idx_p].value % 1., dveff_mdl_psr[idx_p], **mdl_style)
@@ -460,7 +484,7 @@ sets with low absolute effective velocities.
         plt.xlim(0., 1.)
         plt.title('Pulsar motion', **title_kwargs)
         plt.xlabel('Pulsar orbital phase')
-        plt.ylabel(dveff_lbl)
+        plt.ylabel(dveff_signed_lbl)
         ax2.yaxis.set_label_position('right')
         ax2.yaxis.tick_right()
 
@@ -505,7 +529,6 @@ fold of the full model.
         plt.title('data', **title_kwargs,
                   fontdict={'color': 'w', 'fontweight': 'bold'})
         cbar = plt.colorbar(location='top')
-        cbar.ax.invert_xaxis()
         cbar.set_label(dveff_lbl, labelpad=labelpad)
         
         plt.subplot(132)
@@ -517,7 +540,6 @@ fold of the full model.
         plt.title('model', **title_kwargs,
                 fontdict={'color': 'w', 'fontweight': 'bold'})
         cbar = plt.colorbar(location='top')
-        cbar.ax.invert_xaxis()
         cbar.set_label(dveff_lbl, labelpad=labelpad)
         
         plt.subplot(133)
@@ -531,8 +553,7 @@ fold of the full model.
         plt.title('residuals', **title_kwargs,
                   fontdict={'color': 'k', 'fontweight': 'bold'})
         cbar = plt.colorbar(location='top')
-        cbar.ax.invert_xaxis()
-        cbar.set_label(dveff_lbl, labelpad=labelpad)
+        cbar.set_label(dveff_signed_lbl, labelpad=labelpad)
 
         plt.show()
 
@@ -637,6 +658,7 @@ where the amplitudes are related to the amplitudes and phase offsets in eq.
     \qquad &
     A_\mathrm{p,c} &= A_\mathrm{p} \sin( \chi_\mathrm{p} ).
 
+These new amplitudes can be both positive and negative.
 Results of the fitting can be converted back to the amplitudes and phase
 offsets in eq. :math:`\ref{eq_model}` using
 
@@ -800,10 +822,23 @@ functions, we'll convert this array into the appropriate dictionary of Astropy
     for par_name in pars_opt:
         print(f'{par_name:8s} {pars_opt[par_name]:8.2f}')
 
+Remember that this is only one of the two solutions. The other solution can
+easily be computed from the first one and should be identical in data space.
+
+.. jupyter-execute::
+
+    pars_alt = pars_opt.copy()
+    pars_alt['chi_e'] = (pars_alt['chi_e'] + 180.*u.deg) % (360.*u.deg)
+    pars_alt['chi_p'] = (pars_alt['chi_p'] + 180.*u.deg) % (360.*u.deg)
+    pars_alt['dveff_c'] = -1. * pars_alt['dveff_c']
+        
+    for par_name in pars_alt:
+        print(f'{par_name:8s} {pars_alt[par_name]:8.2f}')
+
 How these parameters can be converted to the physical parameters of interest is
 covered in a :doc:`follow-up tutorial <infer_phys_pars>`.
 
-Let's quantify the goodness of fit.
+Let's quantify the goodness of fit of the solution found by the algorithm.
 
 .. jupyter-execute::
 
