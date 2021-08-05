@@ -1,6 +1,21 @@
+/* Make jupyter-sphinx work with bootstrap-astropy */
+
 div.jupyter_container + p {
     margin-top: 18px;
 }
+
+/* Make sphinx-copybutton work with bootstrap-astropy */
+
+button.copybtn img {
+    margin: 0;
+    padding: 0;
+}
+
+.o-tooltip--left:after {
+    font-size: inherit;
+}
+
+/* Collapsible codeblocks in jupyter-sphinx style */
 
 details > summary {
     padding: .4em;
