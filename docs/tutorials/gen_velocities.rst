@@ -71,19 +71,19 @@ Set the parameters of the pulsar system:
       -
 
     * - right ascension
-      - :math:`\alpha`
+      - :math:`\alpha_\mathrm{p}`
       -
 
     * - declination
-      - :math:`\delta`
+      - :math:`\delta_\mathrm{p}`
       -
 
     * - proper motion in right ascension
-      - :math:`\mu_{\alpha\ast}`
-      - including the :math:`\cos(\delta)` term
+      - :math:`\mu_\mathrm{p,sys,\alpha\ast}`
+      - including the :math:`\cos(\delta_\mathrm{p})` term
 
     * - proper motion in declination
-      - :math:`\mu_\delta`
+      - :math:`\mu_\mathrm{p,sys,\delta}`
       -
 
     * - **Orbital elements of the pulsar binary**
@@ -91,7 +91,7 @@ Set the parameters of the pulsar system:
       -
     
     * - binary period
-      - :math:`P_\mathrm{b}`
+      - :math:`P_\mathrm{orb,p}`
       - 
 
     * - projected semi-major axis
@@ -112,7 +112,7 @@ Set the parameters of the pulsar system:
         :math:`0^\circ \leq \Omega_\mathrm{p} < 360^\circ`
 
     * - time of ascending node
-      - :math:`T_\mathrm{asc,p}`
+      - :math:`t_\mathrm{asc,p}`
       -
 
     * - **Further parameters**
@@ -133,16 +133,16 @@ Set the parameters of the pulsar system:
         formed by the lens; :math:`0^\circ \leq \xi < 180^\circ`
 
     * - velocity of the lens
-      - :math:`v_\mathrm{lens}`
+      - :math:`v_\mathrm{lens,\parallel}`
       - component along the screen direction
 
 .. jupyter-execute::
 
-    p_b = 5.7410459 * u.day
+    p_orb_p = 5.7410459 * u.day
     asini_p = 3.3667144 * const.c * u.s
     i_p = 137.56 * u.deg
     omega_p = 207. * u.deg
-    t0_p = Time(54501.4671, format='mjd', scale='tdb')
+    t_asc_p = Time(54501.4671, format='mjd', scale='tdb')
 
     d_p = 156.79 * u.pc
     d_s = 90.6 * u.pc
@@ -174,7 +174,7 @@ Calculate some derived quantities:
         .. math::
             
             K_\mathrm{p} = \frac{ 2 \pi a_\mathrm{p} \sin( i_\mathrm{p} ) }
-                                { P_\mathrm{b} }
+                                { P_\mathrm{orb,p} }
 
     * - fractional distance to the screen (from the pulsar)
       - 
@@ -188,7 +188,7 @@ Calculate some derived quantities:
         
             d_\mathrm{eff} = \frac{ 1 - s }{ s } d_\mathrm{p}
 
-    * - angle from the lens to the pulsar orbit's line of nodes
+    * - angle from the pulsar's ascending node to the line of lensed images
       - 
         .. math::
         
@@ -196,7 +196,7 @@ Calculate some derived quantities:
 
 .. jupyter-execute::
 
-    k_p = 2.*np.pi * asini_p / p_b
+    k_p = 2.*np.pi * asini_p / p_orb_p
 
     s = 1 - d_s / d_p
     d_eff = d_p * d_s / (d_p - d_s)
@@ -244,13 +244,13 @@ separately:
     * - Velocity component
       - Symbol
     * - Earth's velocity as a function of time
-      - :math:`v_\mathrm{E}( t )`
+      - :math:`v_{\oplus,\parallel}( t )`
     * - pulsar's orbital velocity as a function of time
-      - :math:`v_\mathrm{p,orb}( t )`
+      - :math:`v_\mathrm{p,orb,\parallel}( t )`
     * - pulsar systemic velocity (corresponding to the proper motion)
-      - :math:`v_\mathrm{p,sys}`
+      - :math:`v_\mathrm{p,sys,\parallel}`
     * - velocity of the lens (known in this example)
-      - :math:`v_\mathrm{lens}`
+      - :math:`v_\mathrm{lens,\parallel}`
 
 All these refer to the component of the velocity along the line of images
 formed by the lens.
@@ -283,24 +283,23 @@ Compute the pulsar's orbital velocity projected onto the screen
     
 .. math::
 
-    v_\mathrm{p,orb} = - \frac{ K_\mathrm{p} }{ \sin( i_\mathrm{p} ) }
-                         \left[ \cos( i_\mathrm{p} )
-                                \sin( \Delta\Omega_\mathrm{p} )
-                                \cos( \phi_\mathrm{p} )
-                              - \cos( \Delta\Omega_\mathrm{p} )
-                                \sin( \phi_\mathrm{p} )
-                         \right].
+    v_\mathrm{p,orb,\parallel}
+        = - \frac{ K_\mathrm{p} }{ \sin( i_\mathrm{p} ) }
+            \left[ \cos( \Delta\Omega_\mathrm{p} ) \sin( \phi_\mathrm{p} )
+                 - \sin( \Delta\Omega_\mathrm{p} ) \cos( i_\mathrm{p} )
+                     \cos( \phi_\mathrm{p} )
+            \right].
 
 Here, :math:`\phi_\mathrm{p}( t )` is the phase of pulsar orbit as measured
 from its ascending node.
 
 .. jupyter-execute::
 
-    ph_p = ((t - t0_p) / p_b).to(u.dimensionless_unscaled) * u.cycle
+    ph_p = ((t - t_asc_p) / p_orb_p).to(u.dimensionless_unscaled) * u.cycle
 
     v_p_orb = (-k_p / np.sin(i_p)
-               * (np.cos(i_p) * np.sin(delta_omega_p) * np.cos(ph_p)
-                              - np.cos(delta_omega_p) * np.sin(ph_p)))
+                * (np.cos(delta_omega_p) * np.sin(ph_p)
+                 - np.sin(delta_omega_p) * np.cos(i_p) * np.cos(ph_p)))
 
 Pulsar systemic velocity
 ------------------------
@@ -309,10 +308,10 @@ The pulsar systemic velocity projected onto the screen is given by
 
 .. math::
 
-    v_\mathrm{p,sys} \simeq d_\mathrm{p}
-                              \left[ \mu_{\alpha\ast} \sin( \xi )
-                                         + \mu_\delta \cos( \xi )
-                              \right].
+    v_\mathrm{p,sys,\parallel} = d_\mathrm{p}
+        \left[ \mu_\mathrm{p,sys,\alpha\ast} \sin( \xi )
+             + \mu_\mathrm{p,sys,\delta}     \cos( \xi )
+        \right].
 
 This can be computed manually, but it can also be retrieved from the
 :py:class:`~astropy.coordinates.SkyCoord` of the pulsar system (which contains
@@ -330,31 +329,32 @@ velocity
 
 .. math::
 
-    v_\mathrm{eff} = \frac{1}{s} v_\mathrm{lens}
-                     - \frac{1 - s}{s} ( v_\mathrm{p,orb} + v_\mathrm{p,sys} )
-                     - v_\mathrm{E}
+    v_\mathrm{eff,\parallel} = \frac{1}{s} v_\mathrm{lens,\parallel}
+        - \frac{1 - s}{s} \left( v_\mathrm{p,sys,\parallel}
+                               + v_\mathrm{p,orb,\parallel} \right)
+        - v_{\oplus,\parallel}
 
 .. jupyter-execute::
     
-    v_eff = 1. / s * v_lens - ((1 - s) / s) * (v_p_orb + v_p_sys) - v_earth
+    v_eff = 1. / s * v_lens - (1. - s) / s * (v_p_sys + v_p_orb) - v_earth
 
 Have a look at the contribution of each of the terms to the effective velocity.
 
 .. jupyter-execute::
 
-    plt.figure(figsize=(12., 6.))
+    plt.figure(figsize=(8., 6.))
     
     plt.plot(t, - v_earth)
-    plt.plot(t, - ((1 - s) / s) * v_p_orb)
-    plt.plot(t[::len(t)-1], 1. / s * v_lens * [1, 1])
-    plt.plot(t[::len(t)-1], - ((1 - s) / s) * v_p_sys * [1, 1])
+    plt.plot(t, - ((1. - s) / s) * v_p_orb)
+    plt.plot(t[::len(t)-1], 1. / s * v_lens * [1., 1.])
+    plt.plot(t[::len(t)-1], - ((1. - s) / s) * v_p_sys * [1., 1.])
     plt.plot(t, v_eff)
-    plt.legend([r'$-v_\mathrm{E}$',
-                r'$-((1 - s) / s) v_\mathrm{p,orb}$',
-                r'$(1. / s) v_\mathrm{lens}$',
-                r'$-((1 - s) / s) v_\mathrm{p,sys}$',
-                r'$v_\mathrm{eff}$'],
-               bbox_to_anchor=(1.04,1), loc='upper left')
+    plt.legend([r'$- \, v_{\oplus,\!\!\parallel}$',
+                r'$- \, \dfrac{ 1 - s }{ s } \; v_\mathrm{p,\!orb,\!\!\parallel}$',
+                r'$\dfrac{ 1 }{ s } \; v_\mathrm{lens,\!\!\parallel}$',
+                r'$- \, \dfrac{ 1 - s }{ s } \; v_\mathrm{p,\!sys,\!\!\parallel}$',
+                r'$v_\mathrm{eff,\!\!\parallel}$'],
+               bbox_to_anchor=(1.04, 1.), loc='upper left', fontsize=14)
     plt.xlim(t[0], t[-1])
     plt.ylabel(r'velocity (km/s)')
     
@@ -368,7 +368,7 @@ according to
 
 .. math::
     
-    \eta = \frac{ \lambda^2 d_\mathrm{eff} }{ 2 c v_\mathrm{eff}^2 },
+    \eta = \frac{ \lambda^2 d_\mathrm{eff} }{ 2 c v_\mathrm{eff,\parallel}^2 },
 
 where :math:`\lambda` is the observing wavelength and :math:`c` is the speed of
 light.
@@ -383,7 +383,7 @@ Have a look at the curvature at a function of time.
 
 .. jupyter-execute::
 
-    plt.figure(figsize=(12., 6.))
+    plt.figure(figsize=(10., 6.))
     
     plt.plot(t, eta.to(u.s**3))
     plt.xlim(t[0], t[-1])
@@ -400,7 +400,8 @@ secondary spectrum parabola in a space of "scaled effective velocity"
 .. math::
     
     \frac{ \lambda }{ \sqrt{ 2 \eta c } }
-      = \frac{  \left| v_\mathrm{eff} \right| }{ \sqrt{ d_\mathrm{eff} } }
+      = \frac{  \left| v_\mathrm{eff,\parallel} \right| }
+             { \sqrt{ d_\mathrm{eff} } }
 
 .. jupyter-execute::
     
@@ -410,13 +411,14 @@ Plot this quantity as function of time.
 
 .. jupyter-execute::
 
-    plt.figure(figsize=(12., 6.))
+    plt.figure(figsize=(10., 6.))
     
     plt.plot(t, dveff)
     plt.xlim(t[0], t[-1])
     dveff_lbl = (r'scaled effective velocity '
-                 r'$\frac{ | v_\mathrm{eff} | }{ \sqrt{ d_\mathrm{eff} } }$ '
-                 r'$\left( \frac{\mathrm{km/s}}{\sqrt{\mathrm{pc}}} \right)$')
+                 r'$\dfrac{ | v_\mathrm{eff,\!\!\parallel} | }'
+                 r'{ \sqrt{ d_\mathrm{eff} } }$ '
+                 r'$\left( \dfrac{\mathrm{km/s}}{\sqrt{\mathrm{pc}}} \right)$')
     plt.ylabel(dveff_lbl)
     
     plt.show()
@@ -427,7 +429,7 @@ the data.
 
 .. jupyter-execute::
 
-    plt.figure(figsize=(10., 6.))
+    plt.figure(figsize=(11., 7.))
 
     plt.hexbin(t.jyear % 1., ph_p.value % 1., C=dveff.value,
                reduce_C_function=np.median, gridsize=19)
@@ -440,3 +442,56 @@ the data.
 
     plt.show()
 
+Generate noisy synthetic observations
+=====================================
+
+We now want to generate a set of *noisy* scaled effective velocities, to use in
+the :doc:`next tutorial <fit_velocities>`, in which we will fit a model to
+these fake observations.
+
+To start, we create a set of irregularly spaced observation times.
+
+.. jupyter-execute::
+
+    np.random.seed(654321)
+    nt = 2645
+    dt_mean = 16.425 * u.yr / nt
+    dt = np.random.random(nt) * 2. * dt_mean
+    t = Time(52618., format='mjd') + dt.cumsum()
+
+Next, the time-dependent parts of the above calculations need to be repeated
+for the new times.
+
+.. jupyter-execute::
+
+    v_earth = earth_loc.get_gcrs(t).transform_to(lens_frame).velocity.d_z
+
+    ph_p = ((t - t_asc_p) / p_orb_p).to(u.dimensionless_unscaled) * u.cycle
+
+    v_p_orb = (-k_p / np.sin(i_p)
+                * (np.cos(delta_omega_p) * np.sin(ph_p)
+                - np.sin(delta_omega_p) * np.cos(i_p) * np.cos(ph_p)))
+
+    v_eff = 1. / s * v_lens - (1. - s) / s * (v_p_orb + v_p_sys) - v_earth
+
+    dveff = np.abs(v_eff) / np.sqrt(d_eff)
+
+Now we add some noise to the scaled effective velocities.
+
+.. jupyter-execute::
+
+    dveff_err = (np.random.random(nt) * 0.05 + 0.05) * np.mean(dveff)
+    dveff_obs = dveff + dveff_err * np.random.normal(size=nt)
+
+Finally, we use NumPy's :py:func:`~numpy.savez` to save the data as a set of
+(unitless) NumPy arrays.
+
+.. jupyter-execute::
+
+    # np.savez('data/fake-data-J0437.npz',
+    #          t_mjd=t.mjd,
+    #          dveff_obs=dveff_obs.value,
+    #          dveff_err=dveff_err.value)
+
+.. TODO: When jupyter-sphinx v0.4 is available, this last directive can be
+.. changed to jupyter-input and the Python code can be uncommented
