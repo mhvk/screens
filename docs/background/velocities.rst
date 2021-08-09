@@ -375,7 +375,7 @@ Here, :math:`t_\mathrm{asc,p}` is the pulsar's time of ascending node passage,
 mean orbital speed of the pulsar. Pulsar timing studies normally constrain
 :math:`t_\mathrm{asc,p}` and :math:`P_\mathrm{orb,p}`, as well as the pulsar
 orbit's projected semi-major axis :math:`a_\mathrm{p} \sin( i_\mathrm{p} )`
-and the hence pulsar's radial-velocity amplitude :math:`K_\mathrm{p}
+and hence the pulsar's radial-velocity amplitude :math:`K_\mathrm{p}
 = v_\mathrm{0,p} \sin( i_\mathrm{p} ) = 2 \pi a_\mathrm{p} \sin( i_\mathrm{p} )
 / P_\mathrm{orb,p}`.
 
