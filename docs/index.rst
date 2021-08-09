@@ -8,6 +8,7 @@ Background
 
    background/simple_examples
    background/multiple_screens
+   background/velocities
 
 Tutorials
 =========

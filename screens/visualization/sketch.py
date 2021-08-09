@@ -117,7 +117,8 @@ class NeutronStar(object):
 
 def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, mu_eff=50.*u.mas/u.yr,
                 tels=slice(0, 1), scatters=slice(0, None),
-                screens=True, direct=None, velocity=None, scales=False,
+                earth=True, pulsar=True, screens=True, direct=None,
+                velocity=None, scales=False, distances=False,
                 rotation=0.*u.deg, ax=None):
     """Draw a schematic of the thin-screen model of for scintillation.
 
@@ -137,6 +138,10 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, mu_eff=50.*u.mas/u.yr,
         Slice object to select which telescopes to draw and use.
     scatters : slice, optinal
         Slice object to select which scattering points to draw and use.
+    earth : bool, optional
+        Whether or not to draw Earth and telescopes.
+    pulsar : bool, optional
+        Whether or not to draw the pulsar.
     screens : bool, optional
         Whether or not to draw the scintillation screen.
     direct : bool, optional
@@ -147,6 +152,8 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, mu_eff=50.*u.mas/u.yr,
         Default: infer from ``mu_eff``
     scales : bool, optional
         Whether or not to include scale bars indicating physical sizes.
+    distances : bool, optional
+        Whether or not to include scale bars indicating distances and s.
     rotation : `~astropy.units.Quantity`, optional
         Angle to rotate entire sketch. Default: 0. deg
     ax : `~matplotlib.axes.Axes`, optional
@@ -239,10 +246,12 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, mu_eff=50.*u.mas/u.yr,
     ax.set_aspect('equal')
 
     # Draw Earth and its telescopes
-    ax.plot(*(_v.value for _v in earth_pos), color='blue')
+    if earth:
+        ax.plot(*(_v.value for _v in earth_pos), color='blue')
 
     # Draw Pulsar
-    ax.plot(*(_v.value for _v in ns_pos), color='black')
+    if pulsar:
+        ax.plot(*(_v.value for _v in ns_pos), color='black')
 
     # Draw pulsar's velocity arrow
     if velocity:
@@ -296,6 +305,41 @@ def make_sketch(theta, beta=0.5, screen_y_scale=1.e7, mu_eff=50.*u.mas/u.yr,
         ax.annotate(xy=rotate((ns_x / 3., -5.), rotation), text='~1 kpc',
                     verticalalignment='center',
                     rotation=rotation.to(u.deg).value, rotation_mode='anchor')
+
+    # Draw scale bars for distances
+    if distances:
+        bar_offset = 2.
+        screen_thickness = 0.125
+        d_p_bar = offset(rotate(bar(-ns_x), rotation),
+                         rotate((ns_x / 2.,
+                                 -(screen_size/2. + bar_offset)),
+                                rotation))
+        ax.plot(*(_v for _v in d_p_bar), color='black')
+        ax.annotate(xy=rotate((ns_x / 2.,
+                               -(screen_size/2. + bar_offset + 0.25)),
+                              rotation),
+                    text=r'$ d_\mathrm{p} $', ha='right', va='top')
+        d_s_bar_length = -lens_x - screen_thickness
+        d_s_bar = offset(rotate(bar(d_s_bar_length), rotation),
+                         rotate((-d_s_bar_length / 2.,
+                                 -(screen_size/2. + bar_offset - 1.)),
+                                rotation))
+        ax.plot(*(_v for _v in d_s_bar), color='black')
+        ax.annotate(xy=rotate((-d_s_bar_length / 2.,
+                               -(screen_size/2. + bar_offset - 1.25)),
+                              rotation),
+                    text=r'$ d_\mathrm{s} = (1 - s) d_\mathrm{p} $',
+                    ha='left', va='bottom')
+        d_ps_bar_length = (-ns_x) - (-lens_x) - screen_thickness
+        d_ps_bar = offset(rotate(bar(d_ps_bar_length), rotation),
+                          rotate((ns_x + d_ps_bar_length / 2.,
+                                  -(screen_size/2. + bar_offset - 1.)),
+                                 rotation))
+        ax.plot(*(_v for _v in d_ps_bar), color='black')
+        ax.annotate(xy=rotate((ns_x - (-d_ps_bar_length) / 2.,
+                               -(screen_size/2. + bar_offset - 1.25)),
+                              rotation),
+                    text=r'$ s d_\mathrm{p} $', ha='left', va='bottom')
 
     return ax
 
