@@ -194,7 +194,7 @@ The dynamic wavefield :math:`W_j` of screen image :math:`j` is given by
 
 .. math::
 
-    W_j(f, t) = \mu_j \exp \left[ i f \frac{d_\mathrm{eff}}{2 c}
+    W_j(f, t) = \mu_j \exp \left[ 2 \pi i f \frac{d_\mathrm{eff}}{2 c}
                                   (\theta_j + \mu_\mathrm{eff} t)^2 \right].
 
 .. jupyter-execute::
