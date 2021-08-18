@@ -627,7 +627,7 @@ Pulsar orbital inclination
 
 Next, the relation between pulsar distance and orbital inclination can be
 solved for :math:`\sin( i_\mathrm{p} )`. This relation first needs to be
-rewritten as a (somewhat ugly) quadratic equation in
+rewritten as a quadratic equation in
 :math:`\sin^2( i_\mathrm{p} )`:
 
 .. math::
@@ -635,35 +635,35 @@ rewritten as a (somewhat ugly) quadratic equation in
     \cos^2( \chi_\mathrm{p} ) \sin^4( i_\mathrm{p} )
         - ( 1 + Z^2 ) \sin^2( i_\mathrm{p} ) + Z^2 = 0,
     \qquad \mathrm{with} \qquad
-    Z = \frac{ v_{0,\oplus} K_\mathrm{p} b_\oplus }
+    Z = \frac{ \sin( i_\mathrm{p} ) }{ b_\mathrm{p} }
+      = \frac{ v_{0,\oplus} K_\mathrm{p} b_\oplus }
              { A_\oplus A_\mathrm{p} d_\mathrm{p} }.
 
-The standard quadratic formula then gives the solutions
+We then compute the solutions of the quadratic equation using `Muller's version
+<https://en.wikipedia.org/wiki/Quadratic_formula#Muller's_method>`_
+of the quadratic formula [which has the advantage over the standard quadratic
+formula of also giving a valid root for :math:`\cos^2( \chi_\mathrm{p} ) = 0`]:
 
 .. math::
 
-    \sin^2( i_\mathrm{p} ) = \frac{ 1 + Z^2 \pm \sqrt{ ( 1 + Z^2 )^2
-        - 4 \cos^2( \chi_\mathrm{p} ) Z^2 } }{ 2 \cos^2( \chi_\mathrm{p} ) }.
+    \sin^2( i_\mathrm{p} ) = \frac{ 2 Z^2 }{ 1 + Z^2
+        \pm \sqrt{ ( 1 + Z^2 )^2 - 4 \cos^2( \chi_\mathrm{p} ) Z^2 } }.
 
-One of the two solutions should be in the range
-:math:`0 \le \sin^2( i_\mathrm{p} ) \le 1`, giving a single real solution for
+Of these two solutions, only the one with the plus sign lies in the range
+:math:`0 \le \sin^2( i_\mathrm{p} ) \le 1` for all valid combinations of
+:math:`\chi_\mathrm{p}` and :math:`Z`, yielding a single solution for
 :math:`\sin( i_\mathrm{p} )` that corresponds to two possible values of
-:math:`i_\mathrm{p}`.
+:math:`i_\mathrm{p}`, symmetric around :math:`90^\circ`.
 
 .. jupyter-execute::
 
-    z2 = b2_e * (v_0_e * k_p / ( amp_e * amp_p * d_p ) )**2
+    z2 = b2_e * (v_0_e * k_p / (amp_e * amp_p * d_p))**2
     cos2chi_p = np.cos(chi_p[j_sol])**2
     discrim = (1. + z2)**2 - 4. * cos2chi_p * z2
-    sin2i_p = ((1. + z2 + [+1., -1.] * np.sqrt(discrim) ) / ( 2. * cos2chi_p ))
-
-    bool_real = np.logical_and(sin2i_p >= 0., sin2i_p <= 1.)
-    sin2i_p = sin2i_p[bool_real][0]
-    sini_p = np.sqrt(sin2i_p)
-
+    sin2i_p = 2. * z2 / (1. + z2 + np.sqrt(discrim))
+    sini_p = np.sqrt(sin2i_p).to(u.dimensionless_unscaled)
     i_p = [1., -1.] * np.arcsin(sini_p) % (180.*u.deg)
 
-    print(f'sin^2(i_p):   {sin2i_p:8.2f}')
     print(f'sin(i_p):     {sini_p:8.2f}')
     print(f'\ni_p:   {i_p[0].to(u.deg):.2f}   or   {i_p[1].to(u.deg):.2f}')
 
@@ -699,7 +699,7 @@ Pulsar's longitude of ascending node
 ------------------------------------
 
 Knowing :math:`\sin( i_\mathrm{p} )`, it is possible to constrain the pulsar's
-longitude of ascending node to four possible values.
+longitude of ascending node to two possible values.
 
 .. math::
 
@@ -717,9 +717,9 @@ longitude of ascending node to four possible values.
     delta_omega_p = np.arctan2(np.sin(chi_p[j_sol]) / cosi_p, np.cos(chi_p[j_sol]))
     omega_p = (xi[j_sol] - delta_omega_p) % (360.*u.deg)
 
-    for j in [0, 1]:
-        print(f'omega_p: {omega_p[j].to(u.deg):8.2f}   for   '
-            f'i_p: {i_p[j].to(u.deg):8.2f}')
+    for k in [0, 1]:
+        print(f'omega_p: {omega_p[k].to(u.deg):8.2f}   for   '
+              f'i_p: {i_p[k].to(u.deg):8.2f}')
 
 .. jupyter-execute::
 
@@ -747,9 +747,9 @@ longitude of ascending node to four possible values.
              label=r"position angle of line of lensed images $\xi$")
 
     plt.plot(i_p.to(u.deg), omega_p.to(u.deg), 'k.')
-    for j in [0, 1]:
-        plt.plot([1., 1., 0.] * i_p[j].to(u.deg),
-                 [0., 1., 1.] * omega_p[j].to(u.deg), ':k')
+    for k in [0, 1]:
+        plt.plot([1., 1., 0.] * i_p[k].to(u.deg),
+                 [0., 1., 1.] * omega_p[k].to(u.deg), ':k')
 
     plt.xlim(0., 180.)
     plt.ylim(0., 360.)
