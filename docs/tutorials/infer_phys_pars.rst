@@ -639,15 +639,6 @@ rewritten as a quadratic equation in
       = \frac{ v_{0,\oplus} K_\mathrm{p} b_\oplus }
              { A_\oplus A_\mathrm{p} d_\mathrm{p} }.
 
-Here, the auxiliary parameter :math:`Z` is restricted to the range
-
-.. math::
-
-    \begin{cases}
-        0 \le Z \le 1, & \text{if } \cos^2( \chi_\mathrm{p} ) = 1, \\
-        Z \ge 0,       & \text{otherwise}.
-    \end{cases}
-
 We then compute the solutions of the quadratic equation using `Muller's version
 <https://en.wikipedia.org/wiki/Quadratic_formula#Muller's_method>`_
 of the quadratic formula [which has the advantage over the standard quadratic
