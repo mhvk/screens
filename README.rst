@@ -6,6 +6,14 @@ Pulsar scintillation screens
     :target: http://www.astropy.org
     :alt: Powered by Astropy Badge
 
+.. image:: https://github.com/mhvk/screens/workflows/CI/badge.svg
+   :target: https://github.com/mhvk/screens/actions
+   :alt: Test Status
+
+.. image:: https://readthedocs.org/projects/screens/badge/?version=latest
+   :target: https://screens.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
 Analyze and model pulsar dynamic spectra, using secondary spectra and
 theta-theta decompositions for linear screens.
 
