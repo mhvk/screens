@@ -86,11 +86,26 @@ screens one generally winds up with :math:`n` equations for two-dimensional
 vectors with :math:`2n` unknowns, the :math:`n` bending angles :math:`\alpha_{i}` and the :math:`n`
 angular offsets :math:`\varsigma_{i}` along the lines.
 
-Direct solution for two screens
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Direct solutions for one or two screens
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For two screens, the above can be solved fairly easily by
-substitution.  We start by considering inner products with :math:`\hat{r}_{1}`
+If there is only a single screen, the situation is simple: we just
+need to make sure the trajectory after the first screen ends at the
+pulsar. Following the above simplification, one needs,
+
+
+.. math::
+
+    \rho_{1}\hat{r}_{1} + \varsigma_{1}\hat{u}_{1} - (1-d_{1}/d_{p})\alpha_{1}\hat{r}_{1} = 0.
+
+
+Thus, taking inner products with :math:`\hat{r}_{1}` and :math:`\hat{u}_{1}`, one finds
+:math:`\alpha_{1}=\rho_{1}d_{p}/(d_{p}-d_{1})` and :math:`\varsigma_{1}=0`, i.e., the ray will always be
+bent along the point closes to the line of sight.
+
+For two screens, the above still can be solved fairly easily by
+substitution, though it becomes less obvious this is still useful.
+We start by considering inner products with :math:`\hat{r}_{1}`
 and :math:`\hat{u}_{1}`, giving the following four equations (writing
 :math:`s_{12}\equiv1-d_{1}/d_{2}`, etc., for brevity),
 
