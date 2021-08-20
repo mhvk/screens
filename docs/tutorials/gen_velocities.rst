@@ -6,8 +6,9 @@ This tutorial describes how to generate synthetic scintillation velocities for
 a pulsar in a circular orbit and a single one-dimensional screen, both with
 known parameters.
 
-Further explanations and derivations of the equations seen here can be found in
-`Marten's scintillometry page
+For a derivation of the equations seen here, refer to the
+:doc:`scintillation velocities background <../background/velocities>`.
+Further explanations can be found in `Marten's scintillometry page
 <http://www.astro.utoronto.ca/~mhvk/scintillometry.html#org5ea6450>`_
 and Daniel Baker's "`Orbital Parameters and Distances
 <https://eor.cita.utoronto.ca/images/4/44/DB_Orbital_Parameters.pdf>`_"

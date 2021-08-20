@@ -9,13 +9,14 @@ one-dimensional screen. The tutorial builds upon a :doc:`preceding tutorial
 <fit_velocities>` in which such a phenomenological model is fit to a time
 series of scintillation velocities.
 
-Further explanations and derivations of the equations seen here can be found in
-`Marten's scintillometry page
+For a derivation of the equations seen here, refer to the
+:doc:`scintillation velocities background <../background/velocities>`.
+Further explanations can be found in `Marten's scintillometry page
 <http://www.astro.utoronto.ca/~mhvk/scintillometry.html#org5ea6450>`_
 and Daniel Baker's "`Orbital Parameters and Distances
 <https://eor.cita.utoronto.ca/images/4/44/DB_Orbital_Parameters.pdf>`_"
 document. As in that document, the practical example here uses the parameter
-values for the pulsar PSR J0437-4715 as derived by `Reardon et al. (2020)
+values for the pulsar PSR J0437--4715 as derived by `Reardon et al. (2020)
 <https://ui.adsabs.harvard.edu/abs/2020ApJ...904..104R/abstract>`_.
 
 The combined codeblocks in this tutorial can be downloaded as a Python script
