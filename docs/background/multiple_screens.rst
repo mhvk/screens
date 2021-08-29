@@ -212,8 +212,8 @@ then define angles :math:`\phi_{i}` such that :math:`\hat{r}_{i}=\cos \phi_{i} \
 .. math::
 
     \left(\begin{matrix}
-    -\sin \phi_{t} & -\cos \phi_{t} & \sin \phi_{2} & 0 & \ldots & 0 & 0\\
-     \cos \phi_{t} & -\sin \phi_{t} & -\cos \phi_{2} & 0 & \ldots & 0 & 0\\
+    -\sin \phi_{t} & -\cos \phi_{t} & \sin \phi_{1} & 0 & \ldots & 0 & 0\\
+     \cos \phi_{t} & -\sin \phi_{t} & -\cos \phi_{1} & 0 & \ldots & 0 & 0\\
     -\sin \phi_{t} & -\cos \phi_{t} & 0 & -s_{12}\cos \phi_{1} & \ldots & 0 & 0\\
      \cos \phi_{t} & -\sin \phi_{t} & 0 & -s_{12}\sin \phi_{1} & \ldots & 0 & 0\\
      \vdots  & \vdots    &\vdots & \vdots & \ddots & \vdots &\vdots \\
