@@ -200,7 +200,7 @@ writing :math:`s_{ji}=1-d_{j}/d_{i}` (where all :math:`s_{ti}=1`), one finds,
 
 .. math::
 
-    \varsigma_{t}\hat{u}_{t} - \varsigma_{i}\hat{u}_{i} - \sum_{j=0}^{i-1} \alpha_{j}s_{ji}\hat{r}_{j} = \rho_{i}\hat{r}_{i} - \rho_{ti}\hat{r}_{t}
+    \varsigma_{t}\hat{u}_{t} - \varsigma_{i}\hat{u}_{i} - \sum_{j=0}^{i-1} \alpha_{j}s_{ji}\hat{r}_{j} = \rho_{i}\hat{r}_{i} - \rho_{t}\hat{r}_{t}
 
 Instead of taking inner products with :math:`\hat{r}_{1}` and :math:`\hat{u}_{1}`, it
 seems easier to allow one to chose particular :math:`x` and :math:`y` directions and
@@ -234,15 +234,15 @@ then define angles :math:`\phi_{i}` such that :math:`\hat{r}_{i}=\cos \phi_{i} \
     \alpha_{n}
     \end{matrix}\right) =
     \left(\begin{matrix}
-    \rho_{1}\cos \phi_{1} - \rho_{t1}\cos \phi_{t}\\
-    \rho_{1}\sin \phi_{1} - \rho_{t1}\sin \phi_{t}\\
-    \rho_{2}\cos \phi_{2} - \rho_{t2}\cos \phi_{t}\\
-    \rho_{2}\sin \phi_{2} - \rho_{t2}\sin \phi_{t}\\
+    \rho_{1}\cos \phi_{1} - \rho_{t}\cos \phi_{t}\\
+    \rho_{1}\sin \phi_{1} - \rho_{t}\sin \phi_{t}\\
+    \rho_{2}\cos \phi_{2} - \rho_{t}\cos \phi_{t}\\
+    \rho_{2}\sin \phi_{2} - \rho_{t}\sin \phi_{t}\\
     \vdots\\
-    \rho_{n}\cos \phi_{n} - \rho_{tn}\cos \phi_{t}\\
-    \rho_{n}\sin \phi_{n} - \rho_{tn}\sin \phi_{t}\\
-    \rho_{p}\cos \phi_{p} - \rho_{tp}\cos \phi_{t}\\
-    \rho_{p}\sin \phi_{p} - \rho_{tp}\sin \phi_{t}
+    \rho_{n}\cos \phi_{n} - \rho_{t}\cos \phi_{t}\\
+    \rho_{n}\sin \phi_{n} - \rho_{t}\sin \phi_{t}\\
+    \rho_{p}\cos \phi_{p} - \rho_{t}\cos \phi_{t}\\
+    \rho_{p}\sin \phi_{p} - \rho_{t}\sin \phi_{t}
     \end{matrix}\right).
 
 These can be solved by by inverting the matrix :math:`A`.  Recognizing that
