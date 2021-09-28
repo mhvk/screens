@@ -557,7 +557,9 @@ In many cases, some external constraints exist on the distance to the pulsar.
 An example of such an constraint would be a parallax measurement. While in
 reality there will always be some uncertainty associated with the constraint,
 here we will assume perfect knowledge to examine how this constrains the
-remaining parameters.
+remaining parameters. :doc:`Another tutorial <error_analysis>` considers how
+statistical uncertainties in the distance and model parameters can be
+propagated to the physical parameters.
 
 Set the known pulsar distance :math:`d_\mathrm{p}`.
 
