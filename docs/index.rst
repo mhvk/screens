@@ -20,6 +20,7 @@
     tutorials/gen_velocities
     tutorials/fit_velocities
     tutorials/infer_phys_pars
+    tutorials/error_analysis
 
 
 Background
@@ -64,6 +65,8 @@ equation appearing in these tutorials.
   fit a phenomenological model to a time series of scintillation velocities
 * :doc:`tutorials/infer_phys_pars`:
   retrieve the physical parameters of the system from the fit
+* :doc:`tutorials/error_analysis`:
+  propagate uncertainties from fitting parameters to physical parameters
 
 
 Reference/API
