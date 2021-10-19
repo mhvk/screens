@@ -21,6 +21,7 @@ Generating and processing scintillometry data
 
    tutorials/single_screen
    tutorials/screen1d
+   tutorials/two_screens
 
 Modelling scintillation velocities
 ----------------------------------
