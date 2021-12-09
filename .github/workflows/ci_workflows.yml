@@ -19,7 +19,7 @@ jobs:
 
           - name: Code style checks
             os: ubuntu-latest
-            python: 3.x
+            python: 3.9
             toxenv: codestyle
 
           - name: Python 3.9 with minimal dependencies
@@ -29,7 +29,7 @@ jobs:
 
           - name: Documentation build
             os: ubuntu-latest
-            python: 3.x
+            python: 3.9
             toxenv: build_docs
 
     steps:
