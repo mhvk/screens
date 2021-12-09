@@ -337,7 +337,7 @@ scattering points on both screens need to be calculated.
 .. jupyter-execute::
 
     obs2.tau
-    bool_on_lens2 = obs2.source.pos.x.squeeze() < 7. * u.au
+    bool_on_lens2 = obs2.source.pos.x.ravel() < 7. * u.au
 
 Using the ``tau``, ``taudot``, and ``brightness`` attributes of ``obs1`` and
 ``obs2``, we can find the geometric delays of the optical paths (at the
