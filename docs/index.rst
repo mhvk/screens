@@ -1,5 +1,10 @@
 .. include:: ../README.rst
 
+.. Sphinx requires that all source document files it finds are part of some
+.. table of contents using the `toctree` directive. Without this hidden ToC,
+.. sphinx gives a warning for all `.rst` files in the documentation:
+.. `WARNING: document isn't included in any toctree`
+
 .. toctree::
     :hidden:
 
