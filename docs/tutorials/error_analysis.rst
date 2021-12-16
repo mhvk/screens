@@ -19,7 +19,14 @@ available for download:
 We will do error propagation using two methods:
 
 - Monte Carlo sampling, using Astropy's :py:mod:`~astropy.uncertainty` module.
-- Linear error propagation, using the :py:mod:`uncertainties` package.
+- Linear error propagation, using the |uncertainties|_ package.
+
+.. |uncertainties| replace:: ``uncertainties``
+.. _uncertainties: https://pythonhosted.org/uncertainties/
+
+The analysis in this tutorial does not (yet) consider the prior probabilities
+on parameters such as the flat distribution in :math:`\cos(i_\mathrm{p})` for
+the pulsar's orbital inclination :math:`i_\mathrm{p}`.
 
 For a derivation of the equations seen here, refer to the
 :doc:`scintillation velocities background <../background/velocities>`.
@@ -29,7 +36,9 @@ and Daniel Baker's "`Orbital Parameters and Distances
 <https://eor.cita.utoronto.ca/images/4/44/DB_Orbital_Parameters.pdf>`_"
 document. As in that document, the practical example here uses the parameter
 values for the pulsar PSR J0437--4715 as derived by `Reardon et al. (2020)
-<https://ui.adsabs.harvard.edu/abs/2020ApJ...904..104R/abstract>`_.
+<https://ui.adsabs.harvard.edu/abs/2020ApJ...904..104R/abstract>`_,
+except for the pulsar distance (we use an inflated uncertainty on the distance,
+so the example is more representative of typical pulsar distance estimates).
 
 The combined codeblocks in this tutorial can be downloaded as a Python script
 and as a Jupyter notebook:
@@ -66,6 +75,8 @@ Imports.
     import corner
     from IPython.display import display, Math
 
+    from collections import namedtuple
+
 Set a seed for the random number generator to make the results reproducable.
 
 .. jupyter-execute::
@@ -73,15 +84,17 @@ Set a seed for the random number generator to make the results reproducable.
     np.random.seed(654321)
 
 Set some defaults for plotting functions, including the levels at which to draw
-confidence contours in 2D 
+confidence contours in 2D (see the `note about sigmas
+<https://corner.readthedocs.io/en/latest/pages/sigmas.html>`_
+in the documentation of the :py:mod:`corner` package)
 
 .. jupyter-execute::
 
-    sigmas = np.array([1., 2.])
-    levels = 1.0 - np.exp(-0.5 * sigmas**2)
+    contour2d_sigmas = np.array([1., 2.])
+    contour2d_levels = 1.0 - np.exp(-0.5 * contour2d_sigmas**2)
 
     corner_kwargs = {
-        'levels':       levels,
+        'levels':       contour2d_levels,
         'hist_kwargs':  {'density': True},
         'label_kwargs': {'size': 12},
     }
@@ -100,7 +113,7 @@ along the diagonal, confidence ellipses in the off-diagonal panels).
 
 .. jupyter-execute::
 
-    def overplot_linear(fig, upars, mahalanobis_radii=[1., 2.], **kwargs):
+    def overplot_linear(fig, upars, mahalanobis_radii=contour2d_sigmas, **kwargs):
 
         # get optimal values, standard deviations and covariance matrix
         opt = [upar.n for upar in upars]
@@ -159,39 +172,40 @@ interval for each of the parameters.
 
 .. jupyter-execute::
 
-    def display_samp_quantiles(samp_array, var_strs, unit_strs, fmts):
+    def get_format(fmts, i):
+        if isinstance(fmts, str):
+            fmt = f'{{0:{fmts}}}'.format
+        else:
+            fmt = f'{{0:{fmts[i]}}}'.format
+        return fmt
 
+
+    def display_samp_quantiles(samp_array, par_strs, fmts):
         txt_all = ''
         for i, samp in enumerate(samp_array.T):
             q_16, q_50, q_84 = np.quantile(samp, [0.16, 0.5, 0.84])
             q_m, q_p = q_50 - q_16, q_84 - q_50
-            if isinstance(fmts, str):
-                fmt = f'{{0:{fmts}}}'.format
-            else:
-                fmt = f'{{0:{fmts[i]}}}'.format
+            fmt = get_format(fmts, i)
             if fmt(q_m) == fmt(q_p):
                 txt = '{0} &= {1} \pm {2} \; {4} \\\\[0.5em]'
             else:
                 txt = '{0} &= {1}_{{-{2}}}^{{+{3}}} \; {4} \\\\[0.5em]'
-            txt = txt.format(var_strs[i][1:-1],
-                            fmt(q_50), fmt(q_m), fmt(q_p),
-                            unit_strs[i][1:-1])
+            txt = txt.format(par_strs[i].symbol,
+                             fmt(q_50), fmt(q_m), fmt(q_p),
+                             par_strs[i].unit)
             txt_all += txt
 
         txt_all = '\\begin{align}' + txt_all + '\\end{align}'
         display(Math(txt_all))
 
 
-    def display_ufloats(upars, var_strs, unit_strs, fmts):
+    def display_ufloats(upars, par_strs, fmts):
         txt_all = ''
         for i, upar in enumerate(upars):
-            if isinstance(fmts, str):
-                fmt = f'{{0:{fmts}}}'.format
-            else:
-                fmt = f'{{0:{fmts[i]}}}'.format
-            txt_all += (f'{var_strs[i][1:-1]} &= '
+            fmt = get_format(fmts, i)
+            txt_all += (f'{par_strs[i].symbol} &= '
                         f'{fmt(upar.n)} \pm {fmt(upar.s)} \; '
-                        f'{unit_strs[i][1:-1]} \\\\[0.5em]')
+                        f'{par_strs[i].unit} \\\\[0.5em]')
 
         txt_all = '\\begin{align}' + txt_all + '\\end{align}'
         display(Math(txt_all))
@@ -264,79 +278,84 @@ This tutorial deals with three different sets of parameters:
 - the physical parameters :math:`(i_\mathrm{p}, \Omega_\mathrm{p},
   d_\mathrm{p}, d_\mathrm{s}, \xi, v_\mathrm{lens,\parallel})`.
 
-Here, we simply define lists of strings used for printing results and
-labelling plots later.
+.. note::
+
+    The choice of physical parameters very much depends on the application.
+    If a study is focussed on the pulsar system rather than the screen, it may
+    be better to show the fractional pulsar--screen distance :math:`s` or the
+    effective distance :math:`d_\mathrm{eff}` instead of the screen distance
+    :math:`d_\mathrm{s}`. Conversely, if the screen is the subject of study,
+    it may be better to replace the pulsar's orbital inclination
+    :math:`i_\mathrm{p}` with its cosine :math:`\cos(i_\mathrm{p})`.
+    In case the scintillometry is used to constrain the pulsar's mass
+    :math:`M_\mathrm{p}`, one may opt to show :math:`\sin(i_\mathrm{p})` or
+    even immediately propagate the uncertainty onwards to :math:`M_\mathrm{p}`.
+    This all goes to say that you should carefully consider what physical
+    parameters are most informative or insightful to use in the situation at
+    hand.
+
+Here, we simply define (lists of) strings used for printing results and
+labelling plots later. First, use :py:func:`~collections.namedtuple` to create
+the `ParString` class that stores the LaTeX math-mode strings of the symbol and
+the unit for a parameter, and define a function that combines those symbol and
+unit strings into label strings for a list of parameters.
 
 .. jupyter-execute::
 
-    var_strs_harc = [
-        r'$A_{\oplus,s}$',
-        r'$A_{\oplus,c}$',
-        r'$A_\mathrm{p,s}$',
-        r'$A_\mathrm{p,c}$',
-        r'$C$',
-    ]
-
-    unit_strs_harc = [
-        r'$\mathrm{km/s/\sqrt{pc}}$',
-        r'$\mathrm{km/s/\sqrt{pc}}$',
-        r'$\mathrm{km/s/\sqrt{pc}}$',
-        r'$\mathrm{km/s/\sqrt{pc}}$',
-        r'$\mathrm{km/s/\sqrt{pc}}$',
-    ]
-
-    labels_harc = [f'${var_str[1:-1]} \; ({unit_str[1:-1]})$'
-                  for var_str, unit_str in zip(var_strs_harc, unit_strs_harc)]
+    ParString = namedtuple('ParString', ['symbol', 'unit'])
 
 .. jupyter-execute::
 
-    var_strs_phen = [
-        r'$A_\oplus$',
-        r'$A_\mathrm{p}$',
-        r'$\chi_\oplus$',
-        r'$\chi_\mathrm{p}$',
-        r'$C$',
-    ]
+    def gen_label_strs(par_strs):
+        label_strs = [f'${par_str.symbol} \; ({par_str.unit})$'
+                      for par_str in par_strs]
+        return label_strs
 
-    unit_strs_phen = [
-        r'$\mathrm{km/s/\sqrt{pc}}$',
-        r'$\mathrm{km/s/\sqrt{pc}}$',
-        r'$\mathrm{deg}$',
-        r'$\mathrm{deg}$',
-        r'$\mathrm{km/s/\sqrt{pc}}$',
-    ]
-
-    labels_phen = [f'${var_str[1:-1]} \; ({unit_str[1:-1]})$'
-                   for var_str, unit_str in zip(var_strs_phen, unit_strs_phen)]
+Set the strings for the harmonic coefficients.
 
 .. jupyter-execute::
 
-    var_strs_phys = [
-        r'$i_\mathrm{p}$',
-        r'$\Omega_\mathrm{p}$',
-        r'$d_\mathrm{p}$',
-        r'$d_\mathrm{s}$',
-        r'$\xi$',
-        r'$v_\mathrm{lens,\parallel}$',
-    ]
+    par_strs_harc = [
+        ParString(r'A_{\oplus,s}',   r'\mathrm{km/s/\sqrt{pc}}'),
+        ParString(r'A_{\oplus,c}',   r'\mathrm{km/s/\sqrt{pc}}'),
+        ParString(r'A_\mathrm{p,s}', r'\mathrm{km/s/\sqrt{pc}}'),
+        ParString(r'A_\mathrm{p,s}', r'\mathrm{km/s/\sqrt{pc}}'),
+        ParString(r'C',              r'\mathrm{km/s/\sqrt{pc}}')]
 
-    unit_strs_phys = [
-        '$\mathrm{deg}$',
-        '$\mathrm{deg}$',
-        '$\mathrm{pc}$',
-        '$\mathrm{pc}$',
-        '$\mathrm{deg}$',
-        '$\mathrm{km/s}$',
-    ]
+    labels_harc = gen_label_strs(par_strs_harc)
 
-    labels_phys = [f'${var_str[1:-1]} \; ({unit_str[1:-1]})$'
-                   for var_str, unit_str in zip(var_strs_phys, unit_strs_phys)]
+Set the strings for the phenomenological parameters.
+
+.. jupyter-execute::
+
+    par_strs_phen = [
+        ParString(r'A_\oplus',        r'\mathrm{km/s/\sqrt{pc}}'),
+        ParString(r'A_\mathrm{p}',    r'\mathrm{km/s/\sqrt{pc}}'),
+        ParString(r'\chi_\oplus',     r'\mathrm{deg}'),
+        ParString(r'\chi_\mathrm{p}', r'\mathrm{deg}'),
+        ParString(r'C',               r'\mathrm{km/s/\sqrt{pc}}')]
+
+    labels_phen = gen_label_strs(par_strs_phen)
+
+Set the strings for the physical parameters.
+
+.. jupyter-execute::
+
+    par_strs_phys = [
+        ParString(r'i_\mathrm{p}',              r'\mathrm{deg}'),
+        ParString(r'\Omega_\mathrm{p}',         r'\mathrm{deg}'),
+        ParString(r'd_\mathrm{p}',              r'\mathrm{pc}'),
+        ParString(r'd_\mathrm{s}',              r'\mathrm{pc}'),
+        ParString(r'\xi',                       r'\mathrm{deg}'),
+        ParString(r'v_\mathrm{lens,\parallel}', r'\mathrm{km/s}')]
+
+    labels_phys = gen_label_strs(par_strs_phys)
 
 
 Parameter conversions
 =====================
 
-Define function that convert between the different sets of parameters.
+Define functions that convert between the different sets of parameters.
 
 
 Between the harmonic coefficients the phenomenological parameters
@@ -412,11 +431,15 @@ From harmonic coefficients to phenomenological parameters.
 
         return pars_phen
 
-A separate function is needed that converts parameters and their uncertainties
-using functions from the :py:mod:`uncertainties.umath` module (implementing
-linear error propagation). These functions cannot handle Astropy's
-:py:class:`~astropy.units.quantity.Quantity` objects,
-so we need to keep track of the units ourselves.
+For the linear error propagation, a separate function is needed that converts
+parameters and their uncertainties using functions from the
+|uncertainties.umath|_ module (implementing linear error propagation). These
+functions cannot handle Astropy's :py:class:`~astropy.units.quantity.Quantity`
+objects, so we need to keep track of the units ourselves.
+
+.. |uncertainties.umath| replace:: ``uncertainties.umath``
+.. _uncertainties.umath:
+    https://pythonhosted.org/uncertainties/user_guide.html#mathematical-operations
 
 .. jupyter-execute::
 
@@ -657,11 +680,11 @@ pulsar distance, and computes the remaining physical parameters.
 
         return pars_phys
 
-Again, a separate function is needed that converts parameters and their
-uncertainties using functions from the :py:mod:`uncertainties.umath` module
-(implementing linear error propagation). These functions cannot handle
-Astropy's :py:class:`~astropy.units.quantity.Quantity` objects,
-so we need to keep track of the units ourselves.
+Again, a separate function is needed for the linear error propagation that
+converts parameters and their uncertainties using functions from the
+|uncertainties.umath|_ module (implementing linear error propagation). These
+functions cannot handle Astropy's :py:class:`~astropy.units.quantity.Quantity`
+objects, so we need to keep track of the units ourselves.
 
 .. jupyter-execute::
 
@@ -779,7 +802,6 @@ Here, we load the fit results produced by :py:func:`~scipy.optimize.curve_fit`
 :math:`A_\mathrm{\oplus,s}, A_\mathrm{\oplus,c}, A_\mathrm{p,s},
 A_\mathrm{p,c}, C`) from an `.npz` file (available for download here:
 :download:`fit-results-J0437.npz <../data/fit-results-J0437.npz>`).
-Also isolate the standard deviations from the covariance matrix.
 
 .. jupyter-execute::
 
@@ -787,6 +809,7 @@ Also isolate the standard deviations from the covariance matrix.
 
     popt = fit_results['popt']
     pcov = fit_results['pcov']
+
 
 Multiple solutions
 ==================
@@ -833,7 +856,7 @@ The harmonic coefficients
 This tutorial gives a demonstration of error propagation using two methods:
 
 - Monte Carlo sampling, using Astropy's :py:mod:`~astropy.uncertainty` module.
-- Linear error propagation, using the :py:mod:`uncertainties` package.
+- Linear error propagation, using the |uncertainties|_ package.
 
 For both methods, the input harmonic coefficients first need to be prepared.
 As a sanity check, we will then visualize the fitting results in the parameter
@@ -876,8 +899,8 @@ Generate samples of the correlated harmonic coefficients.
 
     samp_harc = (hc_es, hc_ec, hc_ps, hc_pc, hc_0)
 
-    samp_harc_all = [dist.distribution.value.tolist() for dist in samp_harc]
-    samp_harc_all = np.array(samp_harc_all).T
+    samp_harc_all = [dist.distribution.value for dist in samp_harc]
+    samp_harc_all = np.stack(samp_harc_all, axis=1)
 
 Visualize the samples, plotting only a small fraction, because the points are
 very bunched up at the zoomed-out scale that shows both solutions.
@@ -910,33 +933,28 @@ Select the samples that belong to one of the two solutions.
 
     samp_harc_sel = samp_harc_all[indices, :]
 
-    display_samp_quantiles(samp_harc_sel, var_strs_harc, unit_strs_harc, '.3f')
+    display_samp_quantiles(samp_harc_sel, par_strs_harc, '.3f')
 
-Visualize the samples of the selected solution.
-
-.. jupyter-execute::
-
-    fig = corner.corner(samp_harc_sel, labels=labels_harc, truths=truths_harc_list,
-                        labelpad=0.1, **corner_kwargs)
-
-    fig.set_size_inches(figsize_inches)
-
-    plt.show()
 
 Linear error propagation
 ------------------------
 
 For the linear error propagation, we select one of the two possible solutions
 and set up the harmonic coefficients as correlated variables with uncertainties
-using the :py:func:`uncertainties.correlated_values` function.
+using the |uncertainties.correlated_values()|_ function.
+
+.. |uncertainties.correlated_values()| replace::
+    ``uncertainties.correlated_values()``
+.. _uncertainties.correlated_values():
+    https://pythonhosted.org/uncertainties/user_guide.html#use-of-a-covariance-matrix
 
 .. jupyter-execute::
 
     upars_harc = correlated_values(sol_sign_choice * popt, pcov)
 
-    display_ufloats(upars_harc, var_strs_harc, unit_strs_harc, '.3f')
+    display_ufloats(upars_harc, par_strs_harc, '.3f')
 
-Visually compare the results between the two methods.
+Visualize and compare the results of the two methods.
 
 .. jupyter-execute::
 
@@ -973,8 +991,8 @@ samples for plotting, combine the different free parameters into a single
 
     samp_phen = pars_harc2phen(samp_harc)
 
-    samp_phen_all = [dist.distribution.value.tolist() for dist in samp_phen]
-    samp_phen_all = np.array(samp_phen_all).T
+    samp_phen_all = [dist.distribution.value for dist in samp_phen]
+    samp_phen_all = np.stack(samp_phen_all, axis=1)
 
 Visualize the samples, plotting only a small fraction, because the points are
 very bunched up at the zoomed-out scale that shows both solutions.
@@ -1008,33 +1026,22 @@ Filter the samples to select only the solution of choice.
     samp_phen_sel = samp_phen_all[indices, :]
 
     fmts_phen = ['.3f', '.3f', '.2f', '.1f', '.3f']
-    display_samp_quantiles(samp_phen_sel, var_strs_phen, unit_strs_phen, fmts_phen)
-
-Visualize the samples of the selected solution.
-
-.. jupyter-execute::
-
-    fig = corner.corner(samp_phen_sel, labels=labels_phen, truths=truths_phen_list,
-                        labelpad=0.1, **corner_kwargs)
-
-    fig.set_size_inches(figsize_inches)
-
-    plt.show()
+    display_samp_quantiles(samp_phen_sel, par_strs_phen, fmts_phen)
 
 
 Linear error propagation
 ------------------------
 
 Compute the phenomenological parameters using functions from the
-:py:mod:`uncertainties.umath` module.
+|uncertainties.umath|_ module.
 
 .. jupyter-execute::
 
     upars_phen = upars_harc2phen(upars_harc)
 
-    display_ufloats(upars_phen, var_strs_phen, unit_strs_phen, fmts_phen)
+    display_ufloats(upars_phen, par_strs_phen, fmts_phen)
 
-Visually compare the results between the two methods.
+Visualize and compare the results of the two methods.
 
 .. jupyter-execute::
 
@@ -1051,35 +1058,60 @@ Visually compare the results between the two methods.
 The physical parameters
 =======================
 
-Because there are six physical parameters while the fitting only provided five
+Because there are six physical parameters while the fitting only provides five
 constraints, external constraints need to be provided for one of the physical
 parameters to get narrow constraints on the rest. In this tutorial, we use a
 constraint on the pulsar distance :math:`d_\mathrm{p}`, which would also exist
-in many real-life applications. Here, we set the nominal value of the pulsar
-distance and its uncertainty, assumed to be Gaussian.
+in many real-life applications. In the case of external constraints on a
+different parameter, the functions `pars_phen2phys_d_p()` and
+`upars_phen2phys_d_p()` defined above would have to be replaced with slightly
+different functions to convert from phenomenological to physical parameters.
+
+The pulsar studied in this example, PSR J0437--4715, has an exceptionally well
+constrained distance of :math:`d_\mathrm{p} \approx 156.79 \pm 0.25` pc.
+In this tutorial, however, we will instead use an artificial distance
+estimate with a much larger uncertainty of 30%, which is typical for a distance
+estimate derived from a pulsar's dispersion measure using a model for the
+Galactic distribution of free electrons. This is done to make the example more
+similar to real-life applications (since most pulsars don't have very precise
+distance estimates, but will have a known dispersion measure).
+
+We now set the nominal value of the pulsar distance and its uncertainty,
+assumed to be Gaussian. The nominal value is different from the known pulsar
+distance of 157 pc to reflect measurement error. Note that the assumption of a
+normally distributed measurement error gives non-zero probabilities for zero
+and negative distances, which is unphysical. We will need to take care below
+to prevent this behaviour from causing problems.
 
 .. jupyter-execute::
 
-    d_p_mu = 156.79 * u.pc
-    d_p_sig =  0.25 * u.pc
+    d_p_mu = 200. * u.pc
+    d_p_sig = 60. * u.pc
 
 
 Monte Carlo sampling
 --------------------
 
 Generate a set of samples of the pulsar distance following a Gaussian
-distribution with the given mean and standard deviation. This is achieved using
-the :py:func:`astropy.uncertainty.normal` function, which returns an Astropy
+distribution with the given mean and standard deviation. Redo samples with an
+unphysical non-positive distance. Finally, convert the set into an Astropy
 :py:class:`~astropy.uncertainty.Distribution` object.
 
 .. jupyter-execute::
 
-    samp_d_p = unc.normal(d_p_mu, std=d_p_sig, n_samples=nmc)
+    d_p_iter = np.random.normal(size=nmc) * d_p_sig + d_p_mu
+
+    while np.any(d_p_iter <= 0):
+        ind_neg = np.where(d_p_iter <= 0)
+        d_p_replace = np.random.normal(size=len(ind_neg[0])) * d_p_sig + d_p_mu
+        d_p_iter[ind_neg] = d_p_replace
+        
+    samp_d_p = unc.Distribution(d_p_iter)
 
 Generate random signs of the cosine of the pulsar's orbital inclination,
 corresponding to the two possible spatial orientations of the pulsar's orbit.
 We create an Astropy :py:class:`~astropy.uncertainty.Distribution` object
-consisting of +1 and -1 entries, just like `sol_sign`.
+consisting of +1 and -1 entries, just like `sol_sign` above.
 
 .. jupyter-execute::
 
@@ -1093,8 +1125,9 @@ array for the plotting routine.
 
     samp_phys = pars_phen2phys_d_p(samp_phen, samp_d_p, cos_sign)
 
-    samp_phys_all = [dist.distribution.value.tolist() for dist in samp_phys]
-    samp_phys_all = np.array(samp_phys_all).T
+    samp_phys_all = [dist.distribution.value for dist in samp_phys]
+    samp_phys_all = np.stack(samp_phys_all, axis=1)
+
 
 Visualize the samples, showing the different solutions. Again, only plot a
 small fraction of the samples, because of the overlap of the points.
@@ -1104,13 +1137,13 @@ small fraction of the samples, because of the overlap of the points.
     ranges_phys = [
         (0., 180.),
         (0., 360.),
-        (135., 185.),
-        (50., 150.),
+        (0., 400.),
+        (0., 200.),
         (0., 360.),
         (-60., 60.),
     ]
 
-    fig = corner.corner(samp_phys_all[::200, :], labels=labels_phys,
+    fig = corner.corner(samp_phys_all[::20, :], labels=labels_phys,
                         range=ranges_phys, plot_contours=False, plot_density=False,
                         **corner_kwargs)
 
@@ -1131,18 +1164,44 @@ Filter the samples to select only the solution of choice.
 
     samp_phys_sel = samp_phys_all[indices, :]
 
-    fmts_phys = ['.2f', '.1f', '.2f', '.1f', '.2f', '.2f']
-    display_samp_quantiles(samp_phys_sel, var_strs_phys, unit_strs_phys, fmts_phys)
+    fmts_phys = ['.0f', '.1f', '.0f', '.0f', '.2f', '.1f']
+    display_samp_quantiles(samp_phys_sel, par_strs_phys, fmts_phys)
 
-Visualize the samples of the selected solution. For for the pulsar distance,
-we can also show the prior probability distribution to emphasize that this
-parameter was not retrieved by fitting the scintillation measurements,
+
+Linear error propagation
+------------------------
+
+Set up the pulsar distance as a value with uncertainty using the
+|uncertainties.ufloat()|_ function.
+
+.. |uncertainties.ufloat()| replace:: ``uncertainties.ufloat()``
+.. _uncertainties.ufloat():
+    https://pythonhosted.org/uncertainties/user_guide.html#basic-setup
+
+.. jupyter-execute::
+
+    ud_p = ufloat(d_p_mu.to_value(u.pc), d_p_sig.to_value(u.pc))
+
+Compute the physical parameters using functions from the
+|uncertainties.umath|_ module.
+
+.. jupyter-execute::
+
+    upars_phys = upars_phen2phys_d_p(upars_phen, ud_p, cos_sign_choice)
+
+    display_ufloats(upars_phys, par_strs_phys, fmts_phys)
+
+Visualize and compare the results of the two methods. For for the pulsar
+distance, we can also show the prior probability distribution to emphasize that
+this parameter was not retrieved by fitting the scintillation measurements,
 but inserted as an external constraint.
 
 .. jupyter-execute::
 
     fig = corner.corner(samp_phys_sel, labels=labels_phys, truths=truths_phys_list,
                         labelpad=0.1, **corner_kwargs)
+
+    overplot_linear(fig, upars_phys, **linear_style)
 
     ndim_phys = 6
     idim_d_p = 2
@@ -1159,41 +1218,17 @@ but inserted as an external constraint.
                             d_p_mu.to_value(u.pc),
                             d_p_sig.to_value(u.pc))
 
-    ax.plot(d_p_all.to_value(u.pc), d_p_prior, color='C2')
+    ax.plot(d_p_all.to_value(u.pc), d_p_prior, '--', color='C2')
+
+    fig.set_size_inches(figsize_inches)
 
     fig.set_size_inches(figsize_inches)
 
     plt.show()
 
-
-Linear error propagation
-------------------------
-
-Set up the pulsar distance as a value with uncertainty using the
-:py:func:`uncertainties.ufloat` function.
-
-.. jupyter-execute::
-
-    ud_p = ufloat(d_p_mu.to_value(u.pc), d_p_sig.to_value(u.pc))
-
-Compute the physical parameters using functions from the
-:py:mod:`uncertainties.umath` module.
-
-.. jupyter-execute::
-
-    upars_phys = upars_phen2phys_d_p(upars_phen, ud_p, cos_sign_choice)
-
-    display_ufloats(upars_phys, var_strs_phys, unit_strs_phys, fmts_phys)
-
-Visually compare the results between the two methods.
-
-.. jupyter-execute::
-
-    fig = corner.corner(samp_phys_sel, labels=labels_phys, truths=truths_phys_list,
-                        labelpad=0.1, **corner_kwargs)
-
-    overplot_linear(fig, upars_phys, **linear_style)
-
-    fig.set_size_inches(figsize_inches)
-
-    plt.show()
+This final figure illustrates that the linear error propagation is unable to
+capture the nonlinearities (curves) in the correlations between parameters,
+as well as the asymmetries in the probability density distributions of some of
+the parameters. The plot also shows that the constraints on all physical
+parameters (except for the screen angle :math:`\xi`) strongly depend on how
+well the pulsar's distance :math:`d_\mathrm{p}` is known.
