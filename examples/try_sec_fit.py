@@ -27,7 +27,7 @@ sec_kwargs = dict(extent=(conj_spec.fd[0, 0].value, conj_spec.fd[-1, 0].value,
                           conj_spec.tau[0].value, conj_spec.tau[-1].value),
                   cmap='Greys', vmin=-7, vmax=0, origin='lower', aspect='auto')
 plt.subplot(321)
-plt.imshow(np.log10(np.abs(conj_spec.conjspec)**2).T, **sec_kwargs)
+plt.imshow(np.log10(conj_spec.secspec).T, **sec_kwargs)
 
 conserve = True
 

@@ -48,7 +48,7 @@ def simple_figure(th_par, magnification,
                                                  magnification=magnification)
     tau = cs.tau
     fd = cs.fd
-    secspec = np.abs(cs.conjspec)**2
+    secspec = cs.secspec
 
     # Create dynamic wavefield
     dwft = np.fft.fft2(dynwave)

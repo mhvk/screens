@@ -47,6 +47,7 @@ class ConjugateSpectrum:
     def __init__(self, conjspec, tau, fd, noise=None, d_eff=None, mu_eff=None,
                  theta=None, magnification=None):
         self.conjspec = conjspec
+        self.secspec = np.abs(self.conjspec)**2
         self.tau = tau
         self.fd = fd
         self.noise = noise
@@ -337,7 +338,7 @@ class ConjugateSpectrum:
                                           * recovered.conj())))**2).mean()
             conjspec_r = self.model(recovered, mu_eff=mu_eff)
             if power:
-                redchi2 = ((np.abs(self.conjspec)**2 - conjspec_r)**2).mean()
+                redchi2 = ((self.secspec - conjspec_r)**2).mean()
             else:
                 redchi2 = (np.abs(self.conjspec-conjspec_r)**2).mean()
 
