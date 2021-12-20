@@ -339,9 +339,9 @@ the spectrum.
 
 .. jupyter-execute::
 
-    conspec = np.fft.fft2(dynspec)
-    conspec /= conspec[0, 0]
-    conspec = np.fft.fftshift(conspec)
+    conjspec = np.fft.fft2(dynspec)
+    conjspec /= conjspec[0, 0]
+    conjspec = np.fft.fftshift(conjspec)
 
 The conjugate variables, the relative geometric delay :math:`\tau` and the
 differential Doppler shift :math:`f_\mathrm{D}`, also need to be created and
@@ -363,7 +363,7 @@ The secondary spectrum is the square modulus of the conjugate spectrum.
 
 .. jupyter-execute::
 
-    secspec = np.abs(conspec)**2
+    secspec = np.abs(conjspec)**2
 
 Let's plot the secondary spectrum.
 

@@ -262,14 +262,14 @@ spectrum.
 
 .. jupyter-execute::
 
-    conspec = np.fft.fft2(dynspec)
-    conspec /= conspec[0, 0]
-    conspec = np.fft.fftshift(conspec)
+    conjspec = np.fft.fft2(dynspec)
+    conjspec /= conjspec[0, 0]
+    conjspec = np.fft.fftshift(conjspec)
 
     tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0])).to(u.us)
     fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0])).to(u.mHz)
 
-    secspec = np.abs(conspec)**2
+    secspec = np.abs(conjspec)**2
 
 Plot the secondary spectrum.
 
