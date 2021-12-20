@@ -102,16 +102,16 @@ plt.colorbar()
 
 
 # And turn it into a secondary spectrum.
-sec = np.fft.fft2(dynspec)
-sec /= sec[0, 0]
+conj = np.fft.fft2(dynspec)
+conj /= conj[0, 0]
 tau = np.fft.fftfreq(dynspec.shape[1], f[1] - f[0]).to(u.us)
 fd = np.fft.fftfreq(dynspec.shape[0], t[1] - t[0]).to(u.mHz)
 
-sec = np.fft.fftshift(sec)
+conj = np.fft.fftshift(conj)
 tau = np.fft.fftshift(tau) << tau.unit
 fd = np.fft.fftshift(fd) << fd.unit
 
-ss = np.maximum(np.abs(sec)**2, 1e-30)
+ss = np.maximum(np.abs(conj)**2, 1e-30)
 
 
 # Plot secondary spectrum, with thetas from a default grid that would be
@@ -129,8 +129,8 @@ tau_g = (d_eff/(2*const.c)*th_g**2).to(
 i0, i1 = theta_theta_indices(th_g)
 plt.plot(fd_g[i0]-fd_g[i1], tau_g[i0]-tau_g[i1], 'bo', ms=0.2)
 plt.plot(fd_g, tau_g, 'ro', ms=0.4)
-sec_extent = (fd[0].value, fd[-1].value, tau[0].value, tau[-1].value)
-plt.imshow(np.log10(ss.T), origin='lower', aspect='auto', extent=sec_extent,
+ss_extent = (fd[0].value, fd[-1].value, tau[0].value, tau[-1].value)
+plt.imshow(np.log10(ss.T), origin='lower', aspect='auto', extent=ss_extent,
            cmap='Greys', vmin=-7, vmax=0)
 plt.xlabel(fd.unit.to_string('latex'))
 plt.ylabel(tau.unit.to_string('latex'))

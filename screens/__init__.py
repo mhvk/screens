@@ -10,4 +10,4 @@ from ._astropy_init import *   # noqa
 if not _ASTROPY_SETUP_:   # noqa
     # For egg_info test builds to pass, put package imports here.
     from .dynspec import DynamicSpectrum  # noqa
-    from .secspec import SecondarySpectrum  # noqa
+    from .conjspec import ConjugateSpectrum  # noqa

@@ -8,28 +8,28 @@ from .fields import theta_grid, theta_theta_indices, phasor, expand
 from .dynspec import DynamicSpectrum
 
 
-__all__ = ['SecondarySpectrum']
+__all__ = ['ConjugateSpectrum']
 
 
-class SecondarySpectrum:
-    """Secondary spectrum and methods to fit it.
+class ConjugateSpectrum:
+    """Conjugate spectrum and methods to fit it.
 
     The code is meant to be agnostic to which axes are which, but some may
     assume a shape of ``(..., doppler_axis, delay_axis)``.
 
     Parameters
     ----------
-    secspec : `~numpy.ndarray`
+    conjspec : `~numpy.ndarray`
         Fourier transform of a dynamic spectrum.
     fd : `~astropy.units.Quantity`
-        Doppler factors of the secondary spectrum.  Normally time conjugate
+        Doppler factors of the conjugate spectrum.  Normally time conjugate
         but can be arbitrary (e.g., conjugate of ``f*t``).  Should have the
-        the proper shape to broadcast with ``secspec``.
+        the proper shape to broadcast with ``conjspec``.
     tau : `~astropy.units.Quantity`
-        Delays of the secondary spectrum.  Should have the proper shape to
+        Delays of the conjugate spectrum.  Should have the proper shape to
         broadcast with ``dynspec``.
     noise : float
-        The uncertainty in the real and imaginary components of the secondary
+        The uncertainty in the real and imaginary components of the conjugate
         spectrum.
     d_eff : `~astropy.units.Quantity`
         Assumed effective distance.  This is used throughout and not fit,
@@ -44,9 +44,9 @@ class SecondarySpectrum:
         the secondary spectrum.
     """
 
-    def __init__(self, secspec, tau, fd, noise=None, d_eff=None, mu_eff=None,
+    def __init__(self, conjspec, tau, fd, noise=None, d_eff=None, mu_eff=None,
                  theta=None, magnification=None):
-        self.secspec = secspec
+        self.conjspec = conjspec
         self.tau = tau
         self.fd = fd
         self.noise = noise
@@ -57,7 +57,7 @@ class SecondarySpectrum:
 
     @classmethod
     def from_dynamic_spectrum(cls, dynspec, normalization='mean', **kwargs):
-        """Create a secondary spectrum from a dynamic one.
+        """Create a conjugate spectrum from a dynamic one.
 
         Easiest if the input is a `~screens.dynspec.DynamicSpectrum`
         instance.
@@ -81,7 +81,7 @@ class SecondarySpectrum:
             Normalize such that the 0, 0 element equals the mean of the
             dynamic spectrum.
         **kwargs
-            Other arguments to initialize the secondary spectrum.
+            Other arguments to initialize the conjugate spectrum.
         """
         for key in ('f', 't', 'd_eff', 'mu_eff', 'theta',
                     'magnification', 'noise'):
@@ -97,7 +97,7 @@ class SecondarySpectrum:
         t = kwargs.pop('t')
         fd = kwargs.pop('fd', None)
         if t.size in t.shape and fd is None:  # fast FFT possible.
-            sec = np.fft.fftshift(np.fft.fft2(dynspec))
+            conj = np.fft.fftshift(np.fft.fft2(dynspec))
             fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0]).to(u.mHz)
                                  .reshape(t.shape))
         else:
@@ -123,16 +123,16 @@ class SecondarySpectrum:
                 factor *= dynspec
 
             step1 = factor.sum(-2, keepdims=True).swapaxes(0, -2).squeeze(0)
-            sec = np.fft.fftshift(np.fft.fft(step1, axis=-1), axes=-1)
-            fd.shape = sec.shape[-2], 1
+            conj = np.fft.fftshift(np.fft.fft(step1, axis=-1), axes=-1)
+            fd.shape = conj.shape[-2], 1
 
         if normalization == 'mean':
-            normalization = sec[sec.shape[-2] // 2, sec.shape[-1] // 2]
-            sec /= normalization
+            normalization = conj[conj.shape[-2] // 2, conj.shape[-1] // 2]
+            conj /= normalization
 
         tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0]).to(u.us))
         tau.shape = f.shape
-        self = cls(sec, tau, fd, **kwargs)
+        self = cls(conj, tau, fd, **kwargs)
         self.f = f
         self.t = t
         self.normalization = normalization
@@ -193,7 +193,7 @@ class SecondarySpectrum:
         if theta_grid:
             self.theta = self.theta_grid(mu_eff=mu_eff, **kwargs)
 
-        sec = self.secspec
+        conj = self.conjspec
         i0, i1 = theta_theta_indices(self.theta)
         i1 = i1.ravel()
         fobs = self.f.mean()
@@ -208,10 +208,10 @@ class SecondarySpectrum:
                           / (self.tau[1]-self.tau[0])).to_value(1)).astype(int)
         idfd = np.round(((dfd-self.fd[0])
                          / (self.fd[1]-self.fd[0])).to_value(1)).astype(int)
-        ok = ((idtau >= 0) & (idtau < sec.shape[-1])
-              & (idfd >= 0) & (idfd < sec.shape[-2]))
-        theta_theta = np.zeros(self.theta.shape*2, sec.dtype)
-        amplitude = sec[idfd[ok], idtau[ok]]
+        ok = ((idtau >= 0) & (idtau < conj.shape[-1])
+              & (idfd >= 0) & (idfd < conj.shape[-2]))
+        theta_theta = np.zeros(self.theta.shape*2, conj.dtype)
+        amplitude = conj[idfd[ok], idtau[ok]]
         if conserve:
             # Area conversion factor:
             # abs(Δtau[i0]*Δfd[i1]-Δtau[i1]*Δfd[i0])/(Δth[i0]*Δth[i1])
@@ -239,7 +239,7 @@ class SecondarySpectrum:
         fobs = self.f.mean()
         tau_factor = self.d_eff/(2.*const.c)
         fd_factor = self.d_eff*mu_eff*fobs/const.c
-        ifd, itau = np.indices(self.secspec.shape, sparse=True)
+        ifd, itau = np.indices(self.conjspec.shape, sparse=True)
         fd = self.fd[ifd, 0]
         tau = self.tau[itau]
         # On purpose, keep the sign.
@@ -261,7 +261,7 @@ class SecondarySpectrum:
         ith = ith[:, ok]
         goupone = self.theta[ith+1] - ths < ths - self.theta[ith]
         ith += goupone
-        model = np.zeros_like(self.secspec, magnification.dtype)
+        model = np.zeros_like(self.conjspec, magnification.dtype)
         amplitude = magnification[ith[1]] * magnification[ith[0]].conj()
         if conserve:
             area = (np.abs(tau_factor * 2. * fd_factor * (ths[1] - ths[0]))
@@ -335,11 +335,11 @@ class SecondarySpectrum:
 
                 th_ms = (np.abs((th_th - (recovered[:, np.newaxis]
                                           * recovered.conj())))**2).mean()
-            secspec_r = self.model(recovered, mu_eff=mu_eff)
+            conjspec_r = self.model(recovered, mu_eff=mu_eff)
             if power:
-                redchi2 = ((np.abs(self.secspec)**2 - secspec_r)**2).mean()
+                redchi2 = ((np.abs(self.conjspec)**2 - conjspec_r)**2).mean()
             else:
-                redchi2 = (np.abs(self.secspec-secspec_r)**2).mean()
+                redchi2 = (np.abs(self.conjspec-conjspec_r)**2).mean()
 
             r['theta'][i] = self.theta
             r['w'][i] = w[-1]

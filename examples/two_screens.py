@@ -199,13 +199,13 @@ if __name__ == '__main__':
     ax_ds.set_xlabel(t.unit.to_string('latex'))
     ax_ds.set_ylabel(f.unit.to_string('latex'))
     # And the conjugate spectrum.
-    ss = np.fft.fft2(ds)
-    ss /= ss[0, 0]
-    ss = np.fft.fftshift(ss)
+    cs = np.fft.fft2(ds)
+    cs /= cs[0, 0]
+    cs = np.fft.fftshift(cs)
     tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0])).to(u.us)
     fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0])).to(u.mHz)
     ax_ss = plt.subplot(236)
-    ax_ss.imshow(np.log10(np.abs(ss.T)**2), vmin=-7, vmax=0, cmap='Greys',
+    ax_ss.imshow(np.log10(np.abs(cs.T)**2), vmin=-7, vmax=0, cmap='Greys',
                  extent=axis_extent(fd) + axis_extent(tau),
                  origin='lower', interpolation='none', aspect='auto')
     ax_ss.set_xlim(-5, 5)

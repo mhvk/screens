@@ -4,7 +4,7 @@ from matplotlib import cm as cm
 import numpy as np
 from astropy import units as u
 from screens.fields import dynamic_field
-from screens.secspec import SecondarySpectrum
+from screens.conjspec import ConjugateSpectrum
 from screens.visualization import make_sketch, phasecmap
 
 
@@ -42,13 +42,13 @@ def simple_figure(th_par, magnification,
     dynspec = np.abs(dynwave)**2
 
     # Create conjugate and then secondary spectrum
-    ss = SecondarySpectrum.from_dynamic_spectrum(dynspec, f=f, t=t, noise=0.,
+    cs = ConjugateSpectrum.from_dynamic_spectrum(dynspec, f=f, t=t, noise=0.,
                                                  d_eff=d_eff, mu_eff=mu_eff,
                                                  theta=th_par,
                                                  magnification=magnification)
-    tau = ss.tau
-    fd = ss.fd
-    secspec = np.abs(ss.secspec)**2
+    tau = cs.tau
+    fd = cs.fd
+    secspec = np.abs(cs.conjspec)**2
 
     # Create dynamic wavefield
     dwft = np.fft.fft2(dynwave)
