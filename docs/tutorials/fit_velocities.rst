@@ -849,7 +849,7 @@ Let's quantify the goodness of fit of the solution found by the algorithm.
     print(f'\nchi2     {chi2:8.2f}'
           f'\nchi2_red {chi2_red:8.2f}')
 
-Finally, to check if the fitting worked well, it is also important to visually
+To check if the fitting worked well, it is also important to visually
 inspect the solution. This can be done using the visualization functions we
 made earlier:
 
@@ -858,3 +858,16 @@ made earlier:
     visualize_model_full(pars_opt)
     visualize_model_folded(pars_opt)
     visualize_model_fold2d(pars_opt)
+
+Finally, we use NumPy's :py:func:`~numpy.savez` to save the solution and the
+accompanying covariance matrix found by :py:func:`~scipy.optimize.curve_fit`,
+to do an error analysis in a :doc:`later tutorial <error_analysis>`.
+
+.. jupyter-execute::
+
+    # np.savez('data/fit-results-J0437.npz',
+    #          popt=popt,
+    #          pcov=pcov)
+
+.. TODO: When jupyter-sphinx v0.4 is available, this last directive can be
+.. changed to jupyter-input and the Python code can be uncommented
