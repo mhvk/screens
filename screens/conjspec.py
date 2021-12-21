@@ -11,6 +11,10 @@ from .dynspec import DynamicSpectrum
 __all__ = ['ConjugateSpectrum']
 
 
+def power(z):
+    return z.real**2 + z.imag**2
+
+
 class ConjugateSpectrum:
     """Conjugate spectrum and methods to fit it.
 
@@ -47,7 +51,6 @@ class ConjugateSpectrum:
     def __init__(self, conjspec, tau, fd, noise=None, d_eff=None, mu_eff=None,
                  theta=None, magnification=None):
         self.conjspec = conjspec
-        self.secspec = np.abs(self.conjspec)**2
         self.tau = tau
         self.fd = fd
         self.noise = noise
@@ -55,6 +58,11 @@ class ConjugateSpectrum:
         self.mu_eff = mu_eff
         self.theta = theta
         self.magnification = magnification
+
+    @property
+    def secspec(self):
+        """Secondary spectrum, i.e., the power of the conjugate spectrum."""
+        return power(self.conjspec)
 
     @classmethod
     def from_dynamic_spectrum(cls, dynspec, normalization='mean', **kwargs):
@@ -231,7 +239,7 @@ class ConjugateSpectrum:
         return theta_theta
 
     def model(self, magnification=None, mu_eff=None, conserve=False):
-        """Calculate the expected secondary spectrum for given parameters."""
+        """Calculate the expected conjugate spectrum for given parameters."""
         if magnification is None:
             magnification = self.magnification
         if mu_eff is None:
@@ -322,7 +330,7 @@ class ConjugateSpectrum:
         for i, mu_eff in enumerate(r['mu_eff']):
             th_th = self.theta_theta(mu_eff)
             if power:
-                th_th = np.abs(th_th)**2
+                th_th = power(th_th)
 
             w, v = eigh(th_th, eigvals=(self.theta.size-1,)*2)
             recovered = v[:, -1] * np.sqrt(w[-1])
@@ -336,11 +344,11 @@ class ConjugateSpectrum:
 
                 th_ms = (np.abs((th_th - (recovered[:, np.newaxis]
                                           * recovered.conj())))**2).mean()
-            conjspec_r = self.model(recovered, mu_eff=mu_eff)
+            spec_r = self.model(recovered, mu_eff=mu_eff)
             if power:
-                redchi2 = ((self.secspec - conjspec_r)**2).mean()
+                redchi2 = ((self.secspec - spec_r)**2).mean()
             else:
-                redchi2 = (np.abs(self.conjspec-conjspec_r)**2).mean()
+                redchi2 = power(self.conjspec-spec_r).mean()
 
             r['theta'][i] = self.theta
             r['w'][i] = w[-1]
