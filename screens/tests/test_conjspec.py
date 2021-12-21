@@ -1,4 +1,4 @@
-"""Testing of the Secondary Spectrum class.
+"""Testing of the ConjugateSpectrum class.
 
 TODO: make this more complete!
 """
@@ -9,10 +9,10 @@ from astropy import units as u
 
 from screens.fields import dynamic_field
 from screens.dynspec import DynamicSpectrum
-from screens.secspec import SecondarySpectrum
+from screens.conjspec import ConjugateSpectrum
 
 
-class TestSecSpec:
+class TestConjSpec:
     def setup_class(self):
         self.fobs = 316 * u.MHz
         f = (np.arange(-16, 16)/2.) << u.MHz
@@ -32,23 +32,23 @@ class TestSecSpec:
                                   d_eff=self.d_eff, mu_eff=self.mu_eff,
                                   magnification=self.magnification)
         self.ds.theta = self.theta
-        self.secspec = np.fft.fftshift(np.fft.fft2(self.ds.dynspec))
+        self.conjspec = np.fft.fftshift(np.fft.fft2(self.ds.dynspec))
 
-    def expected_secspec(self, norm):
+    def expected_conjspec(self, norm):
         if norm == 'mean':
-            return (self.secspec
+            return (self.conjspec
                     / (self.ds.dynspec.size * self.ds.dynspec.mean()))
         else:
-            return self.secspec
+            return self.conjspec
 
     @pytest.mark.parametrize('norm', (None, 'mean'))
     def test_from_dynspec(self, norm):
-        ss = SecondarySpectrum.from_dynamic_spectrum(self.ds,
+        cs = ConjugateSpectrum.from_dynamic_spectrum(self.ds,
                                                      normalization=norm)
-        assert_allclose(ss.secspec, self.expected_secspec(norm))
-        assert_allclose(ss.tau, np.fft.fftshift(
+        assert_allclose(cs.conjspec, self.expected_conjspec(norm))
+        assert_allclose(cs.tau, np.fft.fftshift(
             np.fft.fftfreq(len(self.f), self.df)), atol=0)
-        assert_allclose(ss.fd, np.fft.fftshift(
+        assert_allclose(cs.fd, np.fft.fftshift(
             np.fft.fftfreq(len(self.t), self.dt))[:, np.newaxis], atol=0)
 
     @pytest.mark.parametrize('norm', (None, 'mean'))
@@ -59,9 +59,9 @@ class TestSecSpec:
         # phase that way.
         t = np.broadcast_to(self.t-self.t[0], self.ds.dynspec.shape,
                             subok=True)
-        ss = SecondarySpectrum.from_dynamic_spectrum(self.ds, t=t,
+        cs = ConjugateSpectrum.from_dynamic_spectrum(self.ds, t=t,
                                                      normalization=norm)
-        assert_allclose(ss.secspec, self.expected_secspec(norm))
+        assert_allclose(cs.conjspec, self.expected_conjspec(norm))
 
     @pytest.mark.parametrize('norm', (None, 'mean'))
     def test_from_dynspec_explicit_fd(self, norm):
@@ -69,6 +69,6 @@ class TestSecSpec:
         # convention is the same.  Again, work relative to start time
         # as does FFT.
         fd = np.fft.fftshift(np.fft.fftfreq(len(self.t), self.dt))
-        ss = SecondarySpectrum.from_dynamic_spectrum(
+        cs = ConjugateSpectrum.from_dynamic_spectrum(
             self.ds, fd=fd, t=self.t-self.t[0], normalization=norm)
-        assert_allclose(ss.secspec, self.expected_secspec(norm))
+        assert_allclose(cs.conjspec, self.expected_conjspec(norm))
