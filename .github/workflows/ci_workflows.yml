@@ -27,10 +27,11 @@ jobs:
             python: 3.9
             toxenv: py39-test
 
-          - name: Documentation build
-            os: ubuntu-latest
-            python: 3.9
-            toxenv: build_docs
+          # Docs are build directly on readthedocs even for PR.
+          # - name: Documentation build
+          #   os: ubuntu-latest
+          #   python: 3.9
+          #   toxenv: build_docs
 
     steps:
     - name: Checkout code
