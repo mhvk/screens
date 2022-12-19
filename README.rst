@@ -14,6 +14,10 @@ Pulsar scintillation screens
    :target: https://screens.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 
+.. image:: https://zenodo.org/badge/237521442.svg
+   :target: https://doi.org/10.5281/zenodo.7455535
+   :alt: DOI 10.5281/zenodo.7455535
+         
 Analyze and model pulsar dynamic spectra, using secondary spectra and
 theta-theta decompositions for linear screens.
 

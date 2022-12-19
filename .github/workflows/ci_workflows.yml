@@ -22,7 +22,7 @@ jobs:
             python: 3.9
             toxenv: codestyle
 
-          - name: Python 3.9 with minimal dependencies
+          - name: Minimal dependencies
             os: ubuntu-latest
             python: 3.9
             toxenv: py39-test
