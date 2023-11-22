@@ -44,9 +44,9 @@ The combined codeblocks in this tutorial can be downloaded as a Python script
 and as a Jupyter notebook:
 
 :Python script:
-    :jupyter-download:script:`error_analysis.py <error_analysis>`
+    :jupyter-download-script:`error_analysis.py <error_analysis>`
 :Jupyter notebook:
-    :jupyter-download:notebook:`error_analysis.ipynb <error_analysis>`
+    :jupyter-download-notebook:`error_analysis.ipynb <error_analysis>`
 
 
 Preliminaries
@@ -162,7 +162,7 @@ along the diagonal, confidence ellipses in the off-diagonal panels).
                     semiaxis_b = r * np.sqrt(lambda_b)
 
                     ellipse = Ellipse(opt_xy, 2.*semiaxis_a, 2.*semiaxis_b,
-                                      theta*180./np.pi, zorder=2, fill=False,
+                                      angle=theta*180./np.pi, zorder=2, fill=False,
                                       **kwargs)
 
                     ax.add_patch(ellipse)
@@ -229,10 +229,10 @@ its orbital period :math:`P_\mathrm{orb,p}`, projected semi-major axis
     psr_coord = SkyCoord('04h37m15.99744s -47d15m09.7170s',
                          pm_ra_cosdec=121.4385 * u.mas / u.yr,
                          pm_dec=-71.4754 * u.mas / u.yr)
-    
+
     p_orb_p = 5.7410459 * u.day
     asini_p = 3.3667144 * const.c * u.s
-    
+
     k_p = 2.*np.pi * asini_p / p_orb_p
 
 Set the known properties of Earth's orbit (the orbital period :math:`P_\oplus`,
@@ -247,12 +247,12 @@ orientation with respect to the line of sight (i.e., the orbit's inclination
     a_e = 1. * u.au
 
     v_0_e = 2.*np.pi * a_e / p_orb_e
-    
+
     psr_coord_eclip = psr_coord.barycentricmeanecliptic
     ascnod_eclip = SkyCoord(lon=psr_coord_eclip.lon - 90.*u.deg, lat=0.*u.deg,
                             frame='barycentricmeanecliptic')
     ascnod_equat = ascnod_eclip.icrs
-    
+
     i_e = psr_coord_eclip.lat + 90.*u.deg
     omega_e = psr_coord.position_angle(ascnod_equat)
 
@@ -447,15 +447,15 @@ objects, so we need to keep track of the units ourselves.
         # units used:
         # angles: rad (internally), deg (output)
         # scaled effective velocities: km/s/sqrt(pc)
-        
+
         hc_es, hc_ec, hc_ps, hc_pc, hc_0 = upars_harc
-        
+
         amp_e = umath.sqrt(hc_es**2 + hc_ec**2)
         amp_p = umath.sqrt(hc_ps**2 + hc_pc**2)
         chi_e = umath.atan2(hc_ec, hc_es) % (2.*np.pi)
         chi_p = umath.atan2(hc_pc, hc_ps) % (2.*np.pi)
         dveff_c = hc_0
-        
+
         upars_phen = (
             amp_e,
             amp_p,
@@ -463,7 +463,7 @@ objects, so we need to keep track of the units ourselves.
             umath.degrees(chi_p),
             dveff_c
         )
-        
+
         return upars_phen
 
 
@@ -531,7 +531,7 @@ where the auxiliary variables that appear in these equations are given by
 .. jupyter-execute::
 
     def pars_phys2phen(pars_phys):
-        
+
         i_p, omega_p, d_p, d_s, xi, v_lens = pars_phys
 
         d_eff = d_p * d_s / (d_p - d_s)
@@ -695,7 +695,7 @@ objects, so we need to keep track of the units ourselves.
         # angles: rad (internally), deg (input/output)
         # proper motion: mas/yr
         # scaled effective velocities: km/s/sqrt(pc)
-        
+
         amp_e, amp_p, chi_e, chi_p, dveff_c = upars_phen
         chi_e = umath.radians(chi_e)
         chi_p = umath.radians(chi_p)
@@ -1105,7 +1105,7 @@ unphysical non-positive distance. Finally, convert the set into an Astropy
         ind_neg = np.where(d_p_iter <= 0)
         d_p_replace = np.random.normal(size=len(ind_neg[0])) * d_p_sig + d_p_mu
         d_p_iter[ind_neg] = d_p_replace
-        
+
     samp_d_p = unc.Distribution(d_p_iter)
 
 Generate random signs of the cosine of the pulsar's orbital inclination,

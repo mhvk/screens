@@ -20,9 +20,9 @@ The combined codeblocks in this tutorial can be downloaded as a Python script
 and as a Jupyter notebook:
 
 :Python script:
-    :jupyter-download:script:`gen_velocities.py <gen_velocities>`
+    :jupyter-download-script:`gen_velocities.py <gen_velocities>`
 :Jupyter notebook:
-    :jupyter-download:notebook:`gen_velocities.ipynb <gen_velocities>`
+    :jupyter-download-notebook:`gen_velocities.ipynb <gen_velocities>`
 
 Preliminaries
 =============
@@ -68,7 +68,7 @@ Set the parameters of the pulsar system:
       - Remarks
 
     * - **Coordinates of the pulsar system**
-      -  
+      -
       -
 
     * - right ascension
@@ -88,12 +88,12 @@ Set the parameters of the pulsar system:
       -
 
     * - **Orbital elements of the pulsar binary**
-      -  
       -
-    
+      -
+
     * - binary period
       - :math:`P_\mathrm{orb,p}`
-      - 
+      -
 
     * - projected semi-major axis
       - :math:`a_\mathrm{p} \sin( i_\mathrm{p} )`
@@ -117,7 +117,7 @@ Set the parameters of the pulsar system:
       -
 
     * - **Further parameters**
-      -  
+      -
       -
 
     * - distance to the pulsar system
@@ -171,28 +171,28 @@ Calculate some derived quantities:
       - Equation
 
     * - pulsar's radial-velocity amplitude
-      - 
+      -
         .. math::
-            
+
             K_\mathrm{p} = \frac{ 2 \pi a_\mathrm{p} \sin( i_\mathrm{p} ) }
                                 { P_\mathrm{orb,p} }
 
     * - fractional distance to the screen (from the pulsar)
-      - 
+      -
         .. math::
-            
+
             s = 1 - \frac{ d_\mathrm{s} }{ d_\mathrm{p} }
 
     * - effective distance
-      - 
+      -
         .. math::
-        
+
             d_\mathrm{eff} = \frac{ 1 - s }{ s } d_\mathrm{p}
 
     * - angle from the pulsar's ascending node to the line of lensed images
-      - 
+      -
         .. math::
-        
+
             \Delta\Omega_\mathrm{p} = \xi - \Omega_\mathrm{p}
 
 .. jupyter-execute::
@@ -274,14 +274,14 @@ z-component of the velocity (in the direction of the screen).
 .. jupyter-execute::
 
     earth_loc = EarthLocation('148°15′47″E', '32°59′52″S')
-    
+
     v_earth = earth_loc.get_gcrs(t).transform_to(lens_frame).velocity.d_z
 
 Pulsar's orbital velocity
 -------------------------
 
 Compute the pulsar's orbital velocity projected onto the screen
-    
+
 .. math::
 
     v_\mathrm{p,orb,\parallel}
@@ -319,7 +319,7 @@ This can be computed manually, but it can also be retrieved from the
 the system's proper motion) by transforming it to ``lens_frame``.
 
 .. jupyter-execute::
-    
+
     v_p_sys = psr_coord.transform_to(lens_frame).velocity.d_z
 
 Effective velocity
@@ -336,7 +336,7 @@ velocity
         - v_{\oplus,\parallel}
 
 .. jupyter-execute::
-    
+
     v_eff = 1. / s * v_lens - (1. - s) / s * (v_p_sys + v_p_orb) - v_earth
 
 Have a look at the contribution of each of the terms to the effective velocity.
@@ -344,7 +344,7 @@ Have a look at the contribution of each of the terms to the effective velocity.
 .. jupyter-execute::
 
     plt.figure(figsize=(8., 6.))
-    
+
     plt.plot(t, - v_earth)
     plt.plot(t, - ((1. - s) / s) * v_p_orb)
     plt.plot(t[::len(t)-1], 1. / s * v_lens * [1., 1.])
@@ -358,7 +358,7 @@ Have a look at the contribution of each of the terms to the effective velocity.
                bbox_to_anchor=(1.04, 1.), loc='upper left', fontsize=14)
     plt.xlim(t[0], t[-1])
     plt.ylabel(r'velocity (km/s)')
-    
+
     plt.show()
 
 Curvature and scaled effective velocity
@@ -368,7 +368,7 @@ The curvature :math:`\eta` can be computed from the effective velocity
 according to
 
 .. math::
-    
+
     \eta = \frac{ \lambda^2 d_\mathrm{eff} }{ 2 c v_\mathrm{eff,\parallel}^2 },
 
 where :math:`\lambda` is the observing wavelength and :math:`c` is the speed of
@@ -385,11 +385,11 @@ Have a look at the curvature at a function of time.
 .. jupyter-execute::
 
     plt.figure(figsize=(10., 6.))
-    
+
     plt.plot(t, eta.to(u.s**3))
     plt.xlim(t[0], t[-1])
     plt.ylabel(r'curvature $\eta$ (s$^3$)')
-    
+
     plt.show()
 
 Since :math:`v_\mathrm{eff}` can be arbitrarily close to zero (letting
@@ -399,21 +399,21 @@ above). For this reason, it is sometimes better to fit for the curvature of the
 secondary spectrum parabola in a space of "scaled effective velocity"
 
 .. math::
-    
+
     \frac{ \lambda }{ \sqrt{ 2 \eta c } }
       = \frac{  \left| v_\mathrm{eff,\parallel} \right| }
              { \sqrt{ d_\mathrm{eff} } }
 
 .. jupyter-execute::
-    
+
     dveff = np.abs(v_eff) / np.sqrt(d_eff)
-    
+
 Plot this quantity as function of time.
 
 .. jupyter-execute::
 
     plt.figure(figsize=(10., 6.))
-    
+
     plt.plot(t, dveff)
     plt.xlim(t[0], t[-1])
     dveff_lbl = (r'scaled effective velocity '
@@ -421,9 +421,9 @@ Plot this quantity as function of time.
                  r'{ \sqrt{ d_\mathrm{eff} } }$ '
                  r'$\left( \dfrac{\mathrm{km/s}}{\sqrt{\mathrm{pc}}} \right)$')
     plt.ylabel(dveff_lbl)
-    
+
     plt.show()
-    
+
 To visualize the modulation in scintillation velocity caused by both the
 pulsar's orbital motion and that of the Earth, we can make a 2D phase fold of
 the data.
