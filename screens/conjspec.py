@@ -117,20 +117,30 @@ class ConjugateSpectrum:
                 t_step = np.abs(np.diff(t, axis=-2)).min()
                 n_t = round((t.ptp()/t_step).to_value(1).item()) + 1
                 fd = np.fft.fftshift(np.fft.fftfreq(n_t, t_step).to(u.mHz))
-
-            if fd.ndim == 1:
                 fd = expand(fd, n=dynspec.ndim)
+                linear_axis = "transform"
 
-            if t.shape[-1] == 1:
-                factor = phasor(t, fd, linear_axis=None).conj() * dynspec
             else:
-                dt = np.diff(t, axis=-1)
-                # Check whether our last axis (generally frequency) is linearly
-                # spaced, so we can speed up the calculation.
-                linear_axis = -1 if np.allclose(dt, dt[..., :1]) else None
-                factor = phasor(t, fd, linear_axis=linear_axis).conj()
-                factor *= dynspec
+                if fd.ndim == 1:
+                    fd = expand(fd, n=dynspec.ndim)
 
+                linear_axis = None
+                # Check for linear spacing to speed up the calculation.  Here,
+                # the first check is whether fd is a linearly spaced array
+                # along a single axis, and the second whether the last axis of
+                # time (generally along frequency) is linearly spaced.
+                if (fd.size in fd.shape and np.allclose(
+                        dfd := np.diff(
+                            fd, axis=(axis := fd.shape.index(fd.size))),
+                        dfd.take(0, axis=axis))):
+                    linear_axis = "transform"
+                elif (t.shape[-1] > 1
+                      and np.allclose(dt := np.diff(t, axis=-1),
+                                      dt[..., :1])):
+                    linear_axis = -1
+
+            factor = (phasor(t, fd, linear_axis=linear_axis).conj()
+                      * dynspec)
             step1 = factor.sum(-2, keepdims=True).swapaxes(0, -2).squeeze(0)
             conj = np.fft.fftshift(np.fft.fft(step1, axis=-1), axes=-1)
             fd.shape = conj.shape[-2], 1
