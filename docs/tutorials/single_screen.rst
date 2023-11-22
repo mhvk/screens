@@ -12,9 +12,9 @@ The combined codeblocks in this tutorial can be downloaded as a Python script
 and as a Jupyter notebook:
 
 :Python script:
-    :jupyter-download:script:`single_screen.py <single_screen>`
+    :jupyter-download-script:`single_screen.py <single_screen>`
 :Jupyter notebook:
-    :jupyter-download:notebook:`single_screen.ipynb <single_screen>`
+    :jupyter-download-notebook:`single_screen.ipynb <single_screen>`
 
 .. plot::
 

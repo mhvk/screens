@@ -23,9 +23,9 @@ The combined codeblocks in this tutorial can be downloaded as a Python script
 and as a Jupyter notebook:
 
 :Python script:
-    :jupyter-download:script:`fit_velocities.py <fit_velocities>`
+    :jupyter-download-script:`fit_velocities.py <fit_velocities>`
 :Jupyter notebook:
-    :jupyter-download:notebook:`fit_velocities.ipynb <fit_velocities>`
+    :jupyter-download-notebook:`fit_velocities.ipynb <fit_velocities>`
 
 Preliminaries
 =============
@@ -67,7 +67,7 @@ and define a little dictionary of arguments to move plot titles inside their
 axes.
 
 .. jupyter-execute::
-    
+
     obs_style = {
         'linestyle': 'none',
         'color': 'grey',
@@ -92,9 +92,9 @@ axes.
                         r'{ \sqrt{ d_\mathrm{eff} } }$ '
                         r'$\left( \dfrac{ \mathrm{km/s} }'
                         r'{ \sqrt{ \mathrm{pc} } } \right)$')
-        
+
     title_kwargs = {
-        'loc': 'left', 
+        'loc': 'left',
         'x': 0.01,
         'y': 1.0,
         'pad': -14
@@ -107,7 +107,7 @@ Set the pulsar's orbital period :math:`P_\mathrm{orb,p}` and time of ascending
 node :math:`t_\mathrm{asc,p}`, which are known from pulsar timing.
 
 .. jupyter-execute::
-    
+
     p_orb_p = 5.7410459 * u.day
     t_asc_p = Time(54501.4671, format='mjd', scale='tdb')
 
@@ -123,7 +123,7 @@ coordinates.
     psr_coord = SkyCoord('04h37m15.99744s -47d15m09.7170s')
 
     psr_coord_eclip = psr_coord.barycentricmeanecliptic
-    
+
     t_asc_e = t_eqx + (psr_coord_eclip.lon + 90.*u.deg).to_value(u.cycle) * p_orb_e
 
 .. warning::
@@ -171,11 +171,11 @@ for the observation times:
 Let's have a look at all the data.
 
 .. jupyter-execute::
-    
+
     plt.figure(figsize=(11., 6.))
 
     plt.errorbar(t_obs.jyear, dveff_obs, yerr=dveff_err, **obs_style, alpha=0.3)
-    
+
     plt.xlim(t_obs[0].jyear, t_obs[-1].jyear)
 
     plt.xlabel('time')
@@ -262,17 +262,17 @@ to model the individual components of the scaled effective velocity separately.
 .. jupyter-execute::
 
     def model_dveff_signed(pars, t):
-    
+
         ph_e = ((t - t_asc_e) / p_orb_e).to(u.dimensionless_unscaled) * u.cycle
         ph_p = ((t - t_asc_p) / p_orb_p).to(u.dimensionless_unscaled) * u.cycle
-        
+
         dveff_e = pars['amp_e'] * np.sin(ph_e - pars['chi_e'])
         dveff_p = pars['amp_p'] * np.sin(ph_p - pars['chi_p'])
-        
+
         dveff = dveff_e + dveff_p + pars['dveff_c']
-    
+
         return (dveff).to(u.km/u.s/u.pc**0.5)
-    
+
     def model_dveff_abs(pars, t):
         dveff_signed = model_dveff_signed(pars, t)
         return np.abs(dveff_signed)
@@ -380,7 +380,7 @@ at a higher time resolution.
         dveff_mdl_many = model_dveff_abs(pars, t_many)
 
         plt.figure(figsize=(10., 7.5))
-        
+
         plt.subplots_adjust(wspace=0.1)
 
         ax1 = plt.subplot(221)
@@ -519,7 +519,7 @@ fold of the full model.
 
         gridsize = 19
         labelpad = 16
-            
+
         plt.subplot(131)
         plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1., C=dveff_obs.value,
                    reduce_C_function=np.median, gridsize=gridsize)
@@ -531,7 +531,7 @@ fold of the full model.
                   fontdict={'color': 'w', 'fontweight': 'bold'})
         cbar = plt.colorbar(location='top')
         cbar.set_label(dveff_lbl, labelpad=labelpad)
-        
+
         plt.subplot(132)
         plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1., C=dveff_mdl.value,
                    reduce_C_function=np.median, gridsize=gridsize)
@@ -542,7 +542,7 @@ fold of the full model.
                 fontdict={'color': 'w', 'fontweight': 'bold'})
         cbar = plt.colorbar(location='top')
         cbar.set_label(dveff_lbl, labelpad=labelpad)
-        
+
         plt.subplot(133)
         plt.hexbin(ph_e_obs.value % 1., ph_p_obs.value % 1., C=dveff_res.value,
                    reduce_C_function=np.median, gridsize=gridsize,
@@ -703,7 +703,7 @@ a NumPy :py:class:`~numpy.ndarray`.
         amp_pc = amp_p * np.sin(chi_p)
 
         pars_fit = np.array([amp_es, amp_ec, amp_ps, amp_pc, dveff_c])
-        
+
         return pars_fit
 
     def pars_fit2mdl(pars_fit):
@@ -722,7 +722,7 @@ a NumPy :py:class:`~numpy.ndarray`.
             'chi_p': (chi_p * u.rad).to(u.deg) % (360.*u.deg),
             'dveff_c': dveff_c * u.km/u.s/u.pc**0.5,
         }
-        
+
         return pars_mdl
 
 Next, to speed up the fitting, we can precompute the independent variables
@@ -792,12 +792,12 @@ useful to review its call signature:
 - The ``p0`` argument is an array of parameter values that serve as an initial
   guess.
 - The ``sigma`` argument is a array of uncertainties on the observed data.
-  
+
 The return values are ``popt``, the optimal parameters found by the algorithm,
 and ``pcov``, the covariance matrix of the solution.
 
 .. jupyter-execute::
-    
+
     popt, pcov = curve_fit(model_dveff_fit, sin_cos_ph_obs, dveff_obs.value,
                            p0=init_guess, sigma=dveff_err.value)
 
@@ -819,7 +819,7 @@ functions, we'll convert this array into the appropriate dictionary of Astropy
 .. jupyter-execute::
 
     pars_opt = pars_fit2mdl(popt)
-        
+
     for par_name in pars_opt:
         print(f'{par_name:8s} {pars_opt[par_name]:8.2f}')
 
@@ -832,7 +832,7 @@ easily be computed from the first one and should be identical in data space.
     pars_alt['chi_e'] = (pars_alt['chi_e'] + 180.*u.deg) % (360.*u.deg)
     pars_alt['chi_p'] = (pars_alt['chi_p'] + 180.*u.deg) % (360.*u.deg)
     pars_alt['dveff_c'] = -1. * pars_alt['dveff_c']
-        
+
     for par_name in pars_alt:
         print(f'{par_name:8s} {pars_alt[par_name]:8.2f}')
 

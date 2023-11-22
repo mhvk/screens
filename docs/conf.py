@@ -176,6 +176,8 @@ man_pages = [('index', project.lower(), project + u' Documentation',
 # -- Add the jupyter_sphinx extension -----------------------------------------
 
 extensions += ['jupyter_sphinx']
+# Avoid warning about frozen modules from IPython
+os.environ['PYDEVD_DISABLE_FILE_VALIDATION'] = '1'
 
 
 # -- Options for the edit_on_github extension ---------------------------------

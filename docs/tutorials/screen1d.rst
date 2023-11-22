@@ -14,9 +14,9 @@ The combined codeblocks in this tutorial can be downloaded as a Python script
 and as a Jupyter notebook:
 
 :Python script:
-    :jupyter-download:script:`screen1d.py <screen1d>`
+    :jupyter-download-script:`screen1d.py <screen1d>`
 :Jupyter notebook:
-    :jupyter-download:notebook:`screen1d.ipynb <screen1d>`
+    :jupyter-download-notebook:`screen1d.ipynb <screen1d>`
 
 
 Preliminaries

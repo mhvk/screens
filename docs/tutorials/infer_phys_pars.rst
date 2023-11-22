@@ -23,9 +23,9 @@ The combined codeblocks in this tutorial can be downloaded as a Python script
 and as a Jupyter notebook:
 
 :Python script:
-    :jupyter-download:script:`infer_phys_pars.py <infer_phys_pars>`
+    :jupyter-download-script:`infer_phys_pars.py <infer_phys_pars>`
 :Jupyter notebook:
-    :jupyter-download:notebook:`infer_phys_pars.ipynb <infer_phys_pars>`
+    :jupyter-download-notebook:`infer_phys_pars.ipynb <infer_phys_pars>`
 
 
 Preliminaries
@@ -75,10 +75,10 @@ its orbital period :math:`P_\mathrm{orb,p}`, projected semi-major axis
     psr_coord = SkyCoord('04h37m15.99744s -47d15m09.7170s',
                          pm_ra_cosdec=121.4385 * u.mas / u.yr,
                          pm_dec=-71.4754 * u.mas / u.yr)
-    
+
     p_orb_p = 5.7410459 * u.day
     asini_p = 3.3667144 * const.c * u.s
-    
+
     k_p = 2.*np.pi * asini_p / p_orb_p
 
 Set the known properties of Earth's orbit (the orbital period :math:`P_\oplus`,
@@ -93,12 +93,12 @@ orientation with respect to the line of sight (i.e., the orbit's inclination
     a_e = 1. * u.au
 
     v_0_e = 2.*np.pi * a_e / p_orb_e
-    
+
     psr_coord_eclip = psr_coord.barycentricmeanecliptic
     ascnod_eclip = SkyCoord(lon=psr_coord_eclip.lon - 90.*u.deg, lat=0.*u.deg,
                             frame='barycentricmeanecliptic')
     ascnod_equat = ascnod_eclip.icrs
-    
+
     i_e = psr_coord_eclip.lat + 90.*u.deg
     omega_e = psr_coord.position_angle(ascnod_equat)
 

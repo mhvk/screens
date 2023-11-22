@@ -23,9 +23,9 @@ The combined codeblocks in this tutorial can be downloaded as a Python script
 and as a Jupyter notebook:
 
 :Python script:
-    :jupyter-download:script:`two_screens.py <two_screens>`
+    :jupyter-download-script:`two_screens.py <two_screens>`
 :Jupyter notebook:
-    :jupyter-download:notebook:`two_screens.ipynb <two_screens>`
+    :jupyter-download-notebook:`two_screens.ipynb <two_screens>`
 
 
 Preliminaries
@@ -120,7 +120,7 @@ to get the telescope's velocity.
     tel_loc = EarthLocation('66°45′10″W', '18°20′48″N')
 
     t_obs = Time(53712.29719907, format='mjd', scale='tai')
-    
+
     vel_tel = (tel_loc
                .get_gcrs(t_obs)
                .transform_to(psr_frame)
@@ -222,7 +222,7 @@ along the line of lensed images).
     pos1 = (theta1 * d_s1).to(u.au, equivalencies=u.dimensionless_angles())
 
 .. note::
-        
+
     As a sanity check, we can verify that the curvature :math:`\eta`
     corresponds to the value measured from the secondary spectrum.
 
