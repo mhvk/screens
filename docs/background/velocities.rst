@@ -80,7 +80,10 @@ interference pattern of bright and dark fringes in space. Because the pulsar,
 the screen, and Earth all move with respect to one another, an Earth-based
 observation will probe different points in this pattern over time.
 
-.. TODO: [add figure showing interference pattern in observing plane]
+.. image:: ../images/sketch3d.png
+    :align: center
+    :width: 80%
+    :alt: Sketch of interference pattern in observing plane
 
 The sky-plane velocity (i.e., the velocity component that is perpendicular
 to the direct line of sight) of the interference pattern relative to Earth,
