@@ -514,7 +514,7 @@ these can be combined into
 .. math::
 
     \chi_\mathrm{p} = \arctantwo \left[
-                            \sin( \Delta\Omega_\mathrm{p} ) \cos( i_\oplus ),
+                            \sin( \Delta\Omega_\mathrm{p} ) \cos( i_\mathrm{p} ),
                             \cos( \Delta\Omega_\mathrm{p} ) \right].
 
 The parameter :math:`b_\mathrm{p}` modifying the sinusoid's amplitude
