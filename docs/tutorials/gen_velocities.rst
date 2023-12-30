@@ -487,12 +487,9 @@ Now we add some noise to the scaled effective velocities.
 Finally, we use NumPy's :py:func:`~numpy.savez` to save the data as a set of
 (unitless) NumPy arrays.
 
-.. jupyter-execute::
+.. jupyter-input::
 
-    # np.savez('data/fake-data-J0437.npz',
-    #          t_mjd=t.mjd,
-    #          dveff_obs=dveff_obs.value,
-    #          dveff_err=dveff_err.value)
-
-.. TODO: When jupyter-sphinx v0.4 is available, this last directive can be
-.. changed to jupyter-input and the Python code can be uncommented
+    np.savez('data/fake-data-J0437.npz',
+             t_mjd=t.mjd,
+             dveff_obs=dveff_obs.value,
+             dveff_err=dveff_err.value)

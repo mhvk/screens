@@ -863,11 +863,8 @@ Finally, we use NumPy's :py:func:`~numpy.savez` to save the solution and the
 accompanying covariance matrix found by :py:func:`~scipy.optimize.curve_fit`,
 to do an error analysis in a :doc:`later tutorial <error_analysis>`.
 
-.. jupyter-execute::
+.. jupyter-input::
 
-    # np.savez('data/fit-results-J0437.npz',
-    #          popt=popt,
-    #          pcov=pcov)
-
-.. TODO: When jupyter-sphinx v0.4 is available, this last directive can be
-.. changed to jupyter-input and the Python code can be uncommented
+    np.savez('data/fit-results-J0437.npz',
+             popt=popt,
+             pcov=pcov)
