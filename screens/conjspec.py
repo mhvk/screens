@@ -107,7 +107,7 @@ class ConjugateSpectrum:
         fd = kwargs.pop('fd', None)
         if t.size in t.shape and fd is None:  # fast FFT possible.
             conj = np.fft.fftshift(np.fft.fft2(dynspec))
-            fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0]).to(u.mHz)
+            fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0])
                                  .reshape(t.shape))
         else:
             # Time axis has slow FT or explicit fd given.
@@ -149,7 +149,7 @@ class ConjugateSpectrum:
             normalization = conj[conj.shape[-2] // 2, conj.shape[-1] // 2]
             conj /= normalization
 
-        tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0]).to(u.us))
+        tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0]))
         tau.shape = f.shape
         self = cls(conj, tau, fd, **kwargs)
         self.f = f
