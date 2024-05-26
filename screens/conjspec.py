@@ -87,8 +87,9 @@ class ConjugateSpectrum:
             ``theta``, ``magnification``, and ``noise``, those will be
             used as default inputs.  TODO: ``noise`` is likely wrong!
         normalization : 'mean' or None
-            Normalize such that the 0, 0 element equals the mean of the
-            dynamic spectrum.
+            Normalize dynamic spectrum by its mean and subtract 1 before
+            transforming and ensure the resulting conjugate spectrum is
+            normalized as well, with the 0, 0 element equal unity.
         **kwargs
             Other arguments to initialize the conjugate spectrum.
         """
@@ -102,12 +103,15 @@ class ConjugateSpectrum:
             # TODO: give DynamicSpectrum an __array__ method.
             dynspec = dynspec.dynspec
 
+        if normalization == 'mean':
+            dynspec = dynspec / dynspec.mean() - 1.  # Not in place!!
+
         f = kwargs.pop('f')
         t = kwargs.pop('t')
         fd = kwargs.pop('fd', None)
         if t.size in t.shape and fd is None:  # fast FFT possible.
             conj = np.fft.fftshift(np.fft.fft2(dynspec))
-            fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0]).to(u.mHz)
+            fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0])
                                  .reshape(t.shape))
         else:
             # Time axis has slow FT or explicit fd given.
@@ -146,10 +150,10 @@ class ConjugateSpectrum:
             fd.shape = conj.shape[-2], 1
 
         if normalization == 'mean':
-            normalization = conj[conj.shape[-2] // 2, conj.shape[-1] // 2]
-            conj /= normalization
+            conj /= dynspec.size
+            conj[conj.shape[-2] // 2, conj.shape[-1] // 2] = 1.
 
-        tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0]).to(u.us))
+        tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0]))
         tau.shape = f.shape
         self = cls(conj, tau, fd, **kwargs)
         self.f = f
