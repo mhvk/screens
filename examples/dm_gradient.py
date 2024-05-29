@@ -1,10 +1,9 @@
 # Licensed under the GPLv3 - see LICENSE
 """Simulate a 1-D scatering screen and show its dynamic and secondary spectra.
 
-Run as a script to see the effect of different transforms on blending
-for a large frequency range: straight fourier transform on frequency
-and time, after rebinning on a constant wavelength grid, and after
-rebinning time to frequency times time (nu-t transform).
+Run as a script to see the effect of different dispersion measure gradients
+over the screen, and how these can be undone by appropriate frequency-
+dependent time shifts.
 
 """
 
