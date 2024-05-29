@@ -14,6 +14,7 @@
     background/glossary
 
     tutorials/single_screen
+    tutorials/different_transforms
     tutorials/screen1d
     tutorials/two_screens
 
@@ -45,6 +46,8 @@ Generating and processing scintillometry data
 
 * :doc:`tutorials/single_screen`:
   how to generate the dynamic and secondary spectrum
+* :doc:`tutorials/different_transforms`:
+  how the nu-t transform preserves features best in wide-band data
 * :doc:`tutorials/screen1d`:
   generate synthetic data and visualize the system (for a single screen)
 * :doc:`tutorials/two_screens`:
