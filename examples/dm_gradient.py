@@ -106,10 +106,10 @@ for i, (dmg, _dt) in enumerate(zip(dm_gradient, dt_max)):
     nut.tau <<= u.us
     # As well as one in which we take account of the frequency-dependent
     # delay introduced by the DM gradient.
-    conv = (d_eff/const.c*mu_eff*f).to(1/(u.ks*u.mas), u.dimensionless_angles())
+    conv = (d_eff/const.c*mu_eff*fobs).to(1/(u.ks*u.mas), u.dimensionless_angles())
     phase_gradient = DispersionMeasure(dmg * u.mas).phase_delay(f, fobs) / u.mas
     delay = (phase_gradient / conv).to(t.unit, equivalencies=[(u.cycle, None)])
-    nut2 = CS.from_dynamic_spectrum(dynspec, f=f, t=(t+delay)*(f/fobs))
+    nut2 = CS.from_dynamic_spectrum(dynspec, f=f, t=(f/fobs)*t+delay)
     nut2.tau <<= u.us
 
     plt.subplot(3, 3, 1+i)
