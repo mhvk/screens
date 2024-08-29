@@ -93,13 +93,14 @@ One sees how badly smeared the signal is.
     dynspec += noise * np.random.normal(size=dynspec.shape)
     # Normalize
     dynspec /= dynspec.mean()
-    ds = DS(dynspec, f=f, t=t, noise=noise)
     # Smooth edges to reduce peakiness in sec. spectrum.
     alpha_nu = 0.25
     alpha_t = 0.5  # Bit larger so nu-t transform also is OK.
     taper = (tukey(dynspec.shape[-1], alpha=alpha_nu)
              * tukey(dynspec.shape[0], alpha=alpha_t)[:, np.newaxis])
     dynspec = (dynspec - 1.0) * taper + 1.0
+    # Create Dynamic and Conjugate spectra.
+    ds = DS(dynspec, f=f, t=t, noise=noise)
     cs = CS.from_dynamic_spectrum(ds)
     cs.tau <<= u.us  # nicer than 1/MHz
     cs.fd <<= u.mHz  # nicer than 1/min
