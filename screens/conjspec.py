@@ -119,7 +119,7 @@ class ConjugateSpectrum:
             # TODO: relax this assumption.
             if fd is None:
                 t_step = np.abs(np.diff(t, axis=-2)).min()
-                n_t = round((t.ptp()/t_step).to_value(1).item()) + 1
+                n_t = round((np.ptp(t)/t_step).to_value(1).item()) + 1
                 fd = np.fft.fftshift(np.fft.fftfreq(n_t, t_step).to(u.mHz))
                 fd = expand(fd, n=dynspec.ndim)
                 linear_axis = "transform"
