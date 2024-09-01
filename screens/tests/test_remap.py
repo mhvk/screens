@@ -66,3 +66,10 @@ class TestRemapTime:
         expected = self.scint(self.new_pos, self.scale[0])
         expected = np.broadcast_to(expected[:, np.newaxis], out.shape)
         assert_allclose(out, expected, atol=0.015)
+
+
+class TestRemapTimeComplex(TestRemapTime):
+    @staticmethod
+    def scint(pos, scale=3.):
+        """Super simple interference pattern."""
+        return np.exp(1j*(pos*scale*u.cy).to_value(u.rad))

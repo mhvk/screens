@@ -61,7 +61,7 @@ def remap_time(ds, t_map, new_t):
     # Ensure the lower bound is always below the upper bound.
     bounds_l, bounds_u = np.minimum(bounds_l, bounds_u), np.maximum(bounds_l, bounds_u)
     # Create output and weight arrays.
-    out = np.zeros((len(new_t),)+ds.shape[1:])
+    out = np.zeros_like(ds, shape=(len(new_t),)+ds.shape[1:])
     weight = np.zeros((len(new_t),)+ds.shape[1:])
     # As well as a fake frequency pixel axis (needed for the case that t_map
     # depends on the frequency axis as well).
