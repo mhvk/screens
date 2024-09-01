@@ -75,8 +75,9 @@ equation appearing in these tutorials.
 Reference/API
 =============
 
+.. automodapi:: screens.screen
 .. automodapi:: screens.fields
 .. automodapi:: screens.dynspec
 .. automodapi:: screens.conjspec
-.. automodapi:: screens.screen
+.. automodapi:: screens.remap
 .. automodapi:: screens.visualization
