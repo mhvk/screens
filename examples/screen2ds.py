@@ -120,8 +120,8 @@ plt.subplot(133)
 
 tau_max = (1./(f[3]-f[0])).to(u.us)
 th_g = theta_grid(d_eff, mu_eff, fobs=fobs,
-                  dtau=1/f.ptp(), tau_max=tau_max,
-                  dfd=1/t.ptp(), fd_max=1*u.Hz)
+                  dtau=1/np.ptp(f), tau_max=tau_max,
+                  dfd=1/np.ptp(t), fd_max=1*u.Hz)
 fd_g = (d_eff/const.c*mu_eff*fobs*th_g).to(
     u.mHz, equivalencies=u.dimensionless_angles())
 tau_g = (d_eff/(2*const.c)*th_g**2).to(

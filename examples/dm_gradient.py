@@ -14,7 +14,7 @@ from scipy.signal.windows import tukey
 
 from baseband_tasks.dm import DispersionMeasure
 
-from screens.fields import dynamic_field, phasor
+from screens.fields import dynamic_field
 from screens.dynspec import DynamicSpectrum as DS
 from screens.conjspec import ConjugateSpectrum as CS
 
@@ -131,7 +131,7 @@ for i, (dmg, _dt) in enumerate(zip(dm_gradient, dt_max)):
                extent=ss_extent, cmap='Greys', vmin=-9, vmax=-2)
     plt.xlabel(rf"$f_{{D}}\ ({nut.fd.unit.to_string('latex')[1:-1]})$")
     plt.ylabel(rf"$\tau\ ({nut.tau.unit.to_string('latex')[1:-1]})$")
-    plt.title(rf"$\nu - \nu t$")
+    plt.title(r"$\nu - \nu t$")
     plt.colorbar()
 
     plt.subplot(3, 3, 6+1+i)
@@ -139,5 +139,5 @@ for i, (dmg, _dt) in enumerate(zip(dm_gradient, dt_max)):
                extent=ss_extent, cmap='Greys', vmin=-9, vmax=-2)
     plt.xlabel(rf"$f_{{D}}\ ({nut2.fd.unit.to_string('latex')[1:-1]})$")
     plt.ylabel(rf"$\tau\ ({nut2.tau.unit.to_string('latex')[1:-1]})$")
-    plt.title(rf"$\nu - \nu t_{{corr}}$")
+    plt.title(r"$\nu - \nu t_{corr}$")
     plt.colorbar()

@@ -13,21 +13,23 @@ from matplotlib import pyplot as plt
 from astropy.visualization import quantity_support
 from scipy.linalg import eigh
 
-from screens.visualization import ThetaTheta
 from screens import DynamicSpectrum, ConjugateSpectrum
+from screens.modeling import DynamicSpectrumModel, ConjugateSpectrumModel
+from screens.visualization import ThetaTheta
 
 
 quantity_support()
 
-dyn_spec = DynamicSpectrum.fromfile('dynspec.h5', d_eff=1.*u.kpc,
-                                    mu_eff=100*u.mas/u.yr)
-conj_spec = ConjugateSpectrum.from_dynamic_spectrum(dyn_spec)
+ds = DynamicSpectrum.fromfile('dynspec.h5')
+dyn_spec = DynamicSpectrumModel(ds, d_eff=1.*u.kpc, mu_eff=100*u.mas/u.yr)
+cs = ConjugateSpectrum.from_dynamic_spectrum(ds)
+conj_spec = ConjugateSpectrumModel(cs, d_eff=1.*u.kpc, mu_eff=100*u.mas/u.yr)
 
 sec_kwargs = dict(extent=(conj_spec.fd[0, 0].value, conj_spec.fd[-1, 0].value,
                           conj_spec.tau[0].value, conj_spec.tau[-1].value),
                   cmap='Greys', vmin=-7, vmax=0, origin='lower', aspect='auto')
 plt.subplot(321)
-plt.imshow(np.log10(conj_spec.secspec).T, **sec_kwargs)
+plt.imshow(np.log10(cs.secspec).T, **sec_kwargs)
 
 conserve = True
 
@@ -45,7 +47,7 @@ ax.imshow(np.log10(np.maximum(np.abs(th_th)**2, 1e-30)).T, **th_kwargs)
 conjspec = conj_spec.conjspec.copy()
 conjspec[(conj_spec.fd == 0) | (conj_spec.tau == 0)] = 0
 # try recoving just plain power
-w_a, v_a = eigh(np.abs(th_th)**2, eigvals=(conj_spec.theta.size-1,)*2)
+w_a, v_a = eigh(np.abs(th_th)**2, subset_by_index=(conj_spec.theta.size-1,)*2)
 rec_a = v_a[:, -1] * np.sqrt(w_a[-1])
 th_th_rp = rec_a[:, np.newaxis] * rec_a
 ax = plt.subplot(324, projection=th_th_proj)
@@ -60,7 +62,7 @@ plt.subplot(323)
 plt.imshow(np.log10(np.maximum(sec_rp, 1e-30)).T, **sec_kwargs)
 
 # try recovering phases as well.
-w, v = eigh(th_th, eigvals=(conj_spec.theta.size-1,)*2)
+w, v = eigh(th_th, subset_by_index=(conj_spec.theta.size-1,)*2)
 recovered = v[:, -1] * np.sqrt(w[-1])
 th_th_r = recovered[:, np.newaxis] * recovered
 ax = plt.subplot(326, projection=th_th_proj)
