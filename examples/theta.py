@@ -14,6 +14,7 @@ from baseband.io import hdf5
 
 from screens.fields import dynamic_field, theta_grid
 from screens.dynspec import DynamicSpectrum
+from screens.modeling import DynamicSpectrumModel
 from screens.visualization import ThetaTheta
 
 
@@ -51,12 +52,13 @@ mu_eff = 100 * u.mas / u.yr
 # Assue we're not too close to max tau in secondary spectrum.
 tau_max = (1./(f[3]-f[0])).to(u.us)
 th_r = theta_grid(d_eff, mu_eff, fobs=fobs,
-                  dtau=1/f.ptp(), tau_max=tau_max,
-                  dfd=1/t.ptp(), fd_max=1*u.Hz)
+                  dtau=1/np.ptp(f), tau_max=tau_max,
+                  dfd=1/np.ptp(t), fd_max=1*u.Hz)
 
 # Create a DynamicSpectrum just to use its `theta_theta` method.
-ds = DynamicSpectrum(dynspec, f=f, t=t, noise=noise, d_eff=d_eff,
-                     mu_eff=mu_eff, theta=th_r)
+ds = DynamicSpectrumModel(
+    DynamicSpectrum(dynspec, f=f, t=t, noise=noise),
+    d_eff=d_eff, mu_eff=mu_eff, theta=th_r)
 
 th_th = ds.theta_theta()
 
@@ -71,7 +73,7 @@ plt.title(r'raw $\theta-\theta$')
 
 # Calculate eigenvectors for inferred theta-theta.
 
-w, v = scipy.linalg.eigh(th_th, eigvals=(th_r.size-1, th_r.size-1))
+w, v = scipy.linalg.eigh(th_th, subset_by_index=(th_r.size-1, th_r.size-1))
 
 # Ideally, the eigenvalue is 1, but we want a normalized solution anyway,
 # so just use properly normalized eigenvector.

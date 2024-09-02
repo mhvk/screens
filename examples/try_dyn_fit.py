@@ -12,14 +12,15 @@ from astropy import units as u
 from matplotlib import pyplot as plt
 from astropy.visualization import quantity_support
 
-from screens.visualization import ThetaTheta
 from screens import DynamicSpectrum
+from screens.modeling import DynamicSpectrumModel
+from screens.visualization import ThetaTheta
 
 
 quantity_support()
 
-dyn_chi2 = DynamicSpectrum.fromfile('dynspec.h5', d_eff=1.*u.kpc,
-                                    mu_eff=100*u.mas/u.yr)
+ds = DynamicSpectrum.fromfile('dynspec.h5')
+dyn_chi2 = DynamicSpectrumModel(ds, d_eff=1.*u.kpc, mu_eff=100*u.mas/u.yr)
 dyn_chi2.theta = dyn_chi2.theta_grid(
     tau_max=(1./(dyn_chi2.f[3]-dyn_chi2.f[0])).to(u.us))
 dyn_chi2.locate_mu_eff(np.arange(98, 103) << u.mas/u.yr)

@@ -5,8 +5,9 @@ TODO: make this more complete!
 import numpy as np
 from astropy import units as u
 
+from screens import DynamicSpectrum
 from screens.fields import dynamic_field
-from screens.dynspec import DynamicSpectrum
+from screens.modeling import DynamicSpectrumModel
 
 
 class TestFit:
@@ -23,9 +24,9 @@ class TestFit:
         cls.magnification = np.array([1., 0.2, 0.1j])
         ds = np.abs((cls.dw * cls.magnification[:, np.newaxis, np.newaxis])
                     .sum(0))**2
-        cls.ds = DynamicSpectrum(ds, cls.f, cls.t, 0.001,
-                                 d_eff=cls.d_eff, mu_eff=cls.mu_eff,
-                                 magnification=cls.magnification)
+        cls.ds = DynamicSpectrumModel(
+            DynamicSpectrum(ds, cls.f, cls.t, 0.001),
+            d_eff=cls.d_eff, mu_eff=cls.mu_eff, magnification=cls.magnification)
         cls.ds.theta = cls.theta
 
     def test_jacobian(self):

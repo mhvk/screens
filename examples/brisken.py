@@ -2,6 +2,8 @@
 """Fit part of the Brisken dynamic spectrum.
 
 Example runs on Brisken file 'dynamic_spectrum_arar.npz'
+# On CITA machines can use
+# ln -s /mnt/scratch-lustre/simard/GB057/dynamic_spectra/dynamic_spectrum_arar.npz
 """
 
 import numpy as np
@@ -9,8 +11,9 @@ from astropy import units as u
 from matplotlib import pyplot as plt
 from astropy.visualization import quantity_support
 
-from screens.visualization import ThetaTheta
 from screens import DynamicSpectrum
+from screens.modeling import DynamicSpectrumModel
+from screens.visualization import ThetaTheta
 
 
 quantity_support()
@@ -22,9 +25,10 @@ t_full = a['t_s'] << u.s
 sel_t, sel_f = slice(292, 505), slice(50000, 50300)
 t = t_full[sel_t]
 f = f_full[sel_f]
-ds = DynamicSpectrum(a['I'][sel_t, sel_f], t=t[:, np.newaxis],
-                     f=f, noise=1, d_eff=1.4*u.kpc,
-                     mu_eff=50*u.mas/u.yr)
+dynspec = DynamicSpectrum(a['I'][sel_t, sel_f], t=t[:, np.newaxis],
+                          f=f, noise=1)
+ds = DynamicSpectrumModel(dynspec, d_eff=1.4*u.kpc,
+                          mu_eff=50*u.mas/u.yr)
 
 
 tau_max = 350*u.us
