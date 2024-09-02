@@ -28,9 +28,7 @@ class TestConjSpec:
         self.magnification = np.array([1., 0.2, 0.1j])
         ds = np.abs((self.dw * self.magnification[:, np.newaxis, np.newaxis])
                     .sum(0))**2
-        self.ds = DynamicSpectrum(ds, self.f, self.t, 0.001,
-                                  d_eff=self.d_eff, mu_eff=self.mu_eff,
-                                  magnification=self.magnification)
+        self.ds = DynamicSpectrum(ds, self.f, self.t, 0.001)
         self.ds.theta = self.theta
         self.conjspec = np.fft.fftshift(np.fft.fft2(self.ds.dynspec))
 

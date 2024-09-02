@@ -80,4 +80,5 @@ Reference/API
 .. automodapi:: screens.dynspec
 .. automodapi:: screens.conjspec
 .. automodapi:: screens.remap
+.. automodapi:: screens.modeling
 .. automodapi:: screens.visualization
