@@ -37,15 +37,8 @@ Imports.
 
     from screens.screen import Source, Screen1D, Telescope
     from screens.fields import phasor
-
-Define a handy function to create extents to use with imshow.
-
-.. jupyter-execute::
-
-    def axis_extent(x):
-        x = x.ravel().value
-        dx = x[1]-x[0]
-        return x[0]-0.5*dx, x[-1]+0.5*dx
+    # A handy function to create extents to use with imshow.
+    from screens.visualization import axis_extent
 
 
 Construct the system's components
@@ -246,7 +239,7 @@ Plot the dynamic spectrum.
 
     plt.imshow(dynspec.T,
                origin='lower', aspect='auto', interpolation='none',
-               cmap='Greys', extent=axis_extent(t) + axis_extent(f), vmin=0.)
+               cmap='Greys', extent=axis_extent(t, f), vmin=0.)
     plt.xlabel(rf"time $t$ ({t.unit.to_string('latex')})")
     plt.ylabel(rf"frequency $f$ ({f.unit.to_string('latex')})")
 
@@ -279,7 +272,7 @@ Plot the secondary spectrum.
 
     plt.imshow(secspec.T,
                origin='lower', aspect='auto', interpolation='none',
-               cmap='Greys', extent=axis_extent(fd) + axis_extent(tau),
+               cmap='Greys', extent=axis_extent(fd, tau),
                norm=LogNorm(vmin=1.e-4, vmax=1.))
     plt.xlim(-5., 5.)
     plt.ylim(-15., 15.)

@@ -20,6 +20,7 @@ from astropy.coordinates import (
 
 from screens.screen import Source, Screen1D, Telescope
 from screens.fields import phasor
+from screens.visualization import axis_extent
 
 
 dp = 0.75*u.kpc
@@ -39,12 +40,6 @@ s1 = Screen1D(CylindricalRepresentation(1., -40*u.deg, 0.).to_cartesian(),
                    1, 0.2-.5j, 0.5j, 0.3, 0.2, 0.09, 0.02]))
 s2 = Screen1D(CylindricalRepresentation(1., 70*u.deg, 0.).to_cartesian(),
               [0.85]*u.AU, magnification=0.05)[..., np.newaxis]
-
-
-def axis_extent(x):
-    x = x.ravel().value
-    dx = x[1]-x[0]
-    return x[0]-0.5*dx, x[-1]+0.5*dx
 
 
 def unit_vector(c):
@@ -194,7 +189,7 @@ if __name__ == '__main__':
     ds = np.abs(dw.sum(0))**2
     ax_ds = plt.subplot(233)
     ax_ds.imshow(ds.T, cmap='Greys',
-                 extent=axis_extent(t) + axis_extent(f),
+                 extent=axis_extent(t, f),
                  origin='lower', interpolation='none', aspect='auto')
     ax_ds.set_xlabel(t.unit.to_string('latex'))
     ax_ds.set_ylabel(f.unit.to_string('latex'))
@@ -206,7 +201,7 @@ if __name__ == '__main__':
     fd = np.fft.fftshift(np.fft.fftfreq(t.size, t[1]-t[0])).to(u.mHz)
     ax_ss = plt.subplot(236)
     ax_ss.imshow(np.log10(np.abs(cs.T)**2), vmin=-7, vmax=0, cmap='Greys',
-                 extent=axis_extent(fd) + axis_extent(tau),
+                 extent=axis_extent(fd, tau),
                  origin='lower', interpolation='none', aspect='auto')
     ax_ss.set_xlim(-5, 5)
     ax_ss.set_ylim(-10, 10)

@@ -187,15 +187,15 @@ interval for each of the parameters.
             q_m, q_p = q_50 - q_16, q_84 - q_50
             fmt = get_format(fmts, i)
             if fmt(q_m) == fmt(q_p):
-                txt = '{0} &= {1} \pm {2} \; {4} \\\\[0.5em]'
+                txt = r'{0} &= {1} \pm {2} \; {4} \\[0.5em]'
             else:
-                txt = '{0} &= {1}_{{-{2}}}^{{+{3}}} \; {4} \\\\[0.5em]'
+                txt = r'{0} &= {1}_{{-{2}}}^{{+{3}}} \; {4} \\[0.5em]'
             txt = txt.format(par_strs[i].symbol,
                              fmt(q_50), fmt(q_m), fmt(q_p),
                              par_strs[i].unit)
             txt_all += txt
 
-        txt_all = '\\begin{align}' + txt_all + '\\end{align}'
+        txt_all = r'\begin{align}' + txt_all + r'\end{align}'
         display(Math(txt_all))
 
 
@@ -203,11 +203,11 @@ interval for each of the parameters.
         txt_all = ''
         for i, upar in enumerate(upars):
             fmt = get_format(fmts, i)
-            txt_all += (f'{par_strs[i].symbol} &= '
-                        f'{fmt(upar.n)} \pm {fmt(upar.s)} \; '
-                        f'{par_strs[i].unit} \\\\[0.5em]')
+            txt_all += (rf'{par_strs[i].symbol} &= '
+                        rf'{fmt(upar.n)} \pm {fmt(upar.s)} \; '
+                        rf'{par_strs[i].unit} \\[0.5em]')
 
-        txt_all = '\\begin{align}' + txt_all + '\\end{align}'
+        txt_all = r'\begin{align}' + txt_all + r'\end{align}'
         display(Math(txt_all))
 
 
@@ -307,7 +307,7 @@ unit strings into label strings for a list of parameters.
 .. jupyter-execute::
 
     def gen_label_strs(par_strs):
-        label_strs = [f'${par_str.symbol} \; ({par_str.unit})$'
+        label_strs = [rf'${par_str.symbol} \; ({par_str.unit})$'
                       for par_str in par_strs]
         return label_strs
 
