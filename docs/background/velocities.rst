@@ -190,7 +190,7 @@ The pulsar's systemic velocity in the plane of the sky
 
 The component of this velocity that is parallel to the line of images formed by
 the lens is then given by
-    
+
 .. math::
 
     v_\mathrm{p,sys,\parallel} = d_\mathrm{p}
@@ -331,7 +331,7 @@ rotation on the sky, with :math:`i_\mathrm{p} = 90^\circ` for an edge-on orbit
             va='center', vh='left', arrow='-|>', color=col_angmom)
     rot_lin(ax, th=i_p + 90.*u.deg, s=0.6, name='pulsar\norbit', vh='center',
             arrow="-", color=col_orbit)
-    label_angle(ax, th0=180.*u.deg, th1=180.*u.deg + i_p, 
+    label_angle(ax, th0=180.*u.deg, th1=180.*u.deg + i_p,
                 th_name=r"$i_\mathrm{p}$", rad=.2, color=col_angmom)
     ax.set_aspect('equal')
 
@@ -411,7 +411,7 @@ celestial north through east.
                 th_name=r"$\Omega_\mathrm{p}$", color=col_nodes)
     rot_lin(ax, th=omega_p+90.*u.deg, name='line of nodes', vh='center',
             arrow="-|>", color=col_nodes)
-    
+
     plt.show()
 
 In the equatorial coordinate system, the pulsar's orbital sky-plane velocity is
@@ -440,7 +440,7 @@ Projecting the sky-plane velocity onto the line of lensed images
 The component of the pulsar's orbital sky-plane velocity
 :math:`\vec{v}_\mathrm{p,orb,sky}` that is parallel to the line of images
 formed by the lens is then given by
-    
+
 .. math::
 
     \begin{align}
@@ -479,7 +479,7 @@ the line of lensed images measured from the ascending node of the pulsar orbit.
             arrow="-", color=col_screen)
     rot_lin(ax, th=omega_p+90.*u.deg, name='line of nodes', vh='center',
             arrow="-|>", color=col_nodes)
-    
+
     plt.show()
 
 
@@ -566,7 +566,7 @@ with
     \qquad
     \phi_\oplus = 2 \pi \frac{ t - t_\mathrm{asc,\oplus} }
                              { P_\mathrm{orb,\oplus} },
-    
+
 .. math::
 
     \chi_\oplus = \arctantwo \left[
@@ -589,7 +589,7 @@ can be derived from the pulsar system's ecliptic coordinates
 
 .. plot::
     :context: close-figs
-    
+
     from astropy.coordinates import SkyCoord
 
     psr_coord = SkyCoord('04h37m15.99744s -47d15m09.7170s')
@@ -639,7 +639,7 @@ can be derived from the pulsar system's ecliptic coordinates
     plt.plot(1.-0.6, 1., '+', color=col_earth)
     ax.text(0.2,
             1.,
-            "Earth\nat $t_\mathrm{eqx}$",
+            r"Earth\nat $t_\mathrm{eqx}$",
             horizontalalignment='center',
             verticalalignment='center',
             color=col_earth)
@@ -662,11 +662,11 @@ can be derived from the pulsar system's ecliptic coordinates
     label_angle(ax, th1=90.*u.deg, th0=-beta_p, rad=.5,
                 th_name=r" $i_{\!\!\oplus}$", vh='center', color=col_angmom)
     ax.set_aspect('equal')
-    
+
     plt.show()
 
 .. container:: align-center
-    
+
     **Left:** top-down view, looking in the direction of
     :math:`-\vec{h}_\oplus`.
     **Right:** side view, looking in the direction of :math:`\hat{x}`.
@@ -679,7 +679,7 @@ the Earth's orbital specific angular momentum vector :math:`\vec{h}_\oplus`.
 It is given by
 
 .. math::
-    
+
     i_\oplus = \beta_\mathrm{p} + 90^\circ.
 
 The restriction on the pulsar's ecliptic latitude :math:`-90^\circ \le
@@ -716,7 +716,7 @@ Finally, under the simplifying assumption that Earth's orbit is circular,
 the time of Earth's passage through the ascending node is given by
 
 .. math::
-    
+
     t_\mathrm{asc,\oplus} = t_\mathrm{eqx} + P_\mathrm{orb,\oplus}
         \frac{ \lambda_\mathrm{p} + 90^\circ }{ 360^\circ },
 
@@ -769,7 +769,7 @@ Filling in the terms for effective proper motion gives
       + \underbrace{ \vphantom{ \frac{ v_\mathrm{0,p} }{ d_\mathrm{p} } }
             \frac{ v_{0,\oplus} }{ d_\mathrm{eff} } b_\oplus
                 \sin( \phi_\oplus - \chi_\oplus )
-        }_\textrm{Earth's orbital motion}.  
+        }_\textrm{Earth's orbital motion}.
 
 This shows that the scaled effective velocity can be written as the normed sum
 of two sinusoids and a constant offset:

@@ -35,13 +35,7 @@ Start with some standard imports and a handy function for presenting images.
     from screens.fields import dynamic_field
     from screens.dynspec import DynamicSpectrum as DS
     from screens.conjspec import ConjugateSpectrum as CS
-
-    def axis_extent(*args):
-        result = []
-        for a in args:
-            x = a.squeeze().value
-            result.extend([x[0] - (dx:=x[1]-x[0])/2, x[-1]+dx/2])
-        return result
+    from screens.visualization import axis_extent
 
 
 Set up a scattering screen
