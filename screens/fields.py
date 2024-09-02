@@ -59,8 +59,9 @@ def phasor(indep, transform, linear_axis=None):
         ph0 = (indep[ph0_index] * transform * u.cycle).to_value(u.rad)
         dph = (np.diff(indep[ph01_index], axis=linear_axis)
                * transform * u.cycle).to_value(u.rad)
-    phasor = np.empty(np.broadcast(indep, transform).shape, complex)
-    phasor[ph0_index] = np.exp(1j * ph0)
+    phasor0 = np.exp(1j * ph0)
+    phasor = np.empty_like(phasor0, shape=np.broadcast(indep, transform).shape)
+    phasor[ph0_index] = phasor0
     phasor[dph0_index] = np.exp(1j * dph)
     return np.cumprod(phasor, out=phasor, axis=linear_axis)
 
