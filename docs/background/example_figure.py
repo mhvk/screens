@@ -42,12 +42,9 @@ def simple_figure(th_par, magnification,
     dynspec = np.abs(dynwave)**2
 
     # Create conjugate and then secondary spectrum
-    cs = ConjugateSpectrum.from_dynamic_spectrum(dynspec, f=f, t=t, noise=0.,
-                                                 d_eff=d_eff, mu_eff=mu_eff,
-                                                 theta=th_par,
-                                                 magnification=magnification)
-    tau = cs.tau
-    fd = cs.fd
+    cs = ConjugateSpectrum.from_dynamic_spectrum(dynspec, f=f, t=t, noise=0.)
+    tau = cs.tau << u.us
+    fd = cs.fd << u.mHz
     secspec = cs.secspec
 
     # Create dynamic wavefield
