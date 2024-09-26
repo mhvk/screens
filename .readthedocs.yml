@@ -7,6 +7,11 @@ build:
   apt_packages:
     - graphviz
 
+sphinx:
+  builder: html
+  configuration: docs/conf.py
+  fail_on_warning: true
+
 python:
   install:
     - method: pip
