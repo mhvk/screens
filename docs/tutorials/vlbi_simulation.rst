@@ -46,6 +46,8 @@ Import some useful functions for simulating screens.
     from screens.fields import phasor
     from screens.screen import Screen1D, Source, Telescope
     from screens.visualization import axis_extent
+    # Set random seed
+    np.random.seed(12345)
 
 Simulation Function
 ===================
