@@ -15,9 +15,9 @@ method, please refer to the preceding tutorial.
 The code used in this example can be downloaded from:
 
 :Python script:
-    :jupyter-download-script:`vlbi_sims.py <vlbi_sims>`
+    :jupyter-download-script:`vlbi_simulation.py <vlbi_simulation>`
 :Jupyter notebook:
-    :jupyter-download-notebook:`vlbi_sims.ipynb <vlbi_sims>`
+    :jupyter-download-notebook:`vlbi_simulation.ipynb <vlbi_simulation>`
 
 
 Import
@@ -28,10 +28,10 @@ Import some useful functions for simulating screens.
 .. jupyter-execute::
 
     import numpy as np
-    
+
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm, SymLogNorm
-    
+
     import astropy.constants as const
     import astropy.units as u
     from astropy.coordinates import (
@@ -42,7 +42,7 @@ Import some useful functions for simulating screens.
         SkyOffsetFrame,
     )
     from astropy.time import Time
-    
+
     from screens.fields import phasor
     from screens.screen import Screen1D, Source, Telescope
     from screens.visualization import axis_extent
@@ -58,10 +58,10 @@ function.
     def simulate(observationPars, screenPars, pulsarPars, startTime):
         """
         Simulation Code
-    
+
         Parameters
         ----------
-    
+
         observationPars : dict
             dictionary of observation parameters
                 time : Quanity Array
@@ -72,7 +72,7 @@ function.
                     array of dish identifiers
                 dishLocations : list[EarthLocation]
                     list of dish locations
-    
+
         screenPars : dict
             dictionary of screen parameters
                 screenDistance : Quantity
@@ -83,7 +83,7 @@ function.
                     the speed of the screen along the line of images
                 imageNumber : int
                     the number of images to simulate
-    
+
         pulsarPars : dict
             dictionary of pulsar parameters
                 pulsarDistance : Quantity
@@ -94,15 +94,15 @@ function.
                     pulsar position in Right Ascension
                 pulsarDec : Quanity
                     pulsar position in Declination
-    
+
         startTime : astropy.time.core.Time
             start time of the obervation
         """
-    
+
         ## Convert time and freq for use in screens
         t = np.copy(observationPars["time"])[:, np.newaxis]
         f = np.copy(observationPars["freq"])
-    
+
         ## Calculate useful derived quanities
         lam = const.c / observationPars["freq"].mean()
         effectiveDistance = (
@@ -110,16 +110,16 @@ function.
             * screenPars["screenDistance"]
             / (pulsarPars["pulsarDistance"] - screenPars["screenDistance"])
         )
-    
+
         fd = np.fft.fftshift(np.fft.fftfreq(t.shape[0],d=t[1]-t[0]).to(u.mHz))
         tau = np.fft.fftshift(np.fft.fftfreq(f.shape[0],d=f[1]-f[0]).to(u.us))
-    
+
         ## Determine furthest image observable in data (tau limit)
         thetaMaxTau = np.sqrt(
             0.8 * 2 * tau.max() * const.c / effectiveDistance
         )
         offsetMaxTau = thetaMaxTau * screenPars["screenDistance"]
-    
+
         ## Create pulsar frame
         psrCoord = SkyCoord(ra=pulsarPars["pulsarRA"], dec=pulsarPars["pulsarDec"])
         psrFrame = SkyOffsetFrame(origin=psrCoord)
@@ -128,7 +128,7 @@ function.
         )
         pulsarVelocity = np.concatenate((pulsarVelocity, np.zeros(1) * u.km / u.s))
         pulsar = Source(vel=CartesianRepresentation(pulsarVelocity))
-    
+
         ## Create Screen
         screenOffsets = (
             np.random.uniform(-1, 1, screenPars["imageNumber"]) * u.dimensionless_unscaled
@@ -139,29 +139,29 @@ function.
         ) * np.exp(-np.power(screenOffsets / 10, 2) / 2)
         screenMagnification /= np.sqrt(np.sum(np.abs(screenMagnification) ** 2))
         screenOffsets *= offsetMaxTau
-        
+
         screenNormal = CylindricalRepresentation(
             1.0, 90 * u.deg - screenPars["screenOrientation"], 0.0
         ).to_cartesian()
-        
+
         screen = Screen1D(
             normal=screenNormal,
             p=screenOffsets,
             v=screenPars["screenSpeed"],
             magnification=screenMagnification,
         )
-    
+
         ##observe pulsar with screen
         observeScreenPulsar = screen.observe(
             source=pulsar,
             distance=pulsarPars["pulsarDistance"] - screenPars["screenDistance"],
         )
-    
+
         ##Lists to store
         wavefields = []
         etas = []
         UVW = []
-    
+
         ##Determine Earth core position to correct positions
         earthCorePosition = EarthLocation(x=0 * u.m, y=0 * u.m, z=0 * u.m).get_gcrs(
             startTime + observationPars["time"].mean()
@@ -185,7 +185,7 @@ function.
             )
             ##Transform to pulsar frame
             earthPosition = earthPosition.transform_to(psrFrame).cartesian
-    
+
             ## Get dish velocity
             earthVelocity = earthPosition.differentials["s"]
             earthVelocity = (
@@ -199,7 +199,7 @@ function.
                 * u.km
                 / u.s
             )
-    
+
             ## dish position relative to earth center in UVW
             earthPosition = (
                 np.array(
@@ -213,7 +213,7 @@ function.
             )
             earthPosition -= earthCorePosition
             UVW.append(earthPosition)
-    
+
             ## Create telescope
             telescope = Telescope(
                 pos=CartesianRepresentation(earthPosition),
@@ -223,7 +223,7 @@ function.
             observation = telescope.observe(
                 source=observeScreenPulsar, distance=screenPars["screenDistance"]
             )
-    
+
             ##Create wavefield
             brightness = observation.brightness[:, np.newaxis, np.newaxis]
             tau0 = observation.tau[:, np.newaxis, np.newaxis]
@@ -231,7 +231,7 @@ function.
             tau_t = tau0 + taudot * t
             ph = phasor(f, tau_t)
             wavefields.append(np.sum(ph * brightness, axis=0).T)
-    
+
             ##calculate curvature
             parallelVelocity = np.sum((
                 telescope.vel
@@ -246,7 +246,7 @@ function.
             ).to(u.s**3)
             etas.append(eta.to_value(u.s**3))
         etas = np.array(etas) * u.s**3
-    
+
         ## Create visibilities
         baselineID = []
         baselines = []
@@ -317,9 +317,10 @@ data on MJD 53675 for a 1 MHz band from 318 MHz to 319 MHz
 
 .. jupyter-execute::
 
+    # From PINT/src/pint/observatory/observatories.py
     dishLocations = {
-        "AR": EarthLocation.of_site('arecibo'),
-        "GBT" : EarthLocation.of_site('GBT'),
+        "AO": EarthLocation(2390487.080, -5564731.357, 1994720.633, unit="m"),
+        "GB" : EarthLocation(882589.289, -4924872.368, 3943729.418, unit="m"),
     }
     startTime = Time(53675,format="mjd")
     time = np.linspace(0, 60, 512) * u.min
