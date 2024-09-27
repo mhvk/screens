@@ -149,7 +149,7 @@ function.
             tau0 = obs.tau[:, np.newaxis, np.newaxis]
             taudot = obs.taudot[:, np.newaxis, np.newaxis]
             tau_t = tau0 + taudot * t
-            ph = phasor(freq, tau_t)
+            ph = phasor(freq, tau_t, linear_axis=-1)
             wavefields[name] = np.sum(ph * brightness.to_value(u.one), axis=0).T
 
         # Create visibilities
