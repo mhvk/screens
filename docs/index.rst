@@ -17,6 +17,7 @@
     tutorials/different_transforms
     tutorials/screen1d
     tutorials/two_screens
+    tutorials/vlbi_simulation
 
     tutorials/gen_velocities
     tutorials/fit_velocities
@@ -52,6 +53,8 @@ Generating and processing scintillometry data
   generate synthetic data and visualize the system (for a single screen)
 * :doc:`tutorials/two_screens`:
   how to use Screen1D for radiation scattered by multiple screens
+* :doc:`tutorials/vlbi_simulation`:
+  how to use the Screen1D class to generate VLBI data
 
 
 Modelling scintillation velocities
