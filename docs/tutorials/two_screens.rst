@@ -9,13 +9,18 @@ explains how to set up :py:class:`~screens.screen.Screen1D` objects from
 patterns seen in a secondary spectrum, such that the synthetic data roughly
 match the observations.
 
+For background on the expected paths, see :doc:`../background/multiple_screens`,
+and to visualize how the resulting wavefield depends on the properties of the
+screen, try `examples/two_screen_interaction.py
+<https://github.com/mhvk/screens/blob/main/examples/two_screen_interaction.py>`_.
+
 For the basics of how to use the :py:class:`~screens.screen.Screen1D` class and
 the :py:meth:`~screens.screen.Screen.observe` method, please refer to the
 :doc:`preceding tutorial <screen1d>`.
 
 The numerical values in the example explored in this tutorial correspond to a
-model for the scattering of pulsar PSR B0834+06, specifically `Hengrui Zhu's
-solution <https://eor.cita.utoronto.ca/penwiki/User:Hzhu#B0834_Paper_Status>`_,
+model for the scattering of pulsar PSR B0834+06 from `Hengrui Zhu et
+al. (2023) <https://ui.adsabs.harvard.edu/abs/2023ApJ...950..109Z/abstract>`_,
 which is based on that of `Liu et al. (2016)
 <https://ui.adsabs.harvard.edu/abs/2016MNRAS.458.1289L/abstract>`_.
 
