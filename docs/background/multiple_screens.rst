@@ -2,11 +2,16 @@
 Scattering by multiple linear screens
 =====================================
 
-
-
+When multiple screens are present, the number of paths from source to observer
+become much larger. Below, we derive the paths taken for linear screens.  The
+result is implemented in the :py:class:`~screens.screen.Screen1D` class, and
+this class is used in the tutorial on :doc:`../tutorials/two_screens`.  To
+help visualize how the resulting wavefield depends on the properties of the
+screen, have a look at `examples/two_screen_interaction.py
+<https://github.com/mhvk/screens/blob/main/examples/two_screen_interaction.py>`_.
 
 Multiple screens
-----------------
+================
 
 Consider screens with linear features between the telescope and the
 pulsar.  Consider a coordinate system in which z is along the line of
