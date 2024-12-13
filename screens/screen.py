@@ -3,7 +3,7 @@
 Representations for sources, screens, and telescopes.
 
 .. warning:: experimental, i.e., API likely to change.  For an example,
-    see ``examples/two_screens.py``.
+    see :doc:`tutorials/two_screens`
 """
 import operator
 
