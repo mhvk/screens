@@ -42,7 +42,8 @@ if arclets:
     th = np.linspace(-7, 7, 28, endpoint=False) << u.mas
     a = (0.3*np.exp(-0.5*(th/sig)**2)
          + 0.03*np.exp(-0.5*((th-5*u.mas)/sig)**2)).to_value(u.one)
-    realization = a * np.random.normal(size=th.shape+(2,)).view('c16').squeeze(-1)
+    realization = a * (np.random.normal(size=th.shape+(2,))
+                       .view('c16').squeeze(-1))
     # Add a bright spot.
     realization[-3] = 0.5
 else:
@@ -75,7 +76,8 @@ dynwave = dynamic_field(th, 0., realization, d_eff, mu_eff, f, t)
 # DM gradient
 dt_max = [0, 20, 40] * u.ns
 dt_dm1 = DispersionMeasure(1.).time_delay(f.min(), fobs)
-dm_gradient = ((dt_max / dt_dm1) / th.max() * (u.pc / u.cm**3)).to(u.pc/u.cm**3/u.mas)
+dm_gradient = ((dt_max / dt_dm1) / th.max() * (u.pc / u.cm**3)
+               ).to(u.pc/u.cm**3/u.mas)
 for i, (dmg, _dt) in enumerate(zip(dm_gradient, dt_max)):
     ddm = DispersionMeasure(dmg * th[:, np.newaxis, np.newaxis])
     phase_factor = ddm.phase_factor(f, fobs)
@@ -96,9 +98,10 @@ for i, (dmg, _dt) in enumerate(zip(dm_gradient, dt_max)):
 
     ds = DS(dynspec, f=f, t=t, noise=noise)
 
-    # For plotting purposes, show the dynamic spectrum as seen by the nu t transform.
+    # For plotting, show the dynamic spectrum as seen by the nu t transform.
     tt = t * fobs / f
-    _ds = np.stack([np.interp(_t, t[:, 0], _d) for _t, _d in zip(tt.T, dynspec.T)]).T
+    _ds = np.stack([np.interp(_t, t[:, 0], _d)
+                    for _t, _d in zip(tt.T, dynspec.T)]).T
     ds_t = DS(_ds, f=f, t=t, noise=noise)
 
     # Make a plain nu t transform
@@ -106,8 +109,10 @@ for i, (dmg, _dt) in enumerate(zip(dm_gradient, dt_max)):
     nut.tau <<= u.us
     # As well as one in which we take account of the frequency-dependent
     # delay introduced by the DM gradient.
-    conv = (d_eff/const.c*mu_eff*fobs).to(1/(u.ks*u.mas), u.dimensionless_angles())
-    phase_gradient = DispersionMeasure(dmg * u.mas).phase_delay(f, fobs) / u.mas
+    conv = (d_eff/const.c*mu_eff*fobs).to(1/(u.ks*u.mas),
+                                          u.dimensionless_angles())
+    phase_gradient = (DispersionMeasure(dmg * u.mas).phase_delay(f, fobs)
+                      / u.mas)
     delay = (phase_gradient / conv).to(t.unit, equivalencies=[(u.cycle, None)])
     nut2 = CS.from_dynamic_spectrum(dynspec, f=f, t=(f/fobs)*t+delay)
     nut2.tau <<= u.us
@@ -117,9 +122,10 @@ for i, (dmg, _dt) in enumerate(zip(dm_gradient, dt_max)):
                  (f[0] - df/2).value, (f[-1] + df/2).value)
     plt.imshow(ds_t.dynspec.T, origin='lower', aspect='auto', extent=ds_extent,
                cmap='Greys')
-    plt.xlabel(rf"$t(\nu/\bar{{\nu}})\ ({ds_t.t.unit.to_string('latex')[1:-1]})$")
+    plt.xlabel(rf"$t(\nu/\bar{{\nu}})\ "
+               rf"({ds_t.t.unit.to_string('latex')[1:-1]})$")
     plt.ylabel(rf"$\nu\ ({ds_t.f.unit.to_string('latex')[1:-1]})$")
-    plt.title(rf"$d DM/d\theta={dmg.to_string(format='latex', precision=2)[1:]}")
+    plt.title(rf"$d DM/d\theta={dmg.to_string('latex', precision=2)[1:]}")
     plt.colorbar()
 
     plt.subplot(3, 3, 3+1+i)

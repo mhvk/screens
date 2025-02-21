@@ -4,7 +4,7 @@
 Example runs on Brisken file 'dynamic_spectrum_arar.npz'
 # On CITA machines can use
 # ln -s /mnt/scratch-lustre/simard/GB057/dynamic_spectra/dynamic_spectrum_arar.npz
-"""
+"""  # noqa:E501
 
 import numpy as np
 from astropy import units as u

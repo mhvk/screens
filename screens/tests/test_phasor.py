@@ -20,7 +20,8 @@ class TestPhasor:
         cls.fobs = cls.f_type(316) * u.MHz
         f = np.arange(-8, 8, dtype=cls.f_type) << u.MHz
         cls.f = cls.fobs + f
-        cls.t = (np.arange(-16, 16, dtype=cls.f_type) << u.minute)[:, np.newaxis]
+        cls.t = (np.arange(-16, 16, dtype=cls.f_type)
+                 << u.minute)[:, np.newaxis]
         cls.tau = np.fft.fftfreq(cls.f.size, 1*u.MHz).astype(cls.f_type)
         cls.fd = np.fft.fftfreq(cls.t.size, 1*u.minute).astype(cls.f_type)
         cls.w_tau = cls.f_type(0.3) * u.us
