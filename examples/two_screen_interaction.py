@@ -24,10 +24,7 @@ the blue points no longer see any velocity, but the interacting points do.
 import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
-from astropy.coordinates import (
-    CartesianRepresentation,
-    CylindricalRepresentation,
-)
+from astropy.coordinates import CylindricalRepresentation
 from matplotlib.colors import LogNorm
 from matplotlib.widgets import Slider, Button
 
@@ -74,7 +71,8 @@ def observations(xi1=xi1_init, v1=v1_init,
         obs2: via screen 2
         obs12: via both screens
     """
-    vel_psr = CylindricalRepresentation(vpsr, 0.*u.deg, 0.*u.km/u.s).to_cartesian()
+    vel_psr = CylindricalRepresentation(
+        vpsr, 0.*u.deg, 0.*u.km/u.s).to_cartesian()
     # Duplicate entries to have different brightnesses.
     # TODO: implement overall magnification in .observe?
     pulsar0 = Source(vel=vel_psr, magnification=t12)
@@ -105,10 +103,12 @@ def observations(xi1=xi1_init, v1=v1_init,
 
     return obs0, obs1, obs2, obs12
 
+
 # Get initial setup.
 obs0, obs1, obs2, obs12 = observations()
 # Check that total brightness is OK, and set color scale range.
-all_mag = np.hstack([obs.brightness.ravel() for obs in (obs0, obs1, obs2, obs12)])
+all_mag = np.hstack([obs.brightness.ravel()
+                     for obs in (obs0, obs1, obs2, obs12)])
 all_b = np.abs(all_mag)
 assert np.isclose(np.sum(all_b**2), 1.)
 vmin = all_b.min()*0.3
@@ -152,16 +152,18 @@ v2_slider = Slider(ax=ax_v2, label=r'$v_{2}$ (km/s)',
                    valmin=-50., valmax=50, valinit=0)
 ax_vpsr = fig.add_axes([0.1, 0.1, 0.7, 0.03])
 vpsr_slider = Slider(ax=ax_vpsr, label=r'$v_\mathrm{psr}$ (km/s)',
-                     valmin=0., valmax=500, valinit=vpsr_init.to_value(u.km/u.s))
+                     valmin=0., valmax=500,
+                     valinit=vpsr_init.to_value(u.km/u.s))
+
 
 def update(val):
     """Update different scatter parts for new parameters."""
     all_obs = observations(
         xi1=xi1_slider.val * u.deg,
         v1=v1_slider.val * u.km/u.s,
-        xi2 = xi2_slider.val * u.deg,
-        v2 = v2_slider.val * u.km/u.s,
-        vpsr = vpsr_slider.val * u.km/u.s)
+        xi2=xi2_slider.val * u.deg,
+        v2=v2_slider.val * u.km/u.s,
+        vpsr=vpsr_slider.val * u.km/u.s)
     for obs, sc in zip(all_obs, scs):
         tau = obs.tau.to_value(tau_unit).ravel()
         taudot = obs.taudot.to_value(taudot_unit).ravel()
@@ -179,12 +181,14 @@ vpsr_slider.on_changed(update)
 resetax = fig.add_axes([0.85, 0.025, 0.1, 0.04])
 button = Button(resetax, 'Reset', hovercolor='0.975')
 
+
 def reset(event):
     xi1_slider.reset()
     v1_slider.reset()
     xi2_slider.reset()
     v2_slider.reset()
     vpsr_slider.reset()
+
 
 button.on_clicked(reset)
 

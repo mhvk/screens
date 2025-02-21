@@ -26,7 +26,9 @@ class TestFit:
                     .sum(0))**2
         cls.ds = DynamicSpectrumModel(
             DynamicSpectrum(ds, cls.f, cls.t, 0.001),
-            d_eff=cls.d_eff, mu_eff=cls.mu_eff, magnification=cls.magnification)
+            d_eff=cls.d_eff,
+            mu_eff=cls.mu_eff,
+            magnification=cls.magnification)
         cls.ds.theta = cls.theta
 
     def test_jacobian(self):

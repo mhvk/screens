@@ -39,7 +39,8 @@ class DynamicSpectrumModel:
         the dynamic spectrum.
     """
 
-    def __init__(self, ds, d_eff=None, mu_eff=None, theta=None, magnification=None):
+    def __init__(self, ds, d_eff=None, mu_eff=None, theta=None,
+                 magnification=None):
         self.ds = ds
         self.dynspec = ds.dynspec
         self.f = ds.f
@@ -151,7 +152,7 @@ class DynamicSpectrumModel:
             instance.
         **kwargs
             Any further arguments are passed on to
-            `~screens.dynspec.DynamicSpectrum.theta_grid`
+            `~screens.modeling.DynamicSpectrumModel.theta_grid`
         """
         if mu_eff is not None:
             self.mu_eff = mu_eff
@@ -296,7 +297,7 @@ class DynamicSpectrumModel:
     def residuals(self, magnification=None, mu_eff=None):
         """Residuals compared to the model.
 
-        Parameters as for :meth:`~screens.dynspec.DynamicSpectrum.model`:
+        Parameters as for :meth:`~screens.modeling.DynamicSpectrumModel.model`:
         """
         model = self.model(magnification, mu_eff)
         return (self.dynspec - model) / self.noise
@@ -468,7 +469,7 @@ class DynamicSpectrumModel:
         """Fit the dynamic spectrum directly.
 
         This needs good guesses, such as can be gotten from
-        :meth:`screens.dynspec.DynamicSpectrum.locate_mu_eff`.
+        :meth:`screens.modeling.DynamicSpectrumModel.locate_mu_eff`.
 
         Parameters
         ----------
@@ -598,7 +599,8 @@ class ConjugateSpectrumModel:
         the secondary spectrum.
     """
 
-    def __init__(self, cs, d_eff=None, mu_eff=None, theta=None, magnification=None):
+    def __init__(self, cs, d_eff=None, mu_eff=None, theta=None,
+                 magnification=None):
         self.cs = cs
         self.conjspec = cs.conjspec
         self.tau = cs.tau
@@ -658,7 +660,7 @@ class ConjugateSpectrumModel:
             instance.
         **kwargs
             Any further arguments are passed on to
-            `~screens.dynspec.DynamicSpectrum.theta_grid`
+            `~screens.modeling.DynamicSpectrumModel.theta_grid`
         """
         if mu_eff is None:
             mu_eff = self.mu_eff
@@ -745,7 +747,8 @@ class ConjugateSpectrumModel:
             model[ok] = amplitude
         return model
 
-    def locate_mu_eff(self, mu_eff_trials=None, use_secspec=True, verbose=False):
+    def locate_mu_eff(self, mu_eff_trials=None, use_secspec=True,
+                      verbose=False):
         """Try reproducing the secondary spectrum for a range of proper motion.
 
         For each proper motion, construct a theta-theta array, calculte the

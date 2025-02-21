@@ -48,7 +48,8 @@ class TestRemapTime:
         self.new_pos = (np.arange(0, 100) + 0.5) / 100.
 
     def test_single_frequency(self):
-        remapped, weight = remap_time(self.ds.dynspec[:, 0], self.pos, self.new_pos)
+        remapped, weight = remap_time(self.ds.dynspec[:, 0],
+                                      self.pos, self.new_pos)
         out = remapped / weight
         expected = self.scint(self.new_pos, self.scale[0])
         assert_allclose(out, expected, atol=0.015)

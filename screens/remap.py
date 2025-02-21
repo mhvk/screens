@@ -59,7 +59,8 @@ def remap_time(ds, t_map, new_t):
     bounds_l = pix - 0.5 * np.concatenate([dpix[:1], dpix])
     bounds_u = pix + 0.5 * np.concatenate([dpix, dpix[-1:]])
     # Ensure the lower bound is always below the upper bound.
-    bounds_l, bounds_u = np.minimum(bounds_l, bounds_u), np.maximum(bounds_l, bounds_u)
+    bounds_l, bounds_u = (np.minimum(bounds_l, bounds_u),
+                          np.maximum(bounds_l, bounds_u))
     # Create output and weight arrays.
     out = np.zeros_like(ds, shape=(len(new_t),)+ds.shape[1:])
     weight = np.zeros((len(new_t),)+ds.shape[1:])
@@ -83,8 +84,9 @@ def remap_time(ds, t_map, new_t):
         #                        0.9, 1.7, indx = 1:  0.5 - (-0.1) = 0.6
         #                        0.9, 1.7, indx = 2: -0.3 - (-0.5) = 0.2
         #                        0.9, 1.7, indx = 3: -0.5 - (-0.5) = 0.
-        w = np.clip(bounds_u-indx, -0.5, 0.5) - np.clip(bounds_l-indx, -0.5, 0.5)
-        # Only care about pixels with a fraction > 0 and which fall inside output.
+        w = (np.clip(bounds_u-indx, -0.5, 0.5)
+             - np.clip(bounds_l-indx, -0.5, 0.5))
+        # Only care about pixels with a fraction > 0 that fall inside output.
         ok = (w > 0.) & (indx < len(out))
         # If locations vary with frequency, we need to pass in arrays for both
         # time and frequency.
@@ -95,7 +97,7 @@ def remap_time(ds, t_map, new_t):
             indices = indx[ok]
             if ds.ndim == 2:
                 wok = wok[:, np.newaxis]
-        # Add fraction of each input pixel to the output and track fractions added.
+        # Add fraction of each input pixel to output and track fractions added.
         np.add.at(out, indices, wok * ds[ok])
         np.add.at(weight, indices, wok)
 

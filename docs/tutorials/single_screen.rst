@@ -46,8 +46,8 @@ Start with some standard imports.
     from astropy import constants as const
 
 Set a colormap to use for phases. Preferably import the perceptually uniform
-colormap `phasecmap` from :py:mod:`screens.visualization`.
-The `hsv` colormap from :py:mod:`matplotlib.cm` is used as fallback.
+colormap ``phasecmap`` from :py:mod:`screens.visualization`.
+The ``hsv`` colormap from :py:mod:`matplotlib.cm` is used as fallback.
 
 .. jupyter-execute::
 
