@@ -85,8 +85,11 @@ Set a seed for the random number generator to make the results reproducable.
 
 Set some defaults for plotting functions, including the levels at which to draw
 confidence contours in 2D (see the `note about sigmas
-<https://corner.readthedocs.io/en/latest/pages/sigmas.html>`_
-in the documentation of the :py:mod:`corner` package)
+<https://corner.readthedocs.io/en/latest/pages/sigmas>`_
+in the documentation of the |corner|_ package)
+
+.. |corner| replace:: ``corner``
+.. _corner: https://corner.readthedocs.io/en/stable
 
 .. jupyter-execute::
 
@@ -296,9 +299,9 @@ This tutorial deals with three different sets of parameters:
 
 Here, we simply define (lists of) strings used for printing results and
 labelling plots later. First, use :py:func:`~collections.namedtuple` to create
-the `ParString` class that stores the LaTeX math-mode strings of the symbol and
-the unit for a parameter, and define a function that combines those symbol and
-unit strings into label strings for a list of parameters.
+the ``ParString`` class that stores the LaTeX math-mode strings of the symbol
+and the unit for a parameter, and define a function that combines those symbol
+and unit strings into label strings for a list of parameters.
 
 .. jupyter-execute::
 
@@ -800,7 +803,7 @@ effective velocities with the harmonic-coefficients model equation
 Here, we load the fit results produced by :py:func:`~scipy.optimize.curve_fit`
 (the optimum-fit values and the covariance matrix of the parameters
 :math:`A_\mathrm{\oplus,s}, A_\mathrm{\oplus,c}, A_\mathrm{p,s},
-A_\mathrm{p,c}, C`) from an `.npz` file (available for download here:
+A_\mathrm{p,c}, C`) from an ``.npz`` file (available for download here:
 :download:`fit-results-J0437.npz <../data/fit-results-J0437.npz>`).
 
 .. jupyter-execute::
@@ -816,13 +819,14 @@ Multiple solutions
 
 Because of the absolute-value operation in the model equation, there are two
 solutions for the harmonic coefficients: one with positive sign and one with a
-negative sign. The solution found by :py:func:`~scipy.optimize.curve_fit` (just
-loaded from the `.npz` file) is the one with the positive sign, but this simply
-depends on the initial guess used during the fit. The two solutions correspond
-to the two possible sky-orientations of the line of lensed images that fit the
-data and cannot be distinguished using single-station scintillation
-measurements. In terms of the physical parameters, these solutions have a
-difference in :math:`\xi` of :math:`180^\circ` and an accompanying sign flip in
+negative sign. The solution found by :py:func:`~scipy.optimize.curve_fit`
+(just loaded from the ``.npz`` file) is the one with the positive sign, but
+this simply depends on the initial guess used during the fit. The two
+solutions correspond to the two possible sky-orientations of the line of
+lensed images that fit the data and cannot be distinguished using
+single-station scintillation measurements. In terms of the physical
+parameters, these solutions have a difference in :math:`\xi` of
+:math:`180^\circ` and an accompanying sign flip in
 :math:`v_\mathrm{lens,\parallel}`, but they correspond to the same physical
 picture of the system.
 
@@ -1063,8 +1067,8 @@ constraints, external constraints need to be provided for one of the physical
 parameters to get narrow constraints on the rest. In this tutorial, we use a
 constraint on the pulsar distance :math:`d_\mathrm{p}`, which would also exist
 in many real-life applications. In the case of external constraints on a
-different parameter, the functions `pars_phen2phys_d_p()` and
-`upars_phen2phys_d_p()` defined above would have to be replaced with slightly
+different parameter, the functions ``pars_phen2phys_d_p()`` and
+``upars_phen2phys_d_p()`` defined above would have to be replaced with slightly
 different functions to convert from phenomenological to physical parameters.
 
 The pulsar studied in this example, PSR J0437--4715, has an exceptionally well
@@ -1111,7 +1115,7 @@ unphysical non-positive distance. Finally, convert the set into an Astropy
 Generate random signs of the cosine of the pulsar's orbital inclination,
 corresponding to the two possible spatial orientations of the pulsar's orbit.
 We create an Astropy :py:class:`~astropy.uncertainty.Distribution` object
-consisting of +1 and -1 entries, just like `sol_sign` above.
+consisting of +1 and -1 entries, just like ``sol_sign`` above.
 
 .. jupyter-execute::
 

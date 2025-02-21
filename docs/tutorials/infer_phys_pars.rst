@@ -309,7 +309,7 @@ this solution.
     print(f'chi_p:   {chi_p[j_sol].to(u.deg):8.2f}')
     print(f'dveff_c: {dveff_c[j_sol].to(u.km/u.s/u.pc**0.5):8.2f}')
 
-You can verify that the two solution are equivalent by setting `j_sol` to the
+You can verify that the two solution are equivalent by setting ``j_sol`` to the
 index of the other solution. Executing the codeblocks below should then give
 the same answers for the physical parameters.
 
@@ -508,7 +508,7 @@ pulsar's systemic motion to the effective velocity
                          \right].
 
 To compute a velocity from a proper motion and a distance, we use the
-:py:func:`~astropy.units.equivalencies.dimensionless_angles` equivalency. This
+:py:func:`~astropy.units.dimensionless_angles` equivalency. This
 takes care of handling the units of Astropy :py:class:`~astropy.units.Quantity`
 objects correctly when using the small-angle approximation
 (for further explanation, see the `Astropy documentation about equivalencies

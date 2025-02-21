@@ -152,7 +152,7 @@ class DynamicSpectrumModel:
             instance.
         **kwargs
             Any further arguments are passed on to
-            `~screens.dynspec.DynamicSpectrum.theta_grid`
+            `~screens.modeling.DynamicSpectrumModel.theta_grid`
         """
         if mu_eff is not None:
             self.mu_eff = mu_eff
@@ -297,7 +297,7 @@ class DynamicSpectrumModel:
     def residuals(self, magnification=None, mu_eff=None):
         """Residuals compared to the model.
 
-        Parameters as for :meth:`~screens.dynspec.DynamicSpectrum.model`:
+        Parameters as for :meth:`~screens.modeling.DynamicSpectrumModel.model`:
         """
         model = self.model(magnification, mu_eff)
         return (self.dynspec - model) / self.noise
@@ -469,7 +469,7 @@ class DynamicSpectrumModel:
         """Fit the dynamic spectrum directly.
 
         This needs good guesses, such as can be gotten from
-        :meth:`screens.dynspec.DynamicSpectrum.locate_mu_eff`.
+        :meth:`screens.modeling.DynamicSpectrumModel.locate_mu_eff`.
 
         Parameters
         ----------
@@ -660,7 +660,7 @@ class ConjugateSpectrumModel:
             instance.
         **kwargs
             Any further arguments are passed on to
-            `~screens.dynspec.DynamicSpectrum.theta_grid`
+            `~screens.modeling.DynamicSpectrumModel.theta_grid`
         """
         if mu_eff is None:
             mu_eff = self.mu_eff
