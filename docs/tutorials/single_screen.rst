@@ -32,7 +32,10 @@ and as a Jupyter notebook:
 Preliminaries
 =============
 
-Start with some standard imports.
+Start with some standard imports.  This includes a colormap to use for phases,
+for which we use our own perceptually uniform colormap ``phasecmap`` from
+:py:mod:`screens.visualization`.
+
 
 .. jupyter-execute::
 
@@ -45,16 +48,7 @@ Start with some standard imports.
     from astropy import units as u
     from astropy import constants as const
 
-Set a colormap to use for phases. Preferably import the perceptually uniform
-colormap ``phasecmap`` from :py:mod:`screens.visualization`.
-The ``hsv`` colormap from :py:mod:`matplotlib.cm` is used as fallback.
-
-.. jupyter-execute::
-
-    try:
-        from screens.visualization import phasecmap
-    except ImportError:
-        phasecmap = cm.hsv
+    from screens.visualization import phasecmap
 
 Also define a function to make two-dimensional phase-intensity colorbars,
 for plotting dynamic wavefields.
