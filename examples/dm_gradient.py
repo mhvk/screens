@@ -125,7 +125,7 @@ for i, (dmg, _dt) in enumerate(zip(dm_gradient, dt_max)):
     plt.xlabel(rf"$t(\nu/\bar{{\nu}})\ "
                rf"({ds_t.t.unit.to_string('latex')[1:-1]})$")
     plt.ylabel(rf"$\nu\ ({ds_t.f.unit.to_string('latex')[1:-1]})$")
-    plt.title(rf"$d DM/d\theta={dmg.to_string('latex', precision=2)[1:]}")
+    plt.title(rf"$d DM/d\theta={dmg.to_string(format='latex', precision=2)[1:]}")
     plt.colorbar()
 
     plt.subplot(3, 3, 3+1+i)
