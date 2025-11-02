@@ -205,16 +205,17 @@ class Screen1D(Screen):
         Possible distance from the source.  Only useful if ``source`` is given.
 
     """
-    _shaped_attrs = ('normal', 'p', 'v', 'magnification')
+    _shaped_attrs = ('normal', 'p', 'v', 'magnification', 'dp_dalpha')
 
-    def __init__(self, normal, p=0*u.AU, v=0*u.km/u.s, magnification=1.,
-                 source=None, distance=None):
+    def __init__(self, normal, p=0*u.au, v=0*u.km/u.s, magnification=1.,
+                 *, dp_dalpha=0*u.au/u.mas, source=None, distance=None):
         super().__init__(pos=None, vel=None,
                          magnification=magnification,
                          source=source, distance=distance)
         self.normal = normal
         self.p = p
         self.v = v
+        self.dp_dalpha = dp_dalpha
 
     def _apply(self, method, *args, **kwargs):
         new = super()._apply(method, *args, **kwargs)
@@ -235,6 +236,7 @@ class Screen1D(Screen):
         poss = [other.pos]
         vels = [other.vel]
         rhats = [self._unit_vector(other.pos)]
+        dp_dalphas = [None]
         source = self
         while isinstance(source, Screen1D):
             sources.append(source)
@@ -242,29 +244,36 @@ class Screen1D(Screen):
             poss.append(source.p * source.normal)
             vels.append(source.v * source.normal)
             rhats.append(source.normal)
+            dp_dalphas.append(source.dp_dalpha)
             source = source.source
         assert isinstance(source, Source)
         sources.append(source)
         poss.append(source.pos)
         vels.append(source.vel)
         rhats.append(self._unit_vector(source.pos))
+        dp_dalphas.append(None)
 
         distances = u.Quantity(distances).cumsum()
         uhats = [ZHAT.cross(rhat) for rhat in rhats]
 
         n = len(sources)-1
         A = np.zeros((n*2, n*2))
-        for i, (rhat, uhat, distance) in enumerate(
-                zip(rhats[:-1], uhats[:-1], distances[:-1])):
+        for i, (rhat, uhat, distance, dp_dalpha) in enumerate(
+                zip(rhats[:-1], uhats[:-1], distances[:-1], dp_dalphas[:-1])):
             if i == 0:
-                A[::2, 0] = uhats[0].x
+                A[::2, 0] = uhats[0].x  # ςₜ
                 A[1::2, 0] = uhats[0].y
             else:
-                A[(i-1)*2, i*2] = -uhat.x
+                A[(i-1)*2, i*2] = -uhat.x  # ςᵢ
                 A[(i-1)*2+1, i*2] = -uhat.y
 
+            if dp_dalpha is not None:
+                drho_dalpha = (dp_dalpha / distance).to_value(u.one)
+                A[(i-1)*2, i*2+1] = -rhat.x * drho_dalpha  # αᵢ from ρ₁
+                A[(i-1)*2+1, i*2+1] = -rhat.y * drho_dalpha
+
             sij = 1-(distance/distances[i+1:]).to_value(u.one)
-            A[i*2::2, i*2+1] = -sij*rhat.x
+            A[i*2::2, i*2+1] = -sij*rhat.x  # αᵢ effect for next screens
             A[i*2+1::2, i*2+1] = -sij*rhat.y
 
         Ainv = np.linalg.inv(A)
@@ -291,9 +300,10 @@ class Screen1D(Screen):
         sigma_dots = vel_sol[::2]
         alpha_dots = vel_sol[1::2]
 
-        for (source, rhat, uhat, distance,
+        for (source, rhat, uhat, distance, dp_dalpha,
              sigma, sigma_dot, alpha, alpha_dot) in zip(
                 sources[:-1], rhats[:-1], uhats[:-1], distances[:-1],
+                dp_dalphas[:-1],
                 sigmas, sigma_dots, alphas, alpha_dots):
             source.sigma = sigma
             source.sigma_dot = sigma_dot
@@ -302,10 +312,13 @@ class Screen1D(Screen):
             source.alpha = alpha
             source.alpha_dot = alpha_dot
             if isinstance(source, Screen1D):
-                source.pos = source.p * rhat + source.s * uhat
-                source.vel = source.v * rhat + source.s_dot * uhat
+                p = source.p + alpha * dp_dalpha
+                v = source.v + alpha_dot * dp_dalpha
+                source.pos = p * rhat + source.s * uhat
+                source.vel = v * rhat + source.s_dot * uhat
 
     def _rel_posvel(self, other):
         if self.pos is None:
-            self._solve_positions(other)
+            with u.add_enabled_equivalencies(u.dimensionless_angles()):
+                self._solve_positions(other)
         return super()._rel_posvel(other)
