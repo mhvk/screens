@@ -192,10 +192,11 @@ writing :math:`s_{ji}=1-d_{j}/d_{i}` (where all :math:`s_{ti}=1`), one finds,
     - \sum_{j=0}^{i-1} \alpha_{j}s_{ji}\hat{r}_{j}
     = \rho_{i}\hat{r}_{i} - \rho_{t}\hat{r}_{t}
 
-To solve this, we chose particular :math:`x` and :math:`y` directions
-and then define angles :math:`\phi_{i}`
-such that :math:`\hat{r}_{i} = \cos \phi_{i} \hat{x} + \sin \phi_{i}\hat{y}`
-and thus :math:`\hat{u}_{i} = -\sin \phi_{i} \hat{x} + \cos \phi_{i}\hat{y}`.
+To solve this, we project on given :math:`x` and :math:`y` directions, i.e., use
+:math:`\hat{r}_{x,y}` and :math:`\hat{u}_{x,y}` (in terms of angles
+:math:`\phi_{i}` relative to :math:`\hat{x}`,
+one has  :math:`\hat{r}_{i} = \cos \phi_{i} \hat{x} + \sin \phi_{i}\hat{y}`
+and thus :math:`\hat{u}_{i} = -\sin \phi_{i} \hat{x} + \cos \phi_{i}\hat{y}`).
 Furthermore, for brevity, we write
 :math:`\vec{\theta} \equiv (p_{i}\hat{r}_{i} - p_{t}\hat{r}_{t}) / d_{i}`.
 With that, the equations in matrix form are,
@@ -203,18 +204,18 @@ With that, the equations in matrix form are,
 .. math::
    :label: eq_matrix_form
 
-    \left(\begin{matrix}
-    -\sin \phi_{t} & -\cos \phi_{t} & \sin \phi_{1} & 0 & \ldots & 0 & 0\\
-     \cos \phi_{t} & -\sin \phi_{t} & -\cos \phi_{1} & 0 & \ldots & 0 & 0\\
-    -\sin \phi_{t} & -\cos \phi_{t} & 0 & -s_{12}\cos \phi_{1} & \ldots & 0 & 0\\
-     \cos \phi_{t} & -\sin \phi_{t} & 0 & -s_{12}\sin \phi_{1} & \ldots & 0 & 0\\
+   \left(\begin{matrix}
+    \hat{u}_{t,x} & -\hat{r}_{t,x} & -\hat{u}_{1,x} & 0 & \ldots & 0 & 0\\
+    \hat{u}_{t,y} & -\hat{r}_{t,y} & -\hat{u}_{1,y} & 0 & \ldots & 0 & 0\\
+    \hat{u}_{t,x} & -\hat{r}_{t,x} & 0 & -s_{12}\hat{r}_{1,x} & \ldots & 0 & 0\\
+    \hat{u}_{t,y} & -\hat{r}_{t,y} & 0 & -s_{12}\hat{r}_{1,y} & \ldots & 0 & 0\\
      \vdots  & \vdots    &\vdots & \vdots & \ddots & \vdots &\vdots \\
-    -\sin \phi_{t} & -\cos \phi_{t} & 0 & -s_{1n}\cos \phi_{1} & \ldots & \sin \phi_{n} & 0\\
-     \cos \phi_{t} & -\sin \phi_{t} & 0 & -s_{1n}\sin \phi_{1} & \ldots & -\cos \phi_{n} & 0\\
-    -\sin \phi_{t} & -\cos \phi_{t} & 0 & -s_{1p}\cos \phi_{1} & \ldots & 0 & -s_{np}\cos \phi_{n}\\
-     \cos \phi_{t} & -\sin \phi_{t} & 0 & -s_{1p}\sin \phi_{1} & \ldots & 0 & -s_{np}\sin \phi_{n}\\
-    \end{matrix}\right)
-     \left(\begin{matrix}
+    \hat{u}_{t,x} & -\hat{r}_{t,x} & 0 & -s_{1n}\hat{r}_{1,x} & \ldots & -\hat{u}_{n,x} & 0\\
+    \hat{u}_{t,y} & -\hat{r}_{t,y} & 0 & -s_{1n}\hat{r}_{1,y} & \ldots & -\hat{u}_{n,y} & 0\\
+    \hat{u}_{t,x} & -\hat{r}_{t,x} & 0 & -s_{1p}\hat{r}_{1,x} & \ldots & 0 & -s_{np}\hat{r}_{n,x}\\
+    \hat{u}_{t,y} & -\hat{r}_{t,y} & 0 & -s_{1p}\hat{r}_{1,y} & \ldots & 0 & -s_{np}\hat{r}_{n,y}\\
+   \end{matrix}\right)
+   \left(\begin{matrix}
     \varsigma_{t}\\
     \alpha_{t}\\
     \varsigma_{1}\\
@@ -224,8 +225,8 @@ With that, the equations in matrix form are,
     \alpha_{n-1}\\
     \varsigma_{n}\\
     \alpha_{n}
-    \end{matrix}\right) =
-    \left(\begin{matrix}
+    \end{matrix}\right)
+   = \left(\begin{matrix}
     \theta_{1,x}\\
     \theta_{1,y}\\
     \theta_{2,x}\\
@@ -235,7 +236,7 @@ With that, the equations in matrix form are,
     \theta_{n,y}\\
     \theta_{p,x}\\
     \theta_{p,y}\\
-    \end{matrix}\right).
+   \end{matrix}\right).
 
 These can be solved by by inverting the matrix :math:`A`, i.e.,
 
@@ -268,20 +269,19 @@ These can be solved by by inverting the matrix :math:`A`, i.e.,
 Velocities
 ~~~~~~~~~~
 
-In principle, the telescope, screens and pulsar will all have
-velocities.  One sees that the entries in the matrix involve only
-angles of the telescope and screens and ratios of distances, which will
-change with time much slower than everything else.  Hence, one can
-solve for the time derivatives of the parameters by applying the
-matrix inverse to the time derivatives of the entries of the
-right-hand side vector, which are simply the :math:`x` and :math:`y` components of
-the proper motions motions of the screens and the pulsar relative to
-the telescope, i.e.,
+In principle, the telescope, screens and pulsar will all have velocities.  One
+sees that the entries in the matrix involve only directions of the telescope and
+screens and ratios of distances, which will change with time much more slowly
+than everything else.  Hence, one can solve for the time derivatives of the
+parameters by applying the matrix inverse to the time derivatives of the entries
+of the right-hand side vector, which are simply the :math:`x` and :math:`y`
+components of the proper motions of the screens and the pulsar relative to the
+telescope, i.e.,
 
 .. math::
    :label: eq_derivatives_solution
 
-    \left(\begin{matrix}
+   \left(\begin{matrix}
     \dot{\varsigma}_{t}\\
     \dot{\alpha}_{t}\\
     \dot{\varsigma}_{1}\\
@@ -291,8 +291,9 @@ the telescope, i.e.,
     \dot{\alpha}_{n-1}\\
     \dot{\varsigma}_{n}\\
     \dot{\alpha}_{n}
-    \end{matrix}\right) = A^{-1}
-    \left(\begin{matrix}
+   \end{matrix}\right)
+   = A^{-1}
+   \left(\begin{matrix}
     \mu_{1,x}\\
     \mu_{1,y}\\
     \mu_{2,x}\\
@@ -302,13 +303,13 @@ the telescope, i.e.,
     \mu_{n,y}\\
     \mu_{p,x}\\
     \mu_{p,y}\\
-    \end{matrix}\right).
+   \end{matrix}\right).
 
-Trajectories
-------------
+Trajectories and time delays
+----------------------------
 
-Be aware that above :math:`\theta` and :math:`\mu` reflect the positions and
-proper motions of the structures, not of trajectories.
+The above :math:`\theta` and :math:`\mu` reflect the positions and proper
+motions of the structures, not of trajectories taken by different rays.
 Those are given by,
 
 .. math::
@@ -339,15 +340,15 @@ Bending angle dependent positions
 
 In the derivation above, the rays have to intersect the one dimensional lines on
 each screen.  Physically, this corresponds to assuming the lensing structures
-have widths much smaller than their separations.  In reality, where a ray goes
-through a lens will depend on the bending angle: very small angles are produced
-right on top of the lens and far away from it, while the largest bending angles
-occur where the electron column density gradient is steepest.
+have widths much smaller than their separations.  In reality, where a ray
+crosses through a lens will depend on the bending angle: very small angles are
+produced right on top of the lens and far away from it, while the largest
+bending angles occur where the electron column density gradient is steepest.
 
-While the general bending-angle dependence of the location where a ray crosses
-the lens depends on the precise lens shape, and thus cannot be easily included,
-it turns out to be nearly trivial to include a linear expansion, where the
-angular location of the crossing point is given by,
+While the general bending-angle dependence of the crossing location depends on
+the precise lens shape, and thus cannot be easily included, it turns out to be
+nearly trivial to include a linear expansion, where the angular location of the
+crossing point is given by,
 
 .. math::
    :label: eq_position_with_gradient
@@ -380,18 +381,18 @@ In matrix form, one then has,
 .. math::
    :label: eq_matrix_form_with_gradients
 
-    \left(\begin{matrix}
-    -\sin \phi_{t} & -\cos \phi_{t} & \sin \phi_{1} & -\rho_{1}^{\prime}\cos \phi_{1} & \ldots & 0 & 0\\
-     \cos \phi_{t} & -\sin \phi_{t} & -\cos \phi_{1} & -\rho_{1}^{\prime}\sin \phi_{1} & \ldots & 0 & 0\\
-    -\sin \phi_{t} & -\cos \phi_{t} & 0 & -s_{12}\cos \phi_{1} & \ldots & 0 & 0\\
-     \cos \phi_{t} & -\sin \phi_{t} & 0 & -s_{12}\sin \phi_{1} & \ldots & 0 & 0\\
+   \left(\begin{matrix}
+    \hat{u}_{t,x} & -\hat{r}_{t,x} & -\hat{u}_{1,x} & -\rho_{1}^{\prime}\hat{r}_{1,x} & \ldots & 0 & 0\\
+    \hat{u}_{t,y} & -\hat{r}_{t,y} & -\hat{u}_{1,y} & -\rho_{1}^{\prime}\hat{r}_{1,y} & \ldots & 0 & 0\\
+    \hat{u}_{t,x} & -\hat{r}_{t,x} & 0 & -s_{12}\hat{r}_{1,x} & \ldots & 0 & 0\\
+    \hat{u}_{t,y} & -\hat{r}_{t,y} & 0 & -s_{12}\hat{r}_{1,y} & \ldots & 0 & 0\\
      \vdots  & \vdots    &\vdots & \vdots & \ddots & \vdots &\vdots \\
-    -\sin \phi_{t} & -\cos \phi_{t} & 0 & -s_{1n}\cos \phi_{1} & \ldots & \sin \phi_{n} & -\rho_{n}^{\prime} \cos \phi_{n}\\
-     \cos \phi_{t} & -\sin \phi_{t} & 0 & -s_{1n}\sin \phi_{1} & \ldots & -\cos \phi_{n} & -\rho_{n}^{\prime} \sin \phi_{n}\\
-    -\sin \phi_{t} & -\cos \phi_{t} & 0 & -s_{1p}\cos \phi_{1} & \ldots & 0 & -s_{np}\cos \phi_{n}\\
-     \cos \phi_{t} & -\sin \phi_{t} & 0 & -s_{1p}\sin \phi_{1} & \ldots & 0 & -s_{np}\sin \phi_{n}\\
-    \end{matrix}\right)
-     \left(\begin{matrix}
+    \hat{u}_{t,x} & -\hat{r}_{t,x} & 0 & -s_{1n}\hat{r}_{1,x} & \ldots & -\hat{u}_{n,x} & -\rho_{n}^{\prime} \hat{r}_{n,x}\\
+    \hat{u}_{t,y} & -\hat{r}_{t,y} & 0 & -s_{1n}\hat{r}_{1,y} & \ldots & -\hat{u}_{n,y} & -\rho_{n}^{\prime} \hat{r}_{n,y}\\
+    \hat{u}_{t,x} & -\hat{r}_{t,x} & 0 & -s_{1p}\hat{r}_{1,x} & \ldots & 0 & -s_{np}\hat{r}_{n,x}\\
+    \hat{u}_{t,y} & -\hat{r}_{t,y} & 0 & -s_{1p}\hat{r}_{1,y} & \ldots & 0 & -s_{np}\hat{r}_{n,y}\\
+   \end{matrix}\right)
+   \left(\begin{matrix}
     \varsigma_{t}\\
     \alpha_{t}\\
     \varsigma_{1}\\
@@ -401,8 +402,8 @@ In matrix form, one then has,
     \alpha_{n-1}\\
     \varsigma_{n}\\
     \alpha_{n}
-    \end{matrix}\right) =
-    \left(\begin{matrix}
+    \end{matrix}\right)
+   = \left(\begin{matrix}
     \theta_{1,x}\\
     \theta_{1,y}\\
     \theta_{2,x}\\
@@ -412,7 +413,7 @@ In matrix form, one then has,
     \theta_{n,y}\\
     \theta_{p,x}\\
     \theta_{p,y}\\
-    \end{matrix}\right).
+   \end{matrix}\right).
 
 Like before, one can use the same matrix inverse to calculate velocities.
 The trajectories relative to the telescope now are given by,
