@@ -56,6 +56,7 @@ Imports.
 
 .. jupyter-execute::
 
+    import warnings
     import numpy as np
     import matplotlib.pyplot as plt
 
@@ -76,6 +77,8 @@ Imports.
     from IPython.display import display, Math
 
     from collections import namedtuple
+    # Suppress FutureWarnings from uncertainties; TODO: fix code instead!
+    warnings.filterwarnings("ignore", category=FutureWarning)
 
 Set a seed for the random number generator to make the results reproducable.
 
