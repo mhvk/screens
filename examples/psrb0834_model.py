@@ -1,51 +1,52 @@
 # Licensed under the GPLv3 - see LICENSE
-"""Explore the interaction between a screen and a linear refraction ramp.
+"""Explore the interaction between screens like in PSR B0834+06.
 
-Setup is psr -> single-ramp-point -> screen -> observer.
-with properties like those observed for PSR B0834+06
+This uses a regular primary screen and a single point on a second
+screen, for which one can set a linear refraction ramp, with the
+order: psr -> single-ramp-point -> screen -> observer.
+
+All properties are like those observed for PSR B0834+06, as inferred
+from Zhu et al. 2023.
 
 Displayed are the (doppler-delay) wavefield space and sky view.
 
 Black cross direct line of sight
 Blue: only through screen 1
 Red:  only through screen 2
-Grey: through both ramp and screens
+Grey: through both screens
 
 """
 import astropy.units as u
 import numpy as np
 import matplotlib.pyplot as plt
-from astropy.coordinates import (
-    CartesianRepresentation, CylindricalRepresentation
-)
+from astropy.coordinates import CartesianRepresentation
 from astropy.units import Quantity as Q, Unit as U
 from matplotlib.colors import LogNorm
 from matplotlib.widgets import Slider, Button
 
 from screens.screen import Source, Screen1D, Telescope
 
-u.set_enabled_equivalencies(u.dimensionless_angles())
-
 # Properties for PSR B0834+06, taken from Zhu et al. 2023.
 d_psr = Q(620, "pc")
 vel_psr = CartesianRepresentation(
-    (Q([2.2, 51.6, 0], "mas/yr") * d_psr).to("km/s"))
+    (Q([2.2, 51.6, 0], "mas/yr") * d_psr).to("km/s", u.dimensionless_angles()))
 # Screen 1, closest to observer, with lots of points.
 d_s1 = Q(389, "pc")
 p1 = Q(np.linspace(-10, 10, 41), "au")
 xi1_init = Q(155, "deg")
-v1_init = Q(23, "km/s")  # sign flipped??
+v1_init = Q(23, "km/s")  # sign flipped relative to Zhu et al.?
 t1 = Q(0.3)  # Transparency - 30% of light passes through.
-sig1 = Q(4, "au")
+sig1 = Q(4, "au")  # Brightness distribution of points
 m1 = np.exp(-0.5*(p1/sig1)**2)
-m1[5::10] *= (10**np.sign(p1))[5::10]
+m1[5::10] *= (10**np.sign(p1))[5::10]  # Mark some for visualization.
 m1 *= np.sqrt((1-t1**2) / np.sum(np.abs(m1)**2))
 # Screen 2, a refraction ramp closer to pulsar.
 d_s2 = Q(415, "pc")
 xi2_init = Q(136-90, "deg")  # Zhu gives angle of line of images!
 p2_init = Q(10, "au")
 v2_init = Q(-3, "km/s")
-dalpha_dp_init = Q(-100, "mas/au")  # to start on correct side.
+# w=0.7 au for β=24 mas, hence α = βdₑ/dₛ~73 mas, so could be -0.008 au/mas.
+dp_dalpha_init = Q(0, "au/mas")
 t2 = Q(0.9)  # Transparency - 90% of light passes through.
 m2 = np.sqrt(1-t2**2)
 
@@ -53,6 +54,7 @@ m2 = np.sqrt(1-t2**2)
 tau_unit = U("us")
 taudot_unit = U("us/day")
 
+# Set limits like in Fig. 2 of Zhu et al. 2023.
 tau_lims = [0, 1300]
 nu_obs = Q(318.5, "MHz")
 taudot_lims = (Q([-50, 50], "mHz") / nu_obs).to_value(taudot_unit)
@@ -60,7 +62,7 @@ taudot_lims = (Q([-50, 50], "mHz") / nu_obs).to_value(taudot_unit)
 
 def observations(
         xi1=xi1_init, v1=v1_init,
-        xi2=xi2_init, p2=p2_init, v2=v2_init, dalpha_dp=dalpha_dp_init,
+        xi2=xi2_init, p2=p2_init, v2=v2_init, dp_dalpha=dp_dalpha_init,
 ):
     """Create observations for given orientations and velocities.
 
@@ -72,18 +74,16 @@ def observations(
         obs2: via screen 2
         obs12: via both screens
     """
-    # print(f"{xi1=}, {v1=}, {xi2=}, {p2=}, {v2=}, {dalpha_dp=}")
     # Duplicate entries to have different brightnesses.
-    # TODO: implement overall magnification in .observe?
     pulsar0 = Source(vel=vel_psr, magnification=t1*t2)
     pulsar1 = Source(vel=vel_psr, magnification=t2)
     pulsar2 = Source(vel=vel_psr, magnification=t1)
     pulsar12 = Source(vel=vel_psr)
     telescope = Telescope()
-    normal1 = CylindricalRepresentation(1., Q(90, "deg") - xi1, 0.).to_cartesian()
+    # Angles are E of N.
+    normal1 = CartesianRepresentation(np.sin(xi1), np.cos(xi1), 0)
     screen1 = Screen1D(normal=normal1, p=p1, v=v1, magnification=m1)
-    normal2 = CylindricalRepresentation(1., Q(90, "deg") - xi2, 0.).to_cartesian()
-    dp_dalpha = 1/dalpha_dp if dalpha_dp != 0 else 1e20 / dalpha_dp.unit
+    normal2 = CartesianRepresentation(np.sin(xi2), np.cos(xi2), 0)
     screen2 = Screen1D(normal=normal2, p=p2, v=v2, dp_dalpha=dp_dalpha,
                        magnification=m2)
 
@@ -106,54 +106,73 @@ def observations(
     return obs0, obs1, obs2, obs12
 
 
+def get_plot_data(all_obs):
+    return [(
+        obs.tau.to_value(tau_unit).ravel(),
+        obs.taudot.to_value(taudot_unit).ravel(),
+        (obs.source.pos.xyz[:2]
+         / obs.distance).to_value("mas", u.dimensionless_angles())
+    ) for obs in all_obs]
+
+
+def get_s2_line(obs):
+    return ((obs.source.p
+             / obs.distance).to("mas", u.dimensionless_angles())
+            * (n := obs.source.normal).xyz[:2, np.newaxis]
+            + Q([-30, 30], "mas")
+            * n.cross(CartesianRepresentation(0, 0, 1)).xyz[:2, np.newaxis])
+
+
 # Get initial setup.
-obs0, obs1, obs2, obs12 = observations()
+obs0, obs1, obs2, obs12 = all_obs = observations()
+
 # Check that total brightness is OK, and set color scale range.
-all_mag = np.hstack([obs.brightness.ravel()
-                     for obs in (obs0, obs1, obs2, obs12)])
+all_mag = np.hstack([obs.brightness.ravel() for obs in all_obs])
 all_b = np.abs(all_mag)
 assert np.isclose(np.sum(all_b**2), 1.)
 vmin = all_b.min() * 0.5
 vmax = 1.
 
-# Create initial plot.
+# Create initial plot, adjusting it to have room for sliders and sky view.
 fig, ax = plt.subplots(figsize=(12., 8.))
-
-# Adjust the main plot to make room for the sliders and sky view
 fig.subplots_adjust(left=0.07, bottom=0.2, right=0.7, top=0.95)
+ax.set_xlim(*taudot_lims)
+ax.set_ylim(*tau_lims)
+ax.set_xlabel(rf"$\dot{{\tau}}$ ({taudot_unit:latex_inline})")
+ax.set_ylabel(rf"$\tau$ ({tau_unit:latex_inline})")
+
 ax_sky = fig.add_axes([0.75, 0.2, 0.2, 0.75])
+ax_sky.set_xlim(20, -10)
+ax_sky.set_aspect("equal")
+ax_sky.set_xlabel(r"$\Delta\alpha$")
+ax_sky.set_ylabel(r"$\Delta\delta$", labelpad=-5)
+
+s2_line = ax_sky.plot(*get_s2_line(obs2), "r:")
 
 scs = []
 skys = []
-for obs, marker, size, cmap in (
-        (obs0, "x", 30, "Greys"),
-        (obs1, "o", 20, "Blues"),
-        (obs2, "o", 20, "Reds"),
-        (obs12, "o", 10, "Greys"))[::-1]:
-    tau = obs.tau.to_value(tau_unit).ravel()
-    taudot = obs.taudot.to_value(taudot_unit).ravel()
+# Reverse order so non-interaction points plotted on top.
+for obs, (tau, taudot, theta_ray), marker, size, cmap in zip(
+        all_obs[::-1],
+        get_plot_data(all_obs)[::-1],
+        "ooox",
+        (10, 20, 20, 30),
+        ("Greys", "Reds", "Blues", "Greys"),
+):
     sc = ax.scatter(taudot, tau, marker=marker, s=size,
                     c=np.abs(obs.brightness).value, cmap=cmap,
                     norm=LogNorm(vmin=vmin, vmax=vmax))
     scs.insert(0, sc)
-    theta_ray = (obs.source.pos.xyz[:2]
-                 / obs.distance).to_value("mas")
     sky = ax_sky.scatter(*theta_ray, marker=marker, s=size,
                          c=np.abs(obs.brightness).value, cmap=cmap,
                          norm=LogNorm(vmin=vmin, vmax=vmax))
     skys.insert(0, sky)
 
-ax.set_xlim(*taudot_lims)
-ax.set_ylim(*tau_lims)
-ax_sky.set_xlim(20, -10)
-ax_sky.set_aspect("equal")
+# Add colorbar.
+cb = fig.colorbar(mappable=scs[-1], fraction=0.1)
+cb.set_label(r"$|\mu|$", labelpad=-15)
 
-fig.colorbar(mappable=sc, label=r"$|\mu|$", fraction=0.08)
-
-ax.set_xlabel(rf"$\dot{{\tau}}$ ({taudot_unit:latex_inline})")
-ax.set_ylabel(rf"$\tau$ ({tau_unit:latex_inline})")
-
-# Add sliders.
+# Add sliders and a reset button
 ax_xi1 = fig.add_axes([0.5, 0.02, 0.3, 0.03])
 xi1_slider = Slider(ax=ax_xi1, label=r'$\xi_{1}$ (deg)',
                     valmin=0., valmax=180, valinit=xi1_init.to_value("deg"))
@@ -166,45 +185,33 @@ xi2_slider = Slider(ax=ax_xi2, label=r'$\xi_{2}$ (deg)',
 ax_v2 = fig.add_axes([0.1, 0.06, 0.3, 0.03])
 v2_slider = Slider(ax=ax_v2, label=r'$v_{2}$ (km/s)',
                    valmin=-50., valmax=50, valinit=v2_init.to_value("km/s"))
-ax_dalpha_dp = fig.add_axes([0.1, 0.1, 0.3, 0.03])
-dalpha_dp_slider = Slider(ax=ax_dalpha_dp, label=r'$d\alpha/dp$ (mas/au)',
-                          valmin=-150., valmax=150,
-                          valinit=dalpha_dp_init.to_value("mas/au"))
+ax_dp_dalpha = fig.add_axes([0.1, 0.1, 0.3, 0.03])
+dp_dalpha_slider = Slider(ax=ax_dp_dalpha, label=r'$dp/d\alpha$ (au/mas)',
+                          valmin=-0.15, valmax=0.15,
+                          valinit=dp_dalpha_init.to_value("au/mas"))
 ax_p2 = fig.add_axes([0.5, 0.1, 0.3, 0.03])
 p2_slider = Slider(ax=ax_p2, label=r'$p_{2}$ (au)',
-                   valmin=-20., valmax=20, valinit=p2_init.to_value("au"))
+                   valmin=-11, valmax=11, valinit=p2_init.to_value("au"))
+resetax = fig.add_axes([0.85, 0.025, 0.1, 0.04])
+button = Button(resetax, 'Reset', hovercolor='0.975')
 
 
 def update(val):
-    """Update different scatter parts for new parameters."""
+    """Update plot data for new parameters."""
     all_obs = observations(
         xi1=Q(xi1_slider.val, "deg"),
         v1=Q(v1_slider.val, "km/s"),
         p2=Q(p2_slider.val, "au"),
         v2=Q(v2_slider.val, "km/s"),
         xi2=Q(xi2_slider.val, "deg"),
-        dalpha_dp=Q(dalpha_dp_slider.val, "mas/au"),
+        dp_dalpha=Q(dp_dalpha_slider.val, "au/mas"),
     )
-    for obs, sc, sky in zip(all_obs, scs, skys):
-        tau = obs.tau.to_value(tau_unit).ravel()
-        taudot = obs.taudot.to_value(taudot_unit).ravel()
-        sc.set_offsets(np.vstack([taudot, tau]).T)
-        theta_ray = (obs.source.pos.xyz[:2]
-                     / obs.distance).to_value("mas")
+    s2_line[0].set_data(get_s2_line(all_obs[2]))
+    for (tau, taudot, theta_ray), sc, sky in zip(
+            get_plot_data(all_obs), scs, skys
+    ):
+        sc.set_offsets(np.stack([taudot, tau], axis=-1))
         sky.set_offsets(theta_ray.T)
-
-
-xi1_slider.on_changed(update)
-v1_slider.on_changed(update)
-xi2_slider.on_changed(update)
-p2_slider.on_changed(update)
-v2_slider.on_changed(update)
-dalpha_dp_slider.on_changed(update)
-
-
-# Add reset button to get back to initial values.
-resetax = fig.add_axes([0.85, 0.025, 0.1, 0.04])
-button = Button(resetax, 'Reset', hovercolor='0.975')
 
 
 def reset(event):
@@ -213,9 +220,15 @@ def reset(event):
     xi2_slider.reset()
     p2_slider.reset()
     v2_slider.reset()
-    dalpha_dp_slider.reset()
+    dp_dalpha_slider.reset()
 
 
+xi1_slider.on_changed(update)
+v1_slider.on_changed(update)
+xi2_slider.on_changed(update)
+p2_slider.on_changed(update)
+v2_slider.on_changed(update)
+dp_dalpha_slider.on_changed(update)
 button.on_clicked(reset)
 
 fig.show()
