@@ -17,7 +17,7 @@ Pulsar scintillation screens
 .. image:: https://zenodo.org/badge/237521442.svg
    :target: https://doi.org/10.5281/zenodo.7455535
    :alt: DOI 10.5281/zenodo.7455535
-         
+
 Analyze and model pulsar dynamic spectra, using secondary spectra and
 theta-theta decompositions for linear screens.
 
@@ -30,7 +30,7 @@ Installation instructions
 
 The package and its dependencies can be installed with::
 
-  pip install git+https://github.com/mhvk/screens.git#egg=screens
+  pip install git+https://github.com/mhvk/screens.git
 
 
 License

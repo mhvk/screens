@@ -41,7 +41,7 @@ m1 = np.exp(-0.5*(p1/sig1)**2)
 m1[5::10] *= (10**np.sign(p1))[5::10]  # Mark some for visualization.
 m1 *= np.sqrt((1-t1**2) / np.sum(np.abs(m1)**2))
 # Screen 2, a refraction ramp closer to pulsar.
-d_s2 = Q(415, "pc")
+d_s2 = Q(485, "pc")
 xi2_init = Q(136-90, "deg")  # Zhu gives angle of line of images!
 p2_init = Q(10, "au")
 v2_init = Q(-3, "km/s")
@@ -123,9 +123,14 @@ def get_s2_line(obs):
             * n.cross(CartesianRepresentation(0, 0, 1)).xyz[:2, np.newaxis])
 
 
+def get_s2_locations(obs):
+    return (obs.source.source.pos.xyz[:2] / d_s2).to_value(
+        "mas", u.dimensionless_angles())
+
+
 # Get initial setup.
 obs0, obs1, obs2, obs12 = all_obs = observations()
-
+all_obs = list(all_obs)
 # Check that total brightness is OK, and set color scale range.
 all_mag = np.hstack([obs.brightness.ravel() for obs in all_obs])
 all_b = np.abs(all_mag)
@@ -147,7 +152,12 @@ ax_sky.set_aspect("equal")
 ax_sky.set_xlabel(r"$\Delta\alpha$")
 ax_sky.set_ylabel(r"$\Delta\delta$", labelpad=-5)
 
+norm = LogNorm(vmin=vmin, vmax=vmax)
+
 s2_line = ax_sky.plot(*get_s2_line(obs2), "r:")
+s2_locations = ax_sky.scatter(*get_s2_locations(obs12), marker="o", s=10,
+                              c=np.abs(obs12.brightness).value, cmap="Reds",
+                              norm=norm)
 
 scs = []
 skys = []
@@ -165,7 +175,7 @@ for obs, (tau, taudot, theta_ray), marker, size, cmap in zip(
     scs.insert(0, sc)
     sky = ax_sky.scatter(*theta_ray, marker=marker, s=size,
                          c=np.abs(obs.brightness).value, cmap=cmap,
-                         norm=LogNorm(vmin=vmin, vmax=vmax))
+                         norm=norm)
     skys.insert(0, sky)
 
 # Add colorbar.
@@ -198,7 +208,7 @@ button = Button(resetax, 'Reset', hovercolor='0.975')
 
 def update(val):
     """Update plot data for new parameters."""
-    all_obs = observations(
+    all_obs[:] = observations(
         xi1=Q(xi1_slider.val, "deg"),
         v1=Q(v1_slider.val, "km/s"),
         p2=Q(p2_slider.val, "au"),
@@ -206,12 +216,13 @@ def update(val):
         xi2=Q(xi2_slider.val, "deg"),
         dp_dalpha=Q(dp_dalpha_slider.val, "au/mas"),
     )
-    s2_line[0].set_data(get_s2_line(all_obs[2]))
     for (tau, taudot, theta_ray), sc, sky in zip(
             get_plot_data(all_obs), scs, skys
     ):
         sc.set_offsets(np.stack([taudot, tau], axis=-1))
         sky.set_offsets(theta_ray.T)
+    s2_line[0].set_data(get_s2_line(all_obs[2]))
+    s2_locations.set_offsets(get_s2_locations(all_obs[3]).T)
 
 
 def reset(event):
