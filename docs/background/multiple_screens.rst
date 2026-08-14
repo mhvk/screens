@@ -61,6 +61,7 @@ pulsar, i.e.,
 
 .. math::
    :label: eq_two_screen_constraints
+   :no-wrap:
 
     \begin{eqnarray}
     d_{2}(\hat{z} + \rho_{1}\hat{r}_{1} + \varsigma_{1}\hat{u}_{1}) - (d_{2}-d_{1})\alpha_{1}\hat{r}_{1}
@@ -73,11 +74,12 @@ This can be simplified to,
 
 .. math::
    :label: eq_two_screen_constraints_simplified
+   :no-wrap:
 
     \begin{eqnarray}
     \rho_{1}\hat{r}_{1} + \varsigma_{1}\hat{u}_{1} - (1-d_{1}/d_{2})\alpha_{1}\hat{r}_{1}
      &=& \rho_{2}\hat{r}_{2} + \varsigma_{2}\hat{u}_{2},\\
-    \rho_{1}\hat{r}_{1} + \varsigma_{1}\hat{u}_{1} - (1-d_{1}/d_{p})\alpha_{1}\hat{r}_{1} - (1-d_{2}/d_{p})\hat{r}_{2}) &=& 0.
+    \rho_{1}\hat{r}_{1} + \varsigma_{1}\hat{u}_{1} - (1-d_{1}/d_{p})\alpha_{1}\hat{r}_{1} - (1-d_{2}/d_{p})\hat{r}_{2} &=& 0.
     \end{eqnarray}
 
 Obviously, this can be extended to multiple screens, and for :math:`n`
@@ -108,6 +110,7 @@ and :math:`\hat{u}_{1}`, giving the following four equations (writing
 :math:`s_{12}\equiv1-d_{1}/d_{2}`, etc., for brevity),
 
 .. math::
+    :no-wrap:
 
     \begin{eqnarray}
     \rho_{1} - s_{12}\alpha_{1} &=& \rho_{2}\hat{r}_{2}\cdot\hat{r}_{1} + \varsigma_{2}\hat{u}_{2}\cdot\hat{r}_{1}
@@ -314,6 +317,7 @@ Those are given by,
 
 .. math::
    :label: eq_trajectories_solution
+   :no-wrap:
 
     \begin{eqnarray}
     \vec{\theta}^{r}_{i} &=& \theta^{s}_{i}\hat{r}_{i} + \varsigma_{i} \hat{u}_{i},\\
@@ -325,6 +329,7 @@ by,
 
 .. math::
    :label: eq_time_delays
+   :no-wrap:
 
     \begin{eqnarray}
     \tau &=& \sum_{i=0}^{n} \frac{d_{i+1}-d_{i}}{2c}
@@ -420,12 +425,13 @@ The trajectories relative to the telescope now are given by,
 
 .. math::
    :label: eq_trajectories_solution_with_gradients
+   :no-wrap:
 
     \begin{eqnarray}
     \theta^{r}_{i}
-    = \left(\theta^{s}_{i} + \alpha_{i}\rho_{i}^{\prime}\right)\hat{r}_{i}
+    &=& \left(\theta^{s}_{i} + \alpha_{i}\rho_{i}^{\prime}\right)\hat{r}_{i}
     + \varsigma_{i} \hat{u}_{i},\\
     \mu^{r}_{i}
-    = \left(\mu^{s}_{i} + \dot{\alpha}_{i}\rho_{i}^{\prime}\right)\hat{r}_{i}
+    &=& \left(\mu^{s}_{i} + \dot{\alpha}_{i}\rho_{i}^{\prime}\right)\hat{r}_{i}
     + \dot{\varsigma}_{i} \hat{u}_{i}.
     \end{eqnarray}
