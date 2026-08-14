@@ -128,14 +128,14 @@ class ConjugateSpectrum:
                       * dynspec)
             step1 = factor.sum(-2, keepdims=True).swapaxes(0, -2).squeeze(0)
             conj = np.fft.fftshift(np.fft.fft(step1, axis=-1), axes=-1)
-            fd.shape = conj.shape[-2], 1
+            fd = fd.reshape(conj.shape[-2], 1)
 
         if normalization == 'mean':
             conj /= dynspec.size
             conj[conj.shape[-2] // 2, conj.shape[-1] // 2] = 1.
 
-        tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0]))
-        tau.shape = f.shape
+        tau = np.fft.fftshift(np.fft.fftfreq(f.size, f[1]-f[0])
+                              ).reshape(f.shape)
         self = cls(conj, tau, fd, **kwargs)
         self.f = f
         self.t = t
